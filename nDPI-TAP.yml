@@ -1,0 +1,32 @@
+---
+- name: Setup TAP interface on Proxmox to perform nDPI monitoring
+  hosts: proxmox-hosts
+  become: true
+
+  tasks:
+    - name: Copy tc-mirror.sh to /usr/local/bin
+      copy:
+        src: files/tc-mirror.sh
+        dest: /usr/local/bin/tc-mirror.sh
+        mode: '0755'
+
+    - name: Copy tc-mirror-cleanup.sh to /usr/local/bin
+      copy:
+        src: files/tc-mirror-cleanup.sh
+        dest: /usr/local/bin/tc-mirror-cleanup.sh
+        mode: '0755'
+
+    - name: Copy tc-mirror.service to /etc/systemd/system
+      copy:
+        src: files/tc-mirror.service
+        dest: /etc/systemd/system/tc-mirror.service
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      command: systemctl daemon-reload
+
+    - name: Enable and start tc-mirror.service
+      systemd:
+        name: tc-mirror.service
+        enabled: true
+        state: started
