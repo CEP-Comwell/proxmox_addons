@@ -14,6 +14,12 @@
       args:
         creates: /sys/class/net/tapmon0
 
+    - name: Bring tapmon0 interface UP
+      command: ip link set tapmon0 up
+
+    - name: Set tapmon0 interface to promiscuous mode
+      command: ip link set tapmon0 promisc on
+
     - name: Copy tc-mirror.sh to /usr/local/bin
       copy:
         src: files/tc-mirror.sh
@@ -51,6 +57,12 @@
               bridge_stp off
               bridge_fd 0
         insertafter: EOF
+
+    - name: Bring vmbr99 interface UP
+      command: ip link set vmbr99 up
+
+    - name: Set vmbr99 interface to promiscuous mode
+      command: ip link set vmbr99 promisc on
 
     - name: Restart networking service
       service:
