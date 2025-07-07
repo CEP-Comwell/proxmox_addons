@@ -4,6 +4,16 @@
   become: true
 
   tasks:
+    - name: Install iproute2 package
+      apt:
+        name: iproute2
+        state: present
+
+    - name: Create tapmon0 interface
+      command: ip tuntap add mode tap tapmon0
+      args:
+        creates: /sys/class/net/tapmon0
+
     - name: Copy tc-mirror.sh to /usr/local/bin
       copy:
         src: files/tc-mirror.sh
