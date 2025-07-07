@@ -1,2 +1,2 @@
 [proxmox-hosts]
-172.16.10.23 
+172.16.10.23 ansible_user=root
