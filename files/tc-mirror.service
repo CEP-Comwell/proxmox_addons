@@ -1,0 +1,13 @@
+[Unit]
+Description=Mirror vmbr0 traffic to tapmon0
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/tc-mirror.sh
+ExecStop=/usr/local/bin/tc-mirror-cleanup.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
