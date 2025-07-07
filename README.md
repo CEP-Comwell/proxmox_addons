@@ -1,8 +1,6 @@
 # proxmox_addons
 Additional features for configuring Proxmox VE host templates
 
-Absolutely! Here are the three scripts you can copy and paste directly into your Proxmox host:
-
 ---
 
 ### 📄 **1. `tc-mirror.sh`**
@@ -88,5 +86,3 @@ sudo chmod +x /usr/local/bin/tc-mirror-cleanup.sh
 sudo systemctl daemon-reload
 sudo systemctl enable --now tc-mirror.service
 ```
-
-Let me know if you'd like a version that supports multiple bridges or TAP interfaces!
