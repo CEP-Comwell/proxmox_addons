@@ -40,3 +40,19 @@
         name: tc-mirror.service
         enabled: true
         state: started
+
+    - name: Add vmbr99 bridge configuration to /etc/network/interfaces
+      blockinfile:
+        path: /etc/network/interfaces
+        block: |
+          auto vmbr99
+          iface vmbr99 inet manual
+              bridge_ports tapmon0
+              bridge_stp off
+              bridge_fd 0
+        insertafter: EOF
+
+    - name: Restart networking service
+      service:
+        name: networking
+        state: restarted
