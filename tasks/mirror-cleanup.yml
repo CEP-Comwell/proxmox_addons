@@ -1,0 +1,23 @@
+---
+# This task file is a subtask of mirror_cleanup.yml
+# It removes tc mirror filters and ingress qdiscs created by the mirroring playbook.
+
+- name: Delete tc mirror filter from {{ tap_if }}
+  shell: |
+    tc filter show dev {{ tap_if }} parent ffff: | \
+    grep "mirred egress mirror dev {{ mirror_target }}" && \
+    tc filter delete dev {{ tap_if }} parent ffff:
+  ignore_errors: true
+
+- name: Delete ingress qdisc from {{ tap_if }}
+  shell: tc qdisc delete dev {{ tap_if }} ingress
+  ignore_errors: true
+
+- name: Show remaining tc filters on {{ tap_if }}
+  shell: tc filter show dev {{ tap_if }} parent ffff:
+  register: remaining_tc_filters
+  changed_when: false
+
+- name: Print remaining tc filters on {{ tap_if }}
+  debug:
+    msg: "{{ remaining_tc_filters.stdout_lines | default(['No filters found']) }}"

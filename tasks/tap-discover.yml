@@ -1,0 +1,31 @@
+---
+# This task discovers TAP interfaces named tap[100-799]i0
+# and excludes those associated with monitoring VM IDs.
+
+- name: Discover tap interfaces matching tap[100-799]i0
+  shell: |
+    ip -o link show | awk -F': ' '{print $2}' | awk '{print $1}' | grep -E '^tap[1-7][0-9]{2}i0$'
+  register: discovered_tap_interfaces
+  changed_when: false
+
+- name: Debug raw discovered tap interfaces
+  debug:
+    var: discovered_tap_interfaces.stdout_lines
+
+- name: Set fact for tap_interfaces excluding monitor VMs
+  set_fact:
+    tap_interfaces: >-
+      {{
+        discovered_tap_interfaces.stdout_lines
+        | reject('in',
+            monitor_vm_ids
+            | map('regex_replace', '^', 'tap')
+            | map('regex_replace', '$', 'i0')
+            | list
+          )
+        | list
+      }}
+
+- name: Debug filtered tap interfaces
+  debug:
+    var: tap_interfaces

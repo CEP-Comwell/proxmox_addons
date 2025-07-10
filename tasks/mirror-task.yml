@@ -1,0 +1,38 @@
+---
+# This task file is a subtask of mirror_vmbr0_to_br_dpi.yml
+# It configures traffic mirroring from a given tap interface (tap_if)
+# to a designated mirror target interface (mirror_target), typically veth0.
+
+# Step 1: Ensure the tap interface is up
+- name: Ensure {{ tap_if }} is up
+  shell: "ip link set {{ tap_if }} up"
+  ignore_errors: true
+
+# Step 2: Add an ingress qdisc to the tap interface
+- name: Add ingress qdisc to {{ tap_if }}
+  shell: "tc qdisc add dev {{ tap_if }} ingress"
+  ignore_errors: true
+
+# Step 3: Check if a tc mirror filter already exists
+- name: Check if tc mirror filter already exists on {{ tap_if }}
+  shell: "tc filter show dev {{ tap_if }} parent ffff:"
+  register: tc_filter_check
+  changed_when: false
+
+# Step 4: Add a tc mirror filter to mirror traffic to the mirror target
+- name: Add tc mirror filter to {{ tap_if }} → {{ mirror_target }}
+  shell: >
+    tc filter add dev {{ tap_if }} parent ffff: protocol all u32 match u32 0 0
+    action mirred egress mirror dev {{ mirror_target }}
+  when: "'mirred egress mirror dev ' ~ mirror_target not in tc_filter_check.stdout"
+  ignore_errors: true
+
+# Step 5: Display active tc filters on the tap interface
+- name: Show active tc filters on {{ tap_if }}
+  shell: "tc filter show dev {{ tap_if }} parent ffff:"
+  register: active_tc_filters
+  changed_when: false
+
+- name: Print active tc filters for {{ tap_if }}
+  debug:
+    msg: "{{ active_tc_filters.stdout_lines }}"

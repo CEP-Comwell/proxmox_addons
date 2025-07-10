@@ -1,0 +1,26 @@
+---
+# This task file is a subtask of mirror_vmbr0_to_br_dpi.yml
+# It ensures that veth0 and its peer are created, brought up,
+# and that veth0-peer is attached to the destination bridge (br-dpi).
+
+# Step 1: Create veth0 and its peer if not already present
+- name: Create veth0 and veth0-peer if missing
+  shell: |
+    ip link show veth0 || ip link add veth0 type veth peer name veth0-peer
+  register: veth_create
+  changed_when: "'added' in veth_create.stdout or veth_create.rc == 0"
+
+# Step 2: Bring up veth0
+- name: Bring up veth0 interface
+  shell: ip link set veth0 up
+  ignore_errors: true
+
+# Step 3: Bring up veth0-peer
+- name: Bring up veth0-peer interface
+  shell: ip link set veth0-peer up
+  ignore_errors: true
+
+# Step 4: Attach veth0-peer to the destination bridge (e.g., br-dpi)
+- name: Attach veth0-peer to {{ dest_bridge }}
+  shell: ip link set veth0-peer master {{ dest_bridge }}
+  ignore_errors: true

@@ -1,0 +1,26 @@
+---
+- name: Delete existing tap interfaces if they exist
+  shell: |
+    ip link show tap{{ vm_id }} && ip link delete tap{{ vm_id }}
+  loop: "{{ tap_range }}"
+  loop_control:
+    loop_var: vm_id
+  ignore_errors: true
+
+- name: Create dedicated tap interfaces for mirroring
+  shell: ip tuntap add mode tap name tap{{ vm_id }}
+  loop: "{{ tap_range }}"
+  loop_control:
+    loop_var: vm_id
+  ignore_errors: false
+
+- name: Bring up dedicated tap interfaces
+  shell: ip link set tap{{ vm_id }} up
+  loop: "{{ tap_range }}"
+  loop_control:
+    loop_var: vm_id
+  ignore_errors: false
+
+- name: Collect list of created tap interfaces
+  set_fact:
+    tap_interfaces: "{{ tap_range | map('regex_replace', '^', 'tap') | list }}"
