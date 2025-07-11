@@ -34,7 +34,7 @@ Instead, you should create a separate network configuration file included with t
 
 Here is an example:
 
-** /etc/network/interfaces.d/edgesec.conf**
+**/etc/network/interfaces.d/edgesec.conf**
 
   ```bash
 # Create veth pair
