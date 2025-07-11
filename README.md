@@ -23,12 +23,18 @@ This Ansible playbook configures Proxmox VMs on the default (`vmbr0`) bridge to 
 * Integration with Falco IDS
 * Integration with SecurityOnion
 
-
+# Playbook Description 
 **mirror_vmbr0_to_brdpi.yml**
 
-* The playbook assumes that the veth interfaces (`veth0`) and its peer (`veth1`) have been manually set up and configured on the Proxmox host, as direct changes to `/etc/network/interfaces` are not recommended.
+* The playbook assumes that the veth interfaces (`veth0`) and its peer (`veth1`) have been manually set up and configured on the Proxmox host.
 
-**Example file /etc/network/interfaces.d/edgesec.conf**
+Promox recommends against making any direct changes to `/etc/network/interfaces`.
+
+Instead, you should create a separate network configuration file included with the `source /etc/network/interfaces.d/*` command at the bottom of the proxmox managed network configuration.
+
+Here is an example:
+
+** /etc/network/interfaces.d/edgesec.conf**
 
   ```bash
 # Create veth pair
@@ -54,9 +60,13 @@ iface brdpi inet manual
         pre-up ip link set brdpi promisc on
         post-down ip link set brdpi promisc off 
   ```
-# Task Description
+# Subtask Descriptions
 
-* The playbook defines several variables, including `dest_bridge`, `mirror_target`, `tap_prefix`, and `monitor_vm_ids`.
+* The playbook defines several variables, including:
+    + `dest_bridge` : designated monitoring bridge i.e. `brdpi`
+    + `mirror_target` : target interface i.e. `veth0`
+    + `tap_prefix` : Used to generate the associated tc mirror commands from each tap interface i.e. tap400i0 is VM ID 400 on vmbr0
+    + `monitor_vm_ids`: List of VM ID's to exclude for monitoring
 * The playbook includes several tasks, including:
 	+ Discovering tap interfaces dynamically using `tasks/tap-discover.yml`, which takes advantage of the fact that Proxmox automatically creates tap interfaces associated with each VM ID.
 	+ Debugging the list of discovered tap interfaces.
