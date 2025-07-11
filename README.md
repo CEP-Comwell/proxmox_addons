@@ -1,22 +1,36 @@
 # Proxmox VM Traffic Mirroring with Ansible
 
-**Description**
+**Mirroring Ingress Traffic from VMs to a Monitoring Bridge**
 
-This Ansible playbook is designed to mirror VM traffic from (`vmbr0`) to (`brdpi`) using a veth interface (`veth0`) and tc (traffic control).
-to mirror egress traffic from each VM's TAP interface.
+This Ansible playbook configures Proxmox VMs on the default (`vmbr0`) bridge to mirror ingress traffic from each VM's TAP interface, which is automatically assigned by Proxmox at startup.
+
+**How it Works**
+
+* Utilizes a veth interface (`veth0`) and its peer (`veth1`) connected to a designated monitoring bridge (`brdpi`)
+* Dynamically configures tc mirroring (traffic control)
+* Allows you to assign a monitoring VM to the monitoring bridge and set its network interface in promiscuous mode
+
+**Benefits**
+
+* Enables network traffic analysis and monitoring
+* Allows for advanced network monitoring and security tools integration
+
+**Future Development**
+
+* Experimentation with kernel DPDK
+* Integration with Falco IDS
+* Integration with SecurityOnion
 
 
 **mirror_vmbr0_to_brdpi.yml**
 
 * The playbook assumes that the veth interfaces (`veth0`) and its peer (`veth1`) have been manually set up and configured on the Proxmox host, as direct changes to `/etc/network/interfaces` are not recommended.
 
-   
-
-# Create veth pair
 **Example file /etc/network/interfaces.d/edgesec.conf**
 
   ```bash
- auto veth0
+# Create veth pair
+auto veth0
 iface veth0 inet manual
         pre-up ip link delete veth0 type veth || true
         pre-up ip link add veth0 type veth peer name veth1
@@ -38,7 +52,7 @@ iface brdpi inet manual
         pre-up ip link set brdpi promisc on
         post-down ip link set brdpi promisc off 
   ```
-# Description
+# Task Description
 
 * The playbook defines several variables, including `dest_bridge`, `mirror_target`, `tap_prefix`, and `monitor_vm_ids`.
 * The playbook includes several tasks, including:
@@ -77,22 +91,49 @@ iface brdpi inet manual
 
 ---
 
-## 🚀 Quick Start
+# 🚀 Quick Start
 
 ### 1. Clone the Repository
 
+Clone the `proxmox_addons` repository using the following command:
 ```bash
 git clone https://github.com/CEP-Comwell/proxmox_addons.git
+```
+This will download the repository to your local machine. Once the clone is complete, navigate into the repository directory:
+```bash
 cd proxmox_addons
 ```
 
-**Usage**
-To run the playbook, use the following command:
+### 2. Install Ansible
 
+Make sure you have Ansible installed on your system. If you don't have Ansible installed, you can install it using the following command:
+```bash
+sudo apt-get install ansible
+```
+or
+```bash
+sudo yum install ansible
+```
+depending on your Linux distribution.
+
+### 3. Create an Inventory File
+
+Create an Ansible inventory file that defines the hosts and groups for your Proxmox environment. You can use a simple text file with the following format:
+```ini
+[proxmox-hosts]
+proxmox01 ansible_host=192.168.1.100
+proxmox02 ansible_host=192.168.1.101
+```
+Replace the `proxmox01` and `proxmox02` with the actual hostnames or IP addresses of your Proxmox nodes.
+
+### 4. Run the Playbook
+
+To run the playbook, use the following command:
 ```bash
 ansible-playbook -i inventory mirror_vmbr0_to_brdpi.yml
 ```
+Replace `inventory` with the path to your Ansible inventory file. This will execute the playbook and configure the Proxmox VMs to mirror ingress traffic to the designated monitoring bridge.
 
-Replace inventory with the path to your Ansible inventory file.
+Note: Make sure you have the necessary permissions and access to the Proxmox nodes before running the playbook.
 
 
