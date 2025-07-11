@@ -10,8 +10,11 @@ to mirror egress traffic from each VM's TAP interface.
 
 * The playbook assumes that the veth interfaces (`veth0`) and its peer (`veth1`) have been manually set up and configured on the Proxmox host, as direct changes to `/etc/network/interfaces` are not recommended.
 
-   **Example file /etc/network/interfaces.d/edgesec.conf**
-# # Create veth pair
+   
+
+# Create veth pair
+**Example file /etc/network/interfaces.d/edgesec.conf**
+
   ```bash
  auto veth0
 iface veth0 inet manual
@@ -35,7 +38,7 @@ iface brdpi inet manual
         pre-up ip link set brdpi promisc on
         post-down ip link set brdpi promisc off 
   ```
-
+# Description
 
 * The playbook defines several variables, including `dest_bridge`, `mirror_target`, `tap_prefix`, and `monitor_vm_ids`.
 * The playbook includes several tasks, including:
