@@ -54,8 +54,6 @@ iface brdpi inet manual
 * The subtask ensures the tap interface is up, adds an ingress qdisc to the tap interface, checks if a `tc` mirror filter already exists, and adds a `tc` mirror filter to mirror traffic to the mirror target.
 * The subtask also displays active `tc` filters on the tap interface.
 
-Let me know if this revised summary accurately reflects the current state of your playbook!
-
 ---
 
 ## 📦 Features
@@ -83,10 +81,10 @@ Let me know if this revised summary accurately reflects the current state of you
 ```bash
 git clone https://github.com/CEP-Comwell/proxmox_addons.git
 cd proxmox_addons
-
-Usage
+```
+**Usage**
 To run the playbook, use the following command:
-
-bash
+```bash
 ansible-playbook -i inventory mirror_vmbr0_to_brdpi.yml
 Replace inventory with the path to your Ansible inventory file.
+```
