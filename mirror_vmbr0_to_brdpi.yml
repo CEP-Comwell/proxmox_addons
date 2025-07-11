@@ -12,30 +12,41 @@
       
   tasks:
 
-    # # Step 1: Ensure veth0 is configured and attached to br-dpi
-    # - name: Check if veth0 is configured in /etc/network/interfaces
-    #   shell: grep -A 3 "iface {{ mirror_target }}" /etc/network/interfaces || true
-    #   register: veth_config
+# Proxmox VE Edgesec Addon - Mirror VM traffic from vmbr0(tap interface on source bridge) to brdpi(monitoring target).
+# NOTE: Proxmox warns against modifying /etc/network/interfaces directly, as it is managed by the system.
 
-    # - name: Add veth0 configuration to /etc/network/interfaces if missing
-    #   blockinfile:
-    #     path: /etc/network/interfaces
-    #     marker: "# {mark} ANSIBLE MANAGED BLOCK - veth0 for mirroring"
-    #     block: |
-    #       auto {{ mirror_target }}
-    #       iface {{ mirror_target }} inet manual
-    #           bridge_ports none
-    #           bridge_stp off
-    #           bridge_fd 0
-    #           bridge_maxwait 0
-    #           bridge_slave yes
-    #           bridge_master {{ dest_bridge }}
-    #   when: "'iface ' ~ mirror_target not in veth_config.stdout"
+    # # Step 1: Manually create a Edgesec configuration file and save it to/etc/network/interfaces.d/edgesec.conf and add the following contents to it:
 
-    # - name: Bring up veth0 interface
-    #   shell: ip link set {{ mirror_target }} up
-    #   ignore_errors: true
+# # Create veth pair
+# auto veth0
+# iface veth0 inet manual
+#         pre-up ip link delete veth0 type veth || true
+#         pre-up ip link add veth0 type veth peer name veth1
+#         up ip link set veth0 up promisc on
+#         down ip link delete veth0
 
+# # Bring up veth1
+# auto veth1
+# iface veth1 inet manual
+#         up ip link set veth1 up promisc on
+
+# # Bridge interface for DPI monitoring
+
+# auto brdpi
+# iface brdpi inet manual
+# 	bridge-ports veth1
+# 	bridge-stp off
+# 	bridge-fd 0
+#         pre-up ip link set brdpi promisc on
+#         post-down ip link set brdpi promisc off 
+
+ 
+# # Restart networking service to apply changes
+# # systemctl restart networking
+# # Preferably, it is recommended to reboot the Proxmox host to ensure all changes are applied correctly.
+
+        
+    
     # Step 2: Discover tap interfaces dynamically
     - name: Discover tap interfaces for mirroring
       include_tasks: tasks/tap-discover.yml
