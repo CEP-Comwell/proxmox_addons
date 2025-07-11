@@ -82,9 +82,14 @@ iface brdpi inet manual
 git clone https://github.com/CEP-Comwell/proxmox_addons.git
 cd proxmox_addons
 ```
+
 **Usage**
 To run the playbook, use the following command:
+
 ```bash
 ansible-playbook -i inventory mirror_vmbr0_to_brdpi.yml
-Replace inventory with the path to your Ansible inventory file.
 ```
+
+Replace inventory with the path to your Ansible inventory file.
+
+
