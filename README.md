@@ -4,7 +4,7 @@
 
 This Ansible playbook configures Proxmox VMs on the default (`vmbr0`) bridge to mirror ingress traffic from each VM's TAP interface, which is automatically assigned by Proxmox at startup.
 
-![Proxmox VM Traffic Mirroring](blob/images/monitor_vmbr0_to_brdpi.png){: width="50%" height="50%"}
+<img src="blob/images/monitor_vmbr0_to_brdpi.png" width="400" height="300">
 
 **How it Works**
 
