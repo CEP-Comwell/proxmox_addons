@@ -4,7 +4,7 @@
 
 This Ansible playbook configures Proxmox VMs on the default (`vmbr0`) bridge to mirror ingress traffic from each VM's TAP interface, which is automatically assigned by Proxmox at startup.
 
-![Proxmox VM Traffic Mirroring](https://github.com/CEP-Comwell/proxmox_addons/blob/main/blob/images/monitor_vmbr0_to_brdpi.png)
+![Proxmox VM Traffic Mirroring](blob/images/monitor_vmbr0_to_brdpi.png){: width="400px" height="300px"}
 **How it Works**
 
 * Utilizes a veth interface (`veth0`) and its peer (`veth1`) connected to a designated monitoring bridge (`brdpi`)
