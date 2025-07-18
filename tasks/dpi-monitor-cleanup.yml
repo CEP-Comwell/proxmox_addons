@@ -1,0 +1,16 @@
+---
+- name: Remove edgesec.conf from interfaces.d
+  file:
+    path: /etc/network/interfaces.d/edgesec.conf
+    state: absent
+  notify: Reload networking
+
+- name: Display reminder to verify DPI bridge and veth removal
+  debug:
+    msg: "edgesec.conf has been removed. Please verify DPI bridge and veth interfaces are down after networking reload."
+
+# Handler to reload networking
+- name: Reload networking
+  ansible.builtin.shell: systemctl restart networking
+  become: true
+  listen: Reload networking

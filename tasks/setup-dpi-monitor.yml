@@ -1,0 +1,28 @@
+---
+- name: Copy edgesec.conf to /etc/network/interfaces.d/
+  copy:
+    src: files/edgesec.conf
+    dest: /etc/network/interfaces.d/edgesec.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload networking
+
+- name: Ensure interfaces.d is sourced in /etc/network/interfaces
+  lineinfile:
+    path: /etc/network/interfaces
+    regexp: '^source /etc/network/interfaces.d/\*'
+    line: 'source /etc/network/interfaces.d/*'
+    state: present
+    insertafter: '^#.*'
+  notify: Reload networking
+
+- name: Display reminder to verify bridge and veth setup
+  debug:
+    msg: "edgesec.conf has been deployed. Please verify DPI bridge and veth interfaces after networking reload."
+
+# Handler to reload networking
+- name: Reload networking
+  ansible.builtin.shell: systemctl restart networking
+  become: true
+  listen: Reload networking

@@ -82,6 +82,14 @@ iface brdpi inet manual
 * The subtask ensures the tap interface is up, adds an ingress qdisc to the tap interface, checks if a `tc` mirror filter already exists, and adds a `tc` mirror filter to mirror traffic to the mirror target.
 * The subtask also displays active `tc` filters on the tap interface.
 
+**tasks/setup-dpi-monitor.yml**
+
+* Copies the DPI bridge and veth configuration from `files/edgesec.conf` to `/etc/network/interfaces.d/edgesec.conf` and reloads networking.
+
+**tasks/dpi-monitor-cleanup.yml**
+
+* Removes `/etc/network/interfaces.d/edgesec.conf` and reloads networking to clean up the DPI bridge and veth interfaces.
+
 ---
 
 ## 📦 Features
@@ -90,6 +98,8 @@ iface brdpi inet manual
 - Excludes monitoring VMs by VMID
 - Applies `tc` mirroring rules to forward traffic to `veth0`
 - Designed for Proxmox 8.x
+- Persistent DPI bridge and veth setup using `/etc/network/interfaces.d/edgesec.conf`
+- Automated cleanup of both mirroring rules and DPI bridge configuration
 
 ---
 
@@ -165,6 +175,14 @@ To remove mirroring rules, run:
 ```bash
 ansible-playbook -i inventory mirror_cleanup.yml
 ```
+
+### 7. Remove DPI Bridge and Mirroring Configuration
+
+To fully remove both mirroring rules and the DPI bridge/veth setup, run:
+```bash
+ansible-playbook -i inventory dpi_bridge_cleanup.yml
+```
+This will clean up all tc mirroring rules and remove the DPI bridge configuration from `/etc/network/interfaces.d/edgesec.conf`.
 
 * All variables are defined in `config.yml` and loaded automatically by the playbooks.
 * Idempotent and safe: checks for existing rules before applying or removing them
