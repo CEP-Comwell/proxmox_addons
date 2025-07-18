@@ -84,7 +84,9 @@ iface brdpi inet manual
 
 **tasks/setup-dpi-monitor.yml**
 
-* Copies the DPI bridge and veth configuration from `files/edgesec.conf` to `/etc/network/interfaces.d/edgesec.conf` and reloads networking.
+* Performs prechecks to ensure veth and bridge interfaces are not already present or conflicting with `/etc/network/interfaces`.
+* Copies the DPI bridge and veth configuration from `files/edgesec.conf` to `/etc/network/interfaces.d/edgesec.conf`.
+* Notifies the main playbook to reload networking after changes.
 
 **tasks/dpi-monitor-cleanup.yml**
 
@@ -100,6 +102,8 @@ iface brdpi inet manual
 - Designed for Proxmox 8.x
 - Persistent DPI bridge and veth setup using `/etc/network/interfaces.d/edgesec.conf`
 - Automated cleanup of both mirroring rules and DPI bridge configuration
+- Idempotent and safe: checks for existing rules and interface conflicts before applying or removing them
+- Provides feedback on remaining tc filters and interface status after setup and cleanup
 
 ---
 
@@ -171,7 +175,7 @@ Note: Make sure you have the necessary permissions and access to the Proxmox nod
 
 ### 6. Remove Mirroring Rules
 
-To remove mirroring rules, run:
+To remove only mirroring rules, run:
 ```bash
 ansible-playbook -i inventory mirror_cleanup.yml
 ```
@@ -184,8 +188,10 @@ ansible-playbook -i inventory dpi_bridge_cleanup.yml
 ```
 This will clean up all tc mirroring rules and remove the DPI bridge configuration from `/etc/network/interfaces.d/edgesec.conf`.
 
-* All variables are defined in `config.yml` and loaded automatically by the playbooks.
-* Idempotent and safe: checks for existing rules before applying or removing them
-* Provides feedback on remaining tc filters after cleanup
+## 📝 Workflow
+
+1. Run `mirror_vmbr0_to_brdpi.yml` to set up DPI bridge, veth, and mirroring.
+2. Run `mirror_cleanup.yml` to remove mirroring rules only.
+3. Run `dpi_bridge_cleanup.yml` to remove both mirroring rules and DPI bridge/veth config.
 
 

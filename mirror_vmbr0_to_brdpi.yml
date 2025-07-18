@@ -38,5 +38,10 @@
         loop_var: tap_if
       when: tap_interfaces | length > 0
 
+  handlers:
+    - name: Reload networking
+      ansible.builtin.shell: systemctl restart networking
+      become: true
+
 # To remove mirroring, run:
 # ansible-playbook mirror_cleanup.yml -i inventory
