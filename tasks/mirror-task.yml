@@ -6,26 +6,27 @@
 # Step 1: Ensure the tap interface is up
 - name: Ensure {{ tap_if }} is up
   shell: "ip link set {{ tap_if }} up"
-  ignore_errors: true
-
-# Step 2: Add an ingress qdisc to the tap interface
-- name: Add ingress qdisc to {{ tap_if }}
-  shell: "tc qdisc add dev {{ tap_if }} ingress"
-  ignore_errors: true
-
-# Step 3: Check if a tc mirror filter already exists
-- name: Check if tc mirror filter already exists on {{ tap_if }}
-  shell: "tc filter show dev {{ tap_if }} parent ffff:"
-  register: tc_filter_check
   changed_when: false
 
+# Step 2: Add an ingress qdisc to the tap interface
+- name: Add mirroring qdisc if not present
+  shell: |
+    tc qdisc show dev {{ tap_if }} | grep "ingress" || tc qdisc add dev {{ tap_if }} ingress
+  changed_when: "'ingress' not in lookup('pipe', 'tc qdisc show dev ' + tap_if)"
+  failed_when: false
+
+# Step 3: Check for existing mirroring filter
+- name: Check if tc mirror filter already exists on {{ tap_if }}
+  shell: "tc filter show dev {{ tap_if }} ingress | grep '{{ mirror_target }}'"
+  register: mirror_filter_check
+  failed_when: false
+
 # Step 4: Add a tc mirror filter to mirror traffic to the mirror target
-- name: Add tc mirror filter to {{ tap_if }} → {{ mirror_target }}
-  shell: >
-    tc filter add dev {{ tap_if }} parent ffff: protocol all u32 match u32 0 0
-    action mirred egress mirror dev {{ mirror_target }}
-  when: "'mirred egress mirror dev ' ~ mirror_target not in tc_filter_check.stdout"
-  ignore_errors: true
+- name: Add mirroring filter if not present
+  shell: |
+    tc filter add dev {{ tap_if }} ingress matchall action mirred egress mirror dev {{ mirror_target }}
+  when: mirror_filter_check.rc != 0
+  changed_when: true
 
 # Step 5: Display active tc filters on the tap interface
 - name: Show active tc filters on {{ tap_if }}

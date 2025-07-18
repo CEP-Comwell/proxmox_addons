@@ -1,0 +1,38 @@
+# Create the Ansible task file 'ollama_cleanup.yml'
+ollama_cleanup = """---
+# ollama_cleanup.yml
+# This task reads the main and modular network interface configuration files,
+# sends them to an Ollama-compatible script for cleanup, and writes the cleaned result back.
+
+- name: Read main network interfaces file
+  ansible.builtin.slurp:
+    src: /etc/network/interfaces
+  register: main_interfaces_raw
+
+- name: Read modular network config file
+  ansible.builtin.slurp:
+    src: /etc/network/interfaces.d/99_net.conf
+  register: modular_interfaces_raw
+
+- name: Run Ollama cleanup script to remove duplicates
+  ansible.builtin.command: >
+    /usr/local/bin/ollama-cleanup.sh
+    "{{ main_interfaces_raw.content | b64decode | quote }}"
+    "{{ modular_interfaces_raw.content | b64decode | quote }}"
+  register: ollama_cleanup_result
+  changed_when: false
+
+- name: Write cleaned 99_net.conf from Ollama output
+  ansible.builtin.copy:
+    content: "{{ ollama_cleanup_result.stdout }}"
+    dest: /etc/network/interfaces.d/99_net.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+"""
+
+# Save the task file
+with open("ollama_cleanup.yml", "w") as f:
+    f.write(ollama_cleanup)
+

@@ -1,28 +1,35 @@
-- name: Cleanup tc mirror rules created by mirror_vmbr0_to_brdpi.yml
+---
+- name: Cleanup tc mirroring rules from tap interfaces
   hosts: proxmox-hosts
   become: true
-  vars:
-    dest_bridge: "brdpi"
-    mirror_target: "veth0"
-    # List of monitoring VM IDs to exclude for traffic mirroring
-    monitor_vm_ids:
-      - "401"
-    #  - "402"
-
+  vars_files:
+    - config.yml
   tasks:
-
-    # Step 1: Discover only the tap interfaces connected to vmbr0
     - name: Discover tap interfaces for cleanup
       include_tasks: tasks/tap-discover.yml
 
-    - name: Debug discovered tap interfaces
+    - name: Debug list of discovered tap interfaces
       debug:
-        msg: "Cleaning up tc rules for: {{ tap_interfaces }}"
+        msg: "Tap interfaces to clean: {{ tap_interfaces }}"
 
-    # Step 2: Run cleanup only for interfaces that were mirrored
-    - name: Run cleanup for each mirrored tap interface
+    - name: Run mirror cleanup for each tap interface
       include_tasks: tasks/mirror-cleanup.yml
       loop: "{{ tap_interfaces }}"
       loop_control:
         loop_var: tap_if
       when: tap_interfaces | length > 0
+
+---
+- name: Remove tc mirror filter from {{ tap_if }}
+  shell: >
+    tc filter delete dev {{ tap_if }} parent ffff: protocol all u32 match u32 0 0
+    action mirred egress mirror dev {{ dest_bridge }}
+  ignore_errors: true
+
+- name: Remove ingress qdisc from {{ tap_if }}
+  shell: tc qdisc delete dev {{ tap_if }} ingress
+  ignore_errors: true
+
+- name: Bring down {{ tap_if }} (optional)
+  shell: ip link set {{ tap_if }} down
+  ignore_errors: true

@@ -1,0 +1,6 @@
+dest_bridge: "brdpi"
+mirror_target: "veth0"
+monitor_vm_ids:
+  - "401"
+  # - "402"
+# Add other shared variables here if needed

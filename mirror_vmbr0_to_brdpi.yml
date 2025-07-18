@@ -1,53 +1,21 @@
+# Proxmox VE Edgesec Addon - Mirror VM traffic from vmbr0(tap interface on source bridge) to brdpi(monitoring target).
+# NOTE: Proxmox warns against modifying /etc/network/interfaces directly, as it is managed by the system.
+# Manual steps for veth/bridge setup are documented below for reference.
+
 - name: Mirror VM traffic from vmbr0 to brdpi using veth and tc
   hosts: proxmox-hosts
   become: true
-  vars:
-    dest_bridge: "brdpi"
-    mirror_target: "veth0"
-    tap_prefix: "mirror-tap"
-    # List of monitoring VM IDs to exclude for traffic mirroring
-    monitor_vm_ids:
-      - "401"
-    #  - "402"
-      
+  vars_files:
+    - config.yml
+  pre_tasks:
+    - name: Ensure required variables are defined
+      assert:
+        that:
+          - dest_bridge is defined
+          - mirror_target is defined
+          - monitor_vm_ids is defined
+        fail_msg: "One or more required variables are missing."
   tasks:
-
-# Proxmox VE Edgesec Addon - Mirror VM traffic from vmbr0(tap interface on source bridge) to brdpi(monitoring target).
-# NOTE: Proxmox warns against modifying /etc/network/interfaces directly, as it is managed by the system.
-
-    # # Step 1: Manually create a Edgesec configuration file and save it to/etc/network/interfaces.d/edgesec.conf and add the following contents to it:
-
-# # Create veth pair
-# auto veth0
-# iface veth0 inet manual
-#         pre-up ip link delete veth0 type veth || true
-#         pre-up ip link add veth0 type veth peer name veth1
-#         up ip link set veth0 up promisc on
-#         down ip link delete veth0
-
-# # Bring up veth1
-# auto veth1
-# iface veth1 inet manual
-#         up ip link set veth1 up promisc on
-
-# # Bridge interface for DPI monitoring
-
-# auto brdpi
-# iface brdpi inet manual
-# 	bridge-ports veth1
-# 	bridge-stp off
-# 	bridge-fd 0
-#         pre-up ip link set brdpi promisc on
-#         post-down ip link set brdpi promisc off 
-
- 
-# # Restart networking service to apply changes
-# # systemctl restart networking
-# # Preferably, it is recommended to reboot the Proxmox host to ensure all changes are applied correctly.
-
-        
-    
-    # Step 2: Discover tap interfaces dynamically
     - name: Discover tap interfaces for mirroring
       include_tasks: tasks/tap-discover.yml
 
@@ -60,10 +28,12 @@
         msg: "No tap interfaces found for mirroring. Skipping setup."
       when: tap_interfaces | length == 0
 
-    # Step 3: Apply mirroring to each tap interface
     - name: Set up mirroring for each tap interface
       include_tasks: tasks/mirror-task.yml
       loop: "{{ tap_interfaces }}"
       loop_control:
         loop_var: tap_if
       when: tap_interfaces | length > 0
+
+# To remove mirroring, run:
+# ansible-playbook mirror_cleanup.yml -i inventory

@@ -65,7 +65,6 @@ iface brdpi inet manual
 * The playbook defines several variables, including:
     + `dest_bridge` : designated monitoring bridge i.e. `brdpi`
     + `mirror_target` : target interface i.e. `veth0`
-    + `tap_prefix` : Used to generate the associated tc mirror commands from each tap interface i.e. tap400i0 is VM ID 400 on vmbr0
     + `monitor_vm_ids`: List of VM ID's to exclude for monitoring
 * The playbook includes several tasks, including:
 	+ Discovering tap interfaces dynamically using `tasks/tap-discover.yml`, which takes advantage of the fact that Proxmox automatically creates tap interfaces associated with each VM ID.
@@ -128,7 +127,17 @@ sudo yum install ansible
 ```
 depending on your Linux distribution.
 
-### 3. Create an Inventory File
+### 3. Configure Variables
+
+Edit `config.yml` to set your monitoring bridge, mirror target, and any VM IDs to exclude from monitoring:
+```yaml
+dest_bridge: "brdpi"
+mirror_target: "veth0"
+monitor_vm_ids:
+  - "401"
+```
+
+### 4. Create an Inventory File
 
 Create an Ansible inventory file that defines the hosts and groups for your Proxmox environment. You can use a simple text file with the following format:
 ```ini
@@ -138,7 +147,7 @@ proxmox02 ansible_host=192.168.1.101
 ```
 Replace the `proxmox01` and `proxmox02` with the actual hostnames or IP addresses of your Proxmox nodes.
 
-### 4. Run the Playbook
+### 5. Run the Playbook
 
 To run the playbook, use the following command:
 ```bash
@@ -147,5 +156,18 @@ ansible-playbook -i inventory mirror_vmbr0_to_brdpi.yml
 Replace `inventory` with the path to your Ansible inventory file. This will execute the playbook and configure the Proxmox VMs to mirror ingress traffic to the designated monitoring bridge.
 
 Note: Make sure you have the necessary permissions and access to the Proxmox nodes before running the playbook.
+
+* The playbook validates required variables before running any tasks.
+
+### 6. Remove Mirroring Rules
+
+To remove mirroring rules, run:
+```bash
+ansible-playbook -i inventory mirror_cleanup.yml
+```
+
+* All variables are defined in `config.yml` and loaded automatically by the playbooks.
+* Idempotent and safe: checks for existing rules before applying or removing them
+* Provides feedback on remaining tc filters after cleanup
 
 
