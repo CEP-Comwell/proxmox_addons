@@ -136,7 +136,7 @@ Internal Overlay (VXLAN 10010)
 
 **Click Create:**
 
-Name: vxlan-internal
+- Name: vxlan-internal
 
 - CIDR: 10.10.10.0/24
 
