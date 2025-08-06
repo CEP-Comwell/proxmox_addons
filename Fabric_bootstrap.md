@@ -42,6 +42,96 @@ Provision a full spine-leaf overlay network on Proxmox using modular Ansible rol
 
 ---
 
+Absolutely, Bob! Here's a clean, markdown-formatted section you can drop directly below your **Requirements** in the `README.md`. It includes installation steps for:
+
+- ✅ FRR (Free Range Routing)  
+- ✅ Proxmox IPAM plugin  
+- ✅ Molecule + Testinfra for role testing  
+
+---
+
+```markdown
+---
+
+## 🔧 Installation Steps
+
+### 🧭 Install FRR (Free Range Routing)
+
+FRR is required for BGP peering and dynamic routing.
+
+```bash
+echo "deb http://deb.frrouting.org/frr $(lsb_release -s -c) frr-stable" | tee /etc/apt/sources.list.d/frr.list
+curl -s https://deb.frrouting.org/frr/keys.asc | apt-key add -
+apt update
+apt install frr frr-pythontools -y
+```
+
+Enable and start the FRR service:
+
+```bash
+systemctl enable frr
+systemctl start frr
+```
+
+---
+
+### 📦 Install Proxmox IPAM Plugin (Optional but Recommended)
+
+IPAM allows dynamic IP assignment for VMs and overlays.
+
+```bash
+apt update
+apt install pve-ipam -y
+```
+
+Enable IPAM in the cluster config:
+
+```bash
+pvesh set /cluster/config --ipam 1
+```
+
+Then configure pools via GUI or API.
+
+---
+
+### 🧪 Install Molecule + Testinfra (for Role Testing)
+
+Use a Python virtual environment to isolate dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install molecule molecule-docker testinfra ansible
+```
+
+Verify installation:
+
+```bash
+molecule --version
+```
+
+You’re now ready to run:
+
+```bash
+molecule converge
+```
+
+Use tags to target specific tests:
+
+```bash
+molecule converge --tags verify_bgp,verify_vxlan
+```
+
+Refer to `molecule_tags.conf` for available tags.
+```
+
+---
+
+Let me know if you'd like to include a `requirements.txt` or `Makefile` to automate these steps.
+
+---
+
 ## 🚀 Usage
 
 ### 1. Clone the Repository
