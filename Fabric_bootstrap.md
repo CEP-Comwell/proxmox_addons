@@ -91,7 +91,8 @@ pvesh set /cluster/config --ipam 1
 
 Then configure pools via GUI or API.
 
-🧭 Enable and Configure IPAM in Proxmox VE 9 (GUI)
+### 🧭 Enable and Configure IPAM in Proxmox VE 9 (GUI)
+
 ✅ **Step 1: Enable IPAM in the Cluster**
 Log into the Proxmox VE 9 web interface.
 
