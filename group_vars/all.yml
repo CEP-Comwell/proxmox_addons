@@ -1,0 +1,39 @@
+# Global variables for all roles and hosts
+
+# VLAN and bridge configuration
+vlan_ids: [10, 20, 30]
+bridge_names:
+  - vmbr0
+  - vmbrinternal
+  - vmbrproxy
+
+# Overlay network ranges
+vxlan_overlays:
+  - name: vxlan-internal
+    vni: 10010
+    cidr: 10.10.10.0/24
+    bridge: vmbrinternal
+  - name: vxlan-proxy
+    vni: 10020
+    cidr: 10.10.20.0/24
+    bridge: vmbrproxy
+
+# BGP configuration
+bgp_neighbors:
+  - neighbor_ip: 192.168.1.1
+    remote_as: 65001
+  - neighbor_ip: 192.168.1.2
+    remote_as: 65002
+local_as: 65000
+
+# Proxy VM IP address
+proxy_vm_ip: 10.10.20.10
+
+# NAT source IPs
+nat_source_ips:
+  - 192.168.100.1
+  - 192.168.100.2
+
+# Ceph/ZFS replication (optional)
+ceph_replication_network: 10.10.30.0/24
+ceph_cluster_network: 10.10.31.0/24

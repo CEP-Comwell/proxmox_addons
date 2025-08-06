@@ -90,6 +90,54 @@ Each role is designed for composability, enabling you to build a robust, multi-s
 
 ---
 
+## 🚀 Quickstart
+
+1. **Clone this repository and install Ansible on your control node.**
+
+2. **Edit your inventory file (`inventory.yml`):**
+   ```yaml
+   all:
+     children:
+       proxmox:
+         hosts:
+           pve-node1:
+           pve-node2:
+           pve-node3:
+       site1:
+         hosts:
+           pve-node1:
+           pve-node2:
+       site2:
+         hosts:
+           pve-node3:
+       spine:
+         hosts:
+           pve-node1:
+           pve-node3:
+       leaf:
+         hosts:
+           pve-node2:
+   ```
+   *(Make sure hostnames match your actual Proxmox nodes.)*
+
+3. **Customize variables in `group_vars/all.yml`:**
+   - VLAN IDs and bridge names
+   - Overlay network ranges
+   - BGP neighbors and ASNs
+   - Proxy VM IP address
+   - NAT source IPs
+   - Ceph/ZFS replication settings (optional)
+
+4. **Run the fabric provisioning playbook:**
+   ```bash
+   ansible-playbook -i inventory.yml provision_network.yml
+   ```
+
+5. **For IPAM GUI integration:**  
+   See [configure_IPAM_in_Proxmox.md](configure_IPAM_in_Proxmox.md) for step-by-step instructions.
+
+---
+
 ## Notes
 
 - **Extensibility:**  

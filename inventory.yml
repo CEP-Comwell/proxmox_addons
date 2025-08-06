@@ -1,0 +1,21 @@
+all:
+  children:
+    proxmox:
+      hosts:
+        pve-node1:
+        pve-node2:
+        pve-node3:
+    site1:
+      hosts:
+        pve-node1:
+        pve-node2:
+    site2:
+      hosts:
+        pve-node3:
+    spine:
+      hosts:
+        pve-node1:
+        pve-node3:
+    leaf:
+      hosts:
+        pve-node2:
