@@ -123,8 +123,6 @@ molecule converge --tags verify_bgp,verify_vxlan
 Refer to `molecule_tags.conf` for available tags.
 ```
 
----
-
 ## 🚀 Usage
 
 ### 1. Clone the Repository
