@@ -1,6 +1,6 @@
 # Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric
 
-![Spine-Leaf Fabric Architecture](images/fabric_architecture.png)
+![Spine-Leaf Fabric Architecture](blob/images/fabric_architecture.png)
 
 ---
 
