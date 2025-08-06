@@ -152,7 +152,7 @@ Internal Overlay (VXLAN 10010)
 
 **Repeat with:**
 
-Name: vxlan-proxy
+- Name: vxlan-proxy
 
 - CIDR: 10.10.20.0/24
 
@@ -171,13 +171,14 @@ Name: vxlan-proxy
 - vxlan-ceph-cluster → 10.10.31.0/24 → gateway 10.10.31.1 → VNI 10031 → bridge vmbrceph_cluster
 
 📌 **Step 4: Reserve Gateway IPs**
+
 To prevent IPAM from assigning .1 to VMs:
 
-Go to Datacenter → IPAM → Pools.
+**Go to Datacenter → IPAM → Pools.**
 
 Select each pool (e.g. vxlan-internal).
 
-Click Edit → Reserved IPs.
+**Click Edit → Reserved IPs.**
 
 Add:
 ```bash
@@ -194,13 +195,13 @@ Go to Create VM.
 
 In the Network tab:
 
-Choose Bridge: e.g. vmbrinternal
+**Choose Bridge: e.g. vmbrinternal**
 
-Enable Use IPAM
+- Enable Use IPAM
 
-Select the appropriate pool: e.g. vxlan-internal
+- Select the appropriate pool: e.g. vxlan-internal
 
-IPAM will auto-assign the next available IP from the pool.
+- IPAM will auto-assign the next available IP from the pool.
 
 🧠 **Tips**
 You can view IP usage and reservations under Datacenter → IPAM → Pools → Usage.
