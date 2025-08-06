@@ -128,10 +128,6 @@ Refer to `molecule_tags.conf` for available tags.
 
 ---
 
-Let me know if you'd like to include a `requirements.txt` or `Makefile` to automate these steps.
-
----
-
 ## 🚀 Usage
 
 ### 1. Clone the Repository
