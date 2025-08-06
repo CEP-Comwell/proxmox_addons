@@ -94,13 +94,14 @@ Then configure pools via GUI or API.
 ### 🧭 Enable and Configure IPAM in Proxmox VE 9 (GUI)
 
 ✅ **Step 1: Enable IPAM in the Cluster**
+
 Log into the Proxmox VE 9 web interface.
 
-Navigate to Datacenter → Options.
+**Navigate to Datacenter → Options.**
 
-Scroll to IPAM Enabled.
+# Scroll to IPAM Enabled.
 
-Set it to Yes and click Apply.
+# Set it to Yes and click Apply.
 
 This activates IPAM across all nodes in the cluster.
 
