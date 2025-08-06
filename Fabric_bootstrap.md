@@ -130,7 +130,7 @@ git clone https://github.com/CEP-Comwell/proxmox_addons.git
 cd proxmox_addons
 
 ### 2. Review Inventory
-Edit inventory.yml to define your Proxmox nodes and group structure.
+Edit **inventory.yml** to define your Proxmox nodes and group structure.
 
 Example:
 ```bash
@@ -145,19 +145,14 @@ all:
 Make sure hostnames match your actual Proxmox nodes.
 
 ### 3. Customize Variables
-Edit group_vars/all.yml or role-specific defaults to match your environment:
+Edit **group_vars/all.yml** or role-specific defaults to match your environment:
 
-VLAN IDs and bridge names
-
-IP ranges for overlays
-
-BGP neighbors and ASNs
-
-Proxy VM IP address
-
-NAT source IPs
-
-Ceph/ZFS replication settings (optional)
+- **VLAN IDs and bridge names**
+- **IP ranges for overlays**
+- **BGP neighbors and ASNs**
+- **Proxy VM IP address**
+- **NAT source IPs**
+- **Ceph/ZFS replication settings (optional)**
 
 ### 4. Run the Playbook
 Execute the full provisioning playbook:
@@ -168,17 +163,12 @@ ansible-playbook provision_network.yml -i inventory.yml
 
 This will apply all roles in sequence:
 
-Underlay bridges
-
-VXLAN overlays
-
-IPAM pools
-
-BGP sessions
-
-NAT/firewall rules
-
-Optional Ceph/ZFS overlays
+- **Underlay bridges**
+- **VXLAN overlays**
+- **IPAM pools**
+- **BGP sessions**
+- **NAT/firewall rules**
+- **Optional Ceph/ZFS overlays**
 
 ### 5. Run Molecule Tests
 Use Molecule to test specific components:
