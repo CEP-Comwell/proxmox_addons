@@ -31,12 +31,10 @@ Provision a full spine-leaf overlay network on Proxmox using modular Ansible rol
 | `ceph_network` | Sets up Ceph/ZFS replication bridges          |
 
 ---
-🧠 What This Shows
-**Stage 1:** Each site builds its host independently, installing required packages (FRR, IPAM).
-
-**Stage 2: **Underlay configuration begins—BGP peering, VXLAN setup, and IPAM pools.
-
-Connection: The underlay links both sites via BGP/VXLAN.
+### 🧠 What This Shows:
+- **Stage 1:** Each site builds its host independently, installing required packages (FRR, IPAM).
+- **Stage 2:** Underlay configuration begins—BGP peering, VXLAN setup, and IPAM pools.
+- **Connection:** The underlay links both sites via BGP/VXLAN.
 
 ![alt text](image.png)
 
