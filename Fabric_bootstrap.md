@@ -200,13 +200,13 @@ In the Network tab:
 - Select the appropriate pool: e.g. vxlan-internal
 
 - IPAM will auto-assign the next available IP from the pool.
+  
 
 🧠 **Tips**
-You can view IP usage and reservations under Datacenter → IPAM → Pools → Usage.
 
-IPAM works with Cloud-Init and DHCP-less provisioning.
-
-**You can also use the API (pvesh get /ipam/pools) for automation.**
+- You can view IP usage and reservations under **Datacenter → IPAM → Pools → Usage.**
+- IPAM works with Cloud-Init and DHCP-less provisioning.
+- **You can also use the API (pvesh get /ipam/pools) for automation.**
 
 ---
 
