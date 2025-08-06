@@ -47,14 +47,6 @@ Provision a full spine-leaf overlay network on Proxmox using modular Ansible rol
 
 ---
 
-Absolutely, Bob! Here's a clean, markdown-formatted section you can drop directly below your **Requirements** in the `README.md`. It includes installation steps for:
-
-- ✅ FRR (Free Range Routing)  
-- ✅ Proxmox IPAM plugin  
-- ✅ Molecule + Testinfra for role testing  
-
----
-
 ```markdown
 ---
 
