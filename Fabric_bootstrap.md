@@ -34,7 +34,7 @@ Provision a full spine-leaf overlay network on Proxmox using modular Ansible rol
 
 ## 📦 Requirements
 
-- Proxmox VE 7+
+- Proxmox VE 9.0+ (required for SDN Fabrics and fabricd)
 - Ansible 2.10+
 - FRR installed on all nodes
 - Proxmox IPAM plugin (optional)
