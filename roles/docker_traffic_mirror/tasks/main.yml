@@ -1,0 +1,12 @@
+---
+- name: Set up DPI monitoring bridge and veth peer
+  include_tasks: setup-dpi-monitor.yml
+
+- name: Discover Docker networks and connected containers
+  include_tasks: docker-network-discover.yml
+
+- name: Mirror Docker network bridges to DPI veth
+  include_tasks: docker-network-mirror.yml
+  loop: "{{ docker_bridges }}"
+  loop_control:
+    loop_var: docker_bridge

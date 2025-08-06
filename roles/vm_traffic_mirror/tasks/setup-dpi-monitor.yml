@@ -1,0 +1,64 @@
+---
+# Precheck: List all network interfaces on the host
+- name: Precheck - Gather all network interface names
+  shell: "ip -o link show | awk -F': ' '{print $2}'"
+  register: interface_list
+  changed_when: false
+
+# Precheck: Check if veth0, veth1, and brdpi exist and are UP
+- name: Precheck - Check if veth0, veth1, and brdpi exist and are UP
+  shell: "ip link show {{ item }} | grep 'state UP'"
+  loop:
+    - veth0
+    - veth1
+    - brdpi
+  register: interface_up_check
+  ignore_errors: true
+  changed_when: false
+
+# Precheck: Warn if interfaces exist but are not UP
+- name: Precheck - Warn if veth0, veth1, or brdpi exist but are not UP
+  debug:
+    msg: "{{ item.item }} exists but is not UP."
+  loop: "{{ interface_up_check.results | selectattr('rc', '!=', 0) | list }}"
+  when: item is defined
+
+# Precheck: Warn if DPI bridge/veth interfaces are managed in /etc/network/interfaces
+- name: Precheck - Check for DPI bridge/veth conflicts in /etc/network/interfaces
+  shell: "grep -E 'auto (veth0|veth1|brdpi)|iface (veth0|veth1|brdpi)' /etc/network/interfaces"
+  register: interfaces_conflict
+  changed_when: false
+  failed_when: false
+
+- name: Precheck - Warn if DPI bridge/veth interfaces are managed in /etc/network/interfaces
+  debug:
+    msg: |
+      "Warning: The following DPI bridge/veth interfaces are defined in /etc/network/interfaces and may conflict with edgesec.conf:\n{{ interfaces_conflict.stdout }}"
+  when: interfaces_conflict.stdout != ""
+
+# Deploy edgesec.conf for persistent DPI bridge/veth setup
+- name: Copy edgesec.conf to /etc/network/interfaces.d/
+  copy:
+    src: files/edgesec.conf
+    dest: /etc/network/interfaces.d/edgesec.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: Reload networking
+
+# Ensure interfaces.d is sourced in /etc/network/interfaces
+- name: Ensure interfaces.d is sourced in /etc/network/interfaces
+  lineinfile:
+    path: /etc/network/interfaces
+    regexp: '^source /etc/network/interfaces.d/\*'
+    line: 'source /etc/ne twork/interfaces.d/*'
+    state: present
+    insertafter: '^#.*'
+  notify: Reload networking
+
+# Reminder for manual verification
+- name: Display reminder to verify bridge and veth setup
+  debug:
+    msg: "edgesec.conf has been deployed. Please verify DPI bridge and veth interfaces after networking reload."
+

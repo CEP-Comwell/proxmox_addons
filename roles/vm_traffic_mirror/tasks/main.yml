@@ -1,0 +1,24 @@
+---
+# Main orchestration for VM traffic mirroring
+
+- name: Set up DPI monitoring bridge and veth peer
+  include_tasks: setup-dpi-monitor.yml
+
+- name: Discover tap interfaces for mirroring
+  include_tasks: tap-discover.yml
+
+- name: Debug list of discovered tap interfaces
+  debug:
+    msg: "Tap interfaces to process: {{ tap_interfaces }}"
+
+- name: Skip mirroring setup if no tap interfaces are found
+  debug:
+    msg: "No tap interfaces found for mirroring. Skipping setup."
+  when: tap_interfaces | length == 0
+
+- name: Set up mirroring for each tap interface
+  include_tasks: mirror-task.yml
+  loop: "{{ tap_interfaces }}"
+  loop_control:
+    loop_var: tap_if
+  when: tap_interfaces | length > 0

@@ -1,0 +1,7 @@
+---
+- name: Run Docker mirror cleanup for each bridge
+  include_tasks: docker-mirror-cleanup.yml
+  loop: "{{ docker_bridges }}"
+  loop_control:
+    loop_var: docker_bridge
+  when: docker_bridges | length > 0

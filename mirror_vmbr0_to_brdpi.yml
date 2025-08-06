@@ -1,49 +1,13 @@
+---
 # Proxmox VE Edgesec Addon - Mirror VM traffic from vmbr0(tap interface on source bridge) to brdpi(monitoring target).
 # NOTE: Proxmox warns against modifying /etc/network/interfaces directly, as it is managed by the system.
 # Manual steps for veth/bridge setup are now automated via setup-dpi-monitor.yml.
 
 - name: Mirror VM traffic from vmbr0 to brdpi using veth and tc
   hosts: proxmox-hosts
-  become: true
   gather_facts: false
   vars_files:
     - config.yml
-  pre_tasks:
-    - name: Ensure required variables are defined
-      assert:
-        that:
-          - dest_bridge is defined
-          - mirror_target is defined
-          - monitor_vm_ids is defined
-        fail_msg: "One or more required variables are missing."
-    - name: Precheck - Gather all network interface names
-      shell: "ip -o link show | awk -F': ' '{print $2}'"
-      register: interface_list
-      changed_when: false
-  tasks:
-    - name: Set up DPI monitoring bridge and veth peer
-      include_tasks: tasks/setup-dpi-monitor.yml
 
-    - name: Discover tap interfaces for mirroring
-      include_tasks: tasks/tap-discover.yml
-
-    - name: Debug list of discovered tap interfaces
-      debug:
-        msg: "Tap interfaces to process: {{ tap_interfaces }}"
-
-    - name: Skip mirroring setup if no tap interfaces are found
-      debug:
-        msg: "No tap interfaces found for mirroring. Skipping setup."
-      when: tap_interfaces | length == 0
-
-    - name: Set up mirroring for each tap interface
-      include_tasks: tasks/mirror-task.yml
-      loop: "{{ tap_interfaces }}"
-      loop_control:
-        loop_var: tap_if
-      when: tap_interfaces | length > 0
-
-  handlers:
-    - name: Reload networking
-      ansible.builtin.shell: systemctl restart networking
-      become: true
+  roles:
+    - vm_traffic_mirror

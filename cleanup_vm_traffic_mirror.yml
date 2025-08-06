@@ -1,0 +1,8 @@
+---
+- name: Cleanup tc mirroring rules from tap interfaces
+  hosts: proxmox-hosts
+  vars_files:
+    - config.yml
+  roles:
+    - role: vm_traffic_mirror
+      tasks_from: cleanup

@@ -1,0 +1,10 @@
+---
+- name: Cleanup Docker tc mirroring rules
+  hosts: docker-hosts
+  gather_facts: false
+  vars_files:
+    - config.yml
+
+  roles:
+    - role: docker_traffic_mirror
+      tasks_from: cleanup

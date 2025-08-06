@@ -1,0 +1,14 @@
+---
+- name: Discover tap interfaces for cleanup
+  include_tasks: tap-discover.yml
+
+- name: Debug list of discovered tap interfaces
+  debug:
+    msg: "Tap interfaces to clean: {{ tap_interfaces }}"
+
+- name: Run mirror cleanup for each tap interface
+  include_tasks: mirror-cleanup.yml
+  loop: "{{ tap_interfaces }}"
+  loop_control:
+    loop_var: tap_if
+  when: tap_interfaces | length > 0

@@ -1,0 +1,58 @@
+---
+- name: List all Docker bridge networks
+  shell: docker network ls --filter driver=bridge --format '{{ "{{.Name}}" }}'
+  register: docker_network_list
+  changed_when: false
+
+- name: Print discovered bridge networks
+  debug:
+    var: docker_network_list.stdout_lines
+
+- name: Inspect each Docker bridge network
+  shell: docker network inspect {{ item }}
+  loop: "{{ docker_network_list.stdout_lines }}"
+  register: docker_network_inspect
+  changed_when: false
+
+- name: Build a mapping of networks to connected containers
+  set_fact:
+    docker_network_map: >-
+      {{
+        dict(
+          docker_network_inspect.results
+          | map(attribute='stdout')
+          | map('from_json')
+          | map('first')
+          | selectattr('Containers', 'defined')
+          | map(attribute='Name')
+          | zip(
+              docker_network_inspect.results
+              | map(attribute='stdout')
+              | map('from_json')
+              | map('first')
+              | selectattr('Containers', 'defined')
+              | map(attribute='Containers')
+            )
+        )
+      }}
+
+- name: Show Docker network to container mapping
+  debug:
+    var: docker_network_map
+
+- name: Collect bridge names for mirroring
+  set_fact:
+    docker_bridges: >-
+      {{
+        docker_network_inspect.results
+        | map(attribute='stdout')
+        | map('from_json')
+        | map('first')
+        | map(attribute='Options.com.docker.network.bridge.name')
+        | select('defined')
+        | list
+      }}
+
+- name: Print docker_bridges to be mirrored
+  debug:
+    var: docker_bridges

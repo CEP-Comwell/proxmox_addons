@@ -1,0 +1,20 @@
+---
+# Remove tc mirroring rules and ingress qdisc from a Docker bridge
+
+- name: Find tc mirror filters on {{ docker_bridge }}
+  shell: "tc filter show dev {{ docker_bridge }} parent ffff: | grep 'mirred egress mirror dev {{ mirror_target }}' | awk '{print $1}'"
+  register: mirror_filter_handles
+  changed_when: false
+  ignore_errors: true
+
+- name: Remove tc mirror filters from {{ docker_bridge }}
+  shell: "tc filter delete dev {{ docker_bridge }} parent ffff: handle {{ item }}"
+  loop: "{{ mirror_filter_handles.stdout_lines }}"
+  when: mirror_filter_handles.stdout_lines is defined and mirror_filter_handles.stdout_lines | length > 0
+  ignore_errors: true
+  notify: Reload networking
+
+- name: Remove ingress qdisc from {{ docker_bridge }}
+  shell: "tc qdisc delete dev {{ docker_bridge }} ingress"
+  ignore_errors: true
+  notify: Reload networking
