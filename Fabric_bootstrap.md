@@ -309,15 +309,12 @@ Available tags include:
 Refer to molecule_tags.conf for the full list.
 
 ### 🧠 Notes
-vmbrceph_pub and vmbrceph_cluster are optional bridges for Ceph or ZFS replication.
-
-Firewall rules default to DROP with explicit ACCEPT for HTTP, HTTPS, and ICMP.
-
-Roles are modular—run them individually or as a full stack.
-
-Cloud-Init integration is planned for future versions.
-
-IPAM integration is optional but recommended for dynamic VM provisioning.
+- **vmbrceph_pub and vmbrceph_cluster are optional bridges for Ceph or ZFS replication.
+**
+- **Firewall rules default to DROP with explicit ACCEPT for HTTP, HTTPS, and ICMP.**
+- **Roles are modular—run them individually or as a full stack.**
+- **Cloud-Init integration is planned for future versions.**
+- **IPAM integration is optional but recommended for dynamic VM provisioning.**
 
 📜 License
 MIT © CEP-Comwell
