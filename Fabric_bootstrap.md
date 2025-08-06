@@ -19,16 +19,16 @@ Provision a full spine-leaf overlay network on Proxmox using modular Ansible rol
 
 ## 📁 Role Breakdown
 
-| Role            | Description                                      |
-|-----------------|--------------------------------------------------|
-| `underlay`      | Sets up physical bridges and VLANs               |
-| `bgp`           | Configures FRR BGP sessions                      |
-| `vxlan`         | Creates VXLAN interfaces and bridges             |
-| `ipam`          | Registers IPAM pools in Proxmox                  |
-| `vm_nic`        | Attaches VM NICs to correct overlays             |
-| `nat`           | Applies SNAT rules for internal traffic          |
-| `proxy`         | Configures firewall rules for Traefik ingress    |
-| `ceph_network`  | Sets up Ceph/ZFS replication bridges             |
+| Role           | Description                                   |
+| -------------- | --------------------------------------------- |
+| `underlay`     | Sets up physical bridges and VLANs            |
+| `bgp`          | Configures FRR BGP sessions                   |
+| `vxlan`        | Creates VXLAN interfaces and bridges          |
+| `ipam`         | Registers IPAM pools in Proxmox               |
+| `vm_nic`       | Attaches VM NICs to correct overlays          |
+| `nat`          | Applies SNAT rules for internal traffic       |
+| `proxy`        | Configures firewall rules for Traefik ingress |
+| `ceph_network` | Sets up Ceph/ZFS replication bridges          |
 
 ---
 ![alt text](image.png)
@@ -188,19 +188,13 @@ molecule converge --tags verify_bgp,verify_vxlan
 ```
 Available tags include:
 
-**verify_underlay**
-
-**verify_bgp**
-
-**verify_vxlan**
-
-**verify_ipam**
-
-**verify_nat**
-
-**verify_proxy**
-
-**verify_ceph**
+- **verify_underlay**
+- **verify_bgp**
+- **verify_vxlan**
+- **verify_ipam**
+- **verify_nat**
+- **verify_proxy**
+- **verify_ceph**
 
 Refer to molecule_tags.conf for the full list.
 
