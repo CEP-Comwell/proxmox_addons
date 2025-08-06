@@ -206,7 +206,8 @@ You can view IP usage and reservations under Datacenter → IPAM → Pools → U
 
 IPAM works with Cloud-Init and DHCP-less provisioning.
 
-You can also use the API (pvesh get /ipam/pools) for automation.
+**You can also use the API (pvesh get /ipam/pools) for automation.**
+
 ---
 
 ### 🧪 Install Molecule + Testinfra (for Role Testing)
