@@ -32,6 +32,10 @@ Provision a full spine-leaf overlay network on Proxmox using modular Ansible rol
 
 ---
 
+[View on Eraser![](https://app.eraser.io/workspace/p8tk5YAidr4AzpPcqNX2/preview)](https://app.eraser.io/workspace/p8tk5YAidr4AzpPcqNX2)
+
+---
+
 ## 📦 Requirements
 
 - Proxmox VE 9.0+ (required for SDN Fabrics and fabricd)
