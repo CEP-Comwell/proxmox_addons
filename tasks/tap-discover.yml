@@ -7,16 +7,13 @@
     ip -o link show | awk -F': ' '{print $2}' | awk '{print $1}' | grep -E '^tap[1-7][0-9]{2}i0$'
   register: discovered_tap_interfaces
   changed_when: false
-
-- name: Debug raw discovered tap interfaces
-  debug:
-    var: discovered_tap_interfaces.stdout_lines
+  ignore_errors: true
 
 - name: Set fact for tap_interfaces excluding monitor VMs
   set_fact:
     tap_interfaces: >-
       {{
-        discovered_tap_interfaces.stdout_lines
+        (discovered_tap_interfaces.stdout_lines | default([]))
         | reject('in',
             monitor_vm_ids
             | map('regex_replace', '^', 'tap')
@@ -25,6 +22,14 @@
           )
         | list
       }}
+
+- name: Warn if no TAP interfaces found
+  debug:
+    msg: >
+      No TAP interfaces found. There are no running VMs matching the pattern.
+      To enable traffic monitoring, please start at least one virtual machine on this host.
+      No running VMs found...continuing playbook execution gracefully.
+  when: tap_interfaces | length == 0
 
 - name: Debug filtered tap interfaces
   debug:

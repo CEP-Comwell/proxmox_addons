@@ -1,0 +1,8 @@
+# roles/bgp/defaults/main.yml
+
+bgp_asn: 65000
+bgp_neighbors:
+  - neighbor: 172.16.10.2
+    remote_as: 65000
+  - neighbor: 172.16.10.3
+    remote_as: 65000

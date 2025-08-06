@@ -1,13 +1,16 @@
 ---
-- name: Remove VM traffic mirroring and DPI bridge configuration
+- import_playbook: mirror_cleanup.yml
+
+- name: Remove DPI bridge and veth configuration
   hosts: proxmox-hosts
   become: true
   vars_files:
     - config.yml
-
   tasks:
-    - name: Run mirror cleanup playbook
-      import_playbook: mirror_cleanup.yml
-
     - name: Remove DPI bridge and veth configuration
       include_tasks: tasks/dpi-monitor-cleanup.yml
+
+  handlers:
+    - name: Reload networking
+      ansible.builtin.shell: systemctl restart networking
+      become: true

@@ -1,0 +1,19 @@
+# roles/ceph_network/tasks/main.yml
+
+- name: Ensure Ceph public network bridge exists
+  community.general.nmcli:
+    conn_name: vmbrceph_pub
+    type: bridge
+    state: present
+  tags:
+    - ceph_pub
+    - verify_ceph_pub
+
+- name: Ensure Ceph cluster/ZFS replication bridge exists
+  community.general.nmcli:
+    conn_name: vmbrceph_cluster
+    type: bridge
+    state: present
+  tags:
+    - ceph_cluster
+    - verify_ceph_cluster

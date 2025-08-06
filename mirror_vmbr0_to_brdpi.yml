@@ -5,6 +5,7 @@
 - name: Mirror VM traffic from vmbr0 to brdpi using veth and tc
   hosts: proxmox-hosts
   become: true
+  gather_facts: false
   vars_files:
     - config.yml
   pre_tasks:
@@ -15,6 +16,10 @@
           - mirror_target is defined
           - monitor_vm_ids is defined
         fail_msg: "One or more required variables are missing."
+    - name: Precheck - Gather all network interface names
+      shell: "ip -o link show | awk -F': ' '{print $2}'"
+      register: interface_list
+      changed_when: false
   tasks:
     - name: Set up DPI monitoring bridge and veth peer
       include_tasks: tasks/setup-dpi-monitor.yml
@@ -42,6 +47,3 @@
     - name: Reload networking
       ansible.builtin.shell: systemctl restart networking
       become: true
-
-# To remove mirroring, run:
-# ansible-playbook mirror_cleanup.yml -i inventory

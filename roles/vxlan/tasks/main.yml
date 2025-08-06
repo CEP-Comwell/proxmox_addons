@@ -1,0 +1,40 @@
+# roles/vxlan/tasks/main.yml
+
+- name: Create Linux bridges for overlays
+  community.general.nmcli:
+    conn_name: "{{ item.bridge }}"
+    type: bridge
+    state: present
+  loop: "{{ overlays }}"
+  tags:
+    - vxlan
+    - verify_vxlan
+
+- name: Create VXLAN devices
+  ansible.builtin.command: >
+    ip link add vxlan{{ item.vni }}
+    type vxlan id {{ item.vni }}
+    dev {{ underlay_iface }}
+    dstport 4789
+  args:
+    creates: "/sys/class/net/vxlan{{ item.vni }}"
+  loop: "{{ overlays }}"
+  tags:
+    - vxlan
+    - verify_vxlan
+
+- name: Attach VXLANs to their bridges
+  ansible.builtin.command: >
+    ip link set vxlan{{ item.vni }} master {{ item.bridge }}
+  loop: "{{ overlays }}"
+  tags:
+    - vxlan
+    - verify_vxlan
+
+- name: Bring up VXLAN interfaces
+  ansible.builtin.command: >
+    ip link set vxlan{{ item.vni }} up
+  loop: "{{ overlays }}"
+  tags:
+    - vxlan
+    - verify_vxlan

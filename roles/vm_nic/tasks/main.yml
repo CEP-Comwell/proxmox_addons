@@ -1,0 +1,16 @@
+# roles/vm_nic/tasks/main.yml
+
+- name: Attach VM NICs using Proxmox API
+  community.general.proxmox:
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password }}"
+    node: "{{ inventory_hostname }}"
+    vmid: "{{ item.vmid }}"
+    netif:
+      - bridge: "{{ item.bridge }}"
+        model: virtio
+        tag: "{{ item.vlan_tag | default(omit) }}"
+  loop: "{{ vm_nic_map }}"
+  tags:
+    - vm_nic
+    - verify_vm_nic

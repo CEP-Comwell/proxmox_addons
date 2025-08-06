@@ -1,0 +1,36 @@
+# roles/proxy/tasks/main.yml
+
+- name: Allow HTTP to proxy VM
+  community.general.proxmox_firewall:
+    action: ACCEPT
+    direction: in
+    interface: vmbrproxy
+    proto: tcp
+    dport: 80
+    dest_ip: "{{ proxy_vm_ip }}"
+  tags:
+    - proxy
+    - verify_proxy
+
+- name: Allow HTTPS to proxy VM
+  community.general.proxmox_firewall:
+    action: ACCEPT
+    direction: in
+    interface: vmbrproxy
+    proto: tcp
+    dport: 443
+    dest_ip: "{{ proxy_vm_ip }}"
+  tags:
+    - proxy
+    - verify_proxy
+
+- name: Allow ICMP to proxy VM
+  community.general.proxmox_firewall:
+    action: ACCEPT
+    direction: in
+    interface: vmbrproxy
+    proto: icmp
+    dest_ip: "{{ proxy_vm_ip }}"
+  tags:
+    - proxy
+    - verify_proxy

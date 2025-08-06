@@ -18,18 +18,3 @@
       loop_control:
         loop_var: tap_if
       when: tap_interfaces | length > 0
-
----
-- name: Remove tc mirror filter from {{ tap_if }}
-  shell: >
-    tc filter delete dev {{ tap_if }} parent ffff: protocol all u32 match u32 0 0
-    action mirred egress mirror dev {{ dest_bridge }}
-  ignore_errors: true
-
-- name: Remove ingress qdisc from {{ tap_if }}
-  shell: tc qdisc delete dev {{ tap_if }} ingress
-  ignore_errors: true
-
-- name: Bring down {{ tap_if }} (optional)
-  shell: ip link set {{ tap_if }} down
-  ignore_errors: true

@@ -1,0 +1,13 @@
+# roles/nat/tasks/main.yml
+
+- name: Enable SNAT for internal network
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    out_interface: vmbrproxy
+    source: 10.10.10.0/24
+    jump: SNAT
+    to_source: "{{ nat_source_ip }}"
+  tags:
+    - nat
+    - verify_nat

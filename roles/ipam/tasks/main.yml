@@ -1,0 +1,11 @@
+# roles/ipam/tasks/main.yml
+
+- name: Register IPAM pools in Proxmox
+  community.general.proxmox_ipam:
+    pool: "{{ item.name }}"
+    cidr: "{{ item.cidr }}"
+    gateway: "{{ item.gateway }}"
+  loop: "{{ ipam_pools }}"
+  tags:
+    - ipam
+    - verify_ipam

@@ -1,0 +1,30 @@
+# roles/underlay/tasks/main.yml
+
+- name: Create Linux bridges for underlay VLANs
+  community.general.nmcli:
+    conn_name: "{{ item.bridge }}"
+    type: bridge
+    state: present
+  loop: "{{ vlans }}"
+  tags:
+    - underlay
+    - verify_underlay
+
+- name: Attach VLAN interfaces to physical device
+  community.general.nmcli:
+    conn_name: "{{ underlay_phys_iface }}.{{ item.id }}"
+    type: vlan
+    ifname: "{{ underlay_phys_iface }}.{{ item.id }}"
+    vlan:
+      id: "{{ item.id }}"
+    connection:
+      bridge: "{{ item.bridge }}"
+    ipv4:
+      address:
+        - "{{ item.address }}"
+      gateway: "{{ item.gateway }}"
+      method: manual
+  loop: "{{ vlans }}"
+  tags:
+    - underlay
+    - verify_underlay

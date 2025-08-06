@@ -1,0 +1,26 @@
+---
+# Playbook: Mirror Docker network traffic to brdpi monitoring bridge
+# Requirements: User must be in the docker group on target hosts.
+
+- name: Mirror Docker network traffic to brdpi monitoring bridge
+  hosts: docker-hosts
+  gather_facts: false
+  vars_files:
+    - config.yml
+
+  tasks:
+    - name: Set up DPI monitoring bridge and veth peer
+      include_tasks: tasks/setup-dpi-monitor.yml
+
+    - name: Discover Docker networks and connected containers
+      include_tasks: tasks/docker-network-discover.yml
+
+    - name: Mirror Docker network bridges to DPI veth
+      include_tasks: tasks/docker-network-mirror.yml
+      loop: "{{ docker_bridges }}"
+      loop_control:
+        loop_var: docker_bridge
+
+  handlers:
+    - name: Reload networking
+      ansible.builtin.shell: systemctl restart

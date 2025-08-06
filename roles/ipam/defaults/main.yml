@@ -1,0 +1,15 @@
+# roles/ipam/defaults/main.yml
+
+ipam_pools:
+  - name: internal
+    cidr: 10.10.10.0/24
+    gateway: 10.10.10.1
+  - name: proxy
+    cidr: 10.10.20.0/24
+    gateway: 10.10.20.1
+  - name: ceph_pub
+    cidr: 10.10.30.0/24
+    gateway: 10.10.30.1
+  - name: ceph_cluster
+    cidr: 10.10.31.0/24
+    gateway: 10.10.31.1

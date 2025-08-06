@@ -1,0 +1,17 @@
+# roles/vxlan/defaults/main.yml
+
+overlays:
+  - name: internal
+    vni: 10010
+    bridge: vmbrinternal
+  - name: proxy
+    vni: 10020
+    bridge: vmbrproxy
+  - name: ceph_pub
+    vni: 10030
+    bridge: vmbrceph_pub
+  - name: ceph_cluster
+    vni: 10031
+    bridge: vmbrceph_cluster
+
+underlay_iface: "{{ underlay_phys_iface }}"

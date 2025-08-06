@@ -1,5 +1,9 @@
 dest_bridge: "brdpi"
-mirror_target: "veth0"
+exclude_docker_networks:
+  - proxy
+  - host
+  - none
+mirror_target: veth0
 monitor_vm_ids:
   - "401"
   # - "402"

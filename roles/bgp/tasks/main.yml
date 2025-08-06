@@ -1,0 +1,19 @@
+# roles/bgp/tasks/main.yml
+
+- name: Ensure FRR BGP daemon is installed
+  apt:
+    name: frr
+    state: present
+  tags:
+    - bgp
+
+- name: Configure FRR BGP sessions
+  community.general.frr_bgp:
+    asn: "{{ bgp_asn }}"
+    neighbor: "{{ item.neighbor }}"
+    state: present
+    remote_as: "{{ item.remote_as }}"
+  loop: "{{ bgp_neighbors }}"
+  tags:
+    - bgp
+    - verify_bgp
