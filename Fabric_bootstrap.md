@@ -188,19 +188,19 @@ molecule converge --tags verify_bgp,verify_vxlan
 ```
 Available tags include:
 
-**verify_underlay
+**verify_underlay**
 
-verify_bgp
+**verify_bgp**
 
-verify_vxlan
+**verify_vxlan**
 
-verify_ipam
+**verify_ipam**
 
-verify_nat
+**verify_nat**
 
-verify_proxy
+**verify_proxy**
 
-verify_ceph**
+**verify_ceph**
 
 Refer to molecule_tags.conf for the full list.
 
