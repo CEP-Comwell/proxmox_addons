@@ -1,7 +1,13 @@
-# Fabric Bootstrap
+# Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric
 
-This subproject provides a modular Ansible framework for deploying a scalable, secure, and automated **spine-leaf network fabric** across multiple Proxmox nodes and locations.  
-It is designed for hyper-converged infrastructure and supports zero trust and microsegmentation initiatives.
+![Spine-Leaf Fabric Architecture](images/fabric_architecture.png)
+
+---
+
+## What does this show?
+
+This documentation demonstrates how to use Ansible roles to automate the deployment of a scalable, secure, and automated **spine-leaf network fabric** across multiple Proxmox nodes and locations.  
+It highlights a hyper-converged infrastructure approach, supporting zero trust and microsegmentation initiatives, and shows how each modular role contributes to building a robust, multi-site network fabric.
 
 ---
 
