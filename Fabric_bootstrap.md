@@ -245,10 +245,11 @@ Refer to `molecule_tags.conf` for available tags.
 ## 🚀 Usage
 
 ### 1. Clone the Repository
-
+```bash
 git clone https://github.com/CEP-Comwell/proxmox_addons.git
-cd proxmox_addons
 
+cd proxmox_addons
+```
 ### 2. Review Inventory
 Edit **inventory.yml** to define your Proxmox nodes and group structure.
 
