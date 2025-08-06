@@ -99,9 +99,9 @@ Log into the Proxmox VE 9 web interface.
 
 **Navigate to Datacenter → Options.**
 
-# Scroll to IPAM Enabled.
+- Scroll to IPAM Enabled.
 
-# Set it to Yes and click Apply.
+- Set it to Yes and click Apply.
 
 This activates IPAM across all nodes in the cluster.
 
