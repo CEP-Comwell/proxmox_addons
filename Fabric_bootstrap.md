@@ -31,6 +31,7 @@ Provision a full spine-leaf overlay network on Proxmox using modular Ansible rol
 | `ceph_network`  | Sets up Ceph/ZFS replication bridges             |
 
 ---
+![alt text](image.png)
 
 [View on Eraser![](https://app.eraser.io/workspace/p8tk5YAidr4AzpPcqNX2/preview)](https://app.eraser.io/workspace/p8tk5YAidr4AzpPcqNX2)
 
