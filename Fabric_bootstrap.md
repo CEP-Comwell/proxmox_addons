@@ -107,23 +107,22 @@ This activates IPAM across all nodes in the cluster.
 🧱 **Step 2: Define Flat Networks (Legacy VLANs)**
 These represent your physical underlay networks (VLANs 10, 20, 30).
 
-Go to Datacenter → IPAM → Networks.
+Go to **Datacenter → IPAM → Networks**.
 
-Click Create and choose:
+**Click Create and choose:**
+- Type: Flat
 
-Type: Flat
+- Name: vlan10-flat
 
-Name: vlan10-flat
+- CIDR: 172.16.10.0/24
 
-CIDR: 172.16.10.0/24
+- Gateway: 172.16.10.1
 
-Gateway: 172.16.10.1
+**Repeat for:**
 
-Repeat for:
+- vlan20-flat → 172.16.20.0/24 → gateway 172.16.20.1
 
-vlan20-flat → 172.16.20.0/24 → gateway 172.16.20.1
-
-vlan30-flat → 172.16.30.0/24 → gateway 172.16.30.10
+- vlan30-flat → 172.16.30.0/24 → gateway 172.16.30.10
 
 These will be used for legacy VM provisioning or static routing.
 
@@ -131,41 +130,44 @@ These will be used for legacy VM provisioning or static routing.
 These are tied to your overlays and used for dynamic VM provisioning.
 
 Internal Overlay (VXLAN 10010)
-Go to Datacenter → IPAM → Pools.
 
-Click Create:
+**Go to Datacenter → IPAM → Pools.**
+
+**Click Create:**
 
 Name: vxlan-internal
 
-CIDR: 10.10.10.0/24
+- CIDR: 10.10.10.0/24
 
-Gateway: 10.10.10.1
+- Gateway: 10.10.10.1
 
-VNI: 10010
+- VNI: 10010
 
-Bridge: vmbrinternal
+- Bridge: vmbrinternal
 
-Type: VXLAN
+- Type: VXLAN
 
-Proxy Overlay (VXLAN 10020)
-Repeat with:
+- Proxy Overlay (VXLAN 10020)
+
+**Repeat with:**
 
 Name: vxlan-proxy
 
-CIDR: 10.10.20.0/24
+- CIDR: 10.10.20.0/24
 
-Gateway: 10.10.20.1
+- Gateway: 10.10.20.1
 
-VNI: 10020
+- VNI: 10020
 
-Bridge: vmbrproxy
+- Bridge: vmbrproxy
 
-Ceph/ZFS Replication (VXLAN 10030 & 10031)
-Repeat for:
+- Ceph/ZFS Replication (VXLAN 10030 & 10031)
 
-vxlan-ceph-pub → 10.10.30.0/24 → gateway 10.10.30.1 → VNI 10030 → bridge vmbrceph_pub
+**Repeat for:**
 
-vxlan-ceph-cluster → 10.10.31.0/24 → gateway 10.10.31.1 → VNI 10031 → bridge vmbrceph_cluster
+- vxlan-ceph-pub → 10.10.30.0/24 → gateway 10.10.30.1 → VNI 10030 → bridge vmbrceph_pub
+
+- vxlan-ceph-cluster → 10.10.31.0/24 → gateway 10.10.31.1 → VNI 10031 → bridge vmbrceph_cluster
 
 📌 **Step 4: Reserve Gateway IPs**
 To prevent IPAM from assigning .1 to VMs:
