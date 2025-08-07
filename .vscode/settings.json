@@ -1,0 +1,5 @@
+{
+    "workbench.editorAssociations": {
+        "*.mmd": "mermaid-preview.previewEditor"
+    }
+}

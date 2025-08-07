@@ -157,4 +157,75 @@ Each role is designed for composability, enabling you to build a robust, multi-s
 - BGP peering is only enabled after all hosts are reachable and you confirm activation.
 - All variables and host-specific settings are managed in `group_vars/` and `host_vars/`.
 
+---
+
+![Fabric Activation Workflow](blob/images/fabric_activation_workflow.png)
+
+## 🚀 Quickstart
+
+1. **Clone this repository and install Ansible on your control node.**
+
+2. **Edit your inventory file (`inventory.yml`):**
+   - Define all Proxmox nodes, their IPs, and groupings.
+   - Example:
+     ```yaml
+     all:
+       children:
+         proxmox:
+           hosts:
+             pve-node1:
+               ansible_host: 192.168.10.11
+             pve-node2:
+               ansible_host: 192.168.10.12
+             pve-node3:
+               ansible_host: 192.168.10.13
+         site1:
+           hosts:
+             pve-node1:
+             pve-node2:
+         site2:
+           hosts:
+             pve-node3:
+     ```
+
+3. **Customize variables in `group_vars/all.yml`:**
+   - Set your underlay interface, VLANs, overlays, gateways, and proxy/NAT IPs.
+
+4. **Create or update `host_vars/<hostname>.yml` for each host:**
+   - Set `peer_active: false` for all hosts initially.
+   - Example:
+     ```yaml
+     peer_active: false
+     ```
+
+5. **Bootstrap each site independently:**
+   ```bash
+   ansible-playbook -i inventory.yml site1_bootstrap.yml
+   ansible-playbook -i inventory.yml site2_bootstrap.yml
+   # Repeat for additional sites as needed
+   ```
+   > **Tip:** For each new site, copy `site1_bootstrap.yml` and change the `hosts:` line to match your site group.
+
+6. **Run the preflight connectivity check:**
+   ```bash
+   ansible-playbook -i inventory.yml preflight_connectivity.yml
+   ```
+   - This ensures all Proxmox hosts can reach each other before enabling BGP peering.
+
+7. **Establish BGP peering interactively:**
+   ```bash
+   ansible-playbook -i inventory.yml establish_fabric.yml
+   ```
+   - You will be prompted for confirmation before BGP peering is activated.
+
+8. **For IPAM GUI integration:**  
+   See [configure_IPAM_in_Proxmox.md](configure_IPAM_in_Proxmox.md) for step-by-step instructions.
+
+---
+
+**Notes:**
+- The staged workflow ensures each site is autonomous and fault-tolerant.
+- BGP peering is only enabled after all hosts are reachable and you confirm activation.
+- All variables and host-specific settings are managed in `group_vars/` and `host_vars/`.
+
 MIT © CEP-Comwell
