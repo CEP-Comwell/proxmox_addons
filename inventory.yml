@@ -3,8 +3,17 @@ all:
     proxmox:
       hosts:
         pve-node1:
+          ansible_host: 192.168.10.11
+          ansible_user: "{{ lookup('env', 'PVE_USER') | default('root') }}"
+          ansible_ssh_pass: "{{ lookup('env', 'PVE_PASS') | default(omit) }}"
         pve-node2:
+          ansible_host: 192.168.10.12
+          ansible_user: "{{ lookup('env', 'PVE_USER') | default('root') }}"
+          ansible_ssh_pass: "{{ lookup('env', 'PVE_PASS') | default(omit) }}"
         pve-node3:
+          ansible_host: 192.168.10.13
+          ansible_user: "{{ lookup('env', 'PVE_USER') | default('root') }}"
+          ansible_ssh_pass: "{{ lookup('env', 'PVE_PASS') | default(omit) }}"
     site1:
       hosts:
         pve-node1:

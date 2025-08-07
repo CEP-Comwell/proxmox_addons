@@ -17,3 +17,19 @@
   tags:
     - bgp
     - verify_bgp
+
+- name: Configure BGP neighbors if peer_active
+  ansible.builtin.template:
+    src: bgpd.conf.j2
+    dest: /etc/frr/bgpd.conf
+  when: peer_active | default(false)
+
+- name: Ensure FRR is running if peer_active
+  ansible.builtin.service:
+    name: frr
+    state: restarted
+  when: peer_active | default(false)
+
+- name: Show BGP activation status
+  ansible.builtin.debug:
+    msg: "peer_active is {{ peer_active | default(false) }}. BGP config will {{ 'proceed' if peer_active | default(false) else 'be skipped' }}."

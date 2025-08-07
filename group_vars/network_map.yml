@@ -1,0 +1,57 @@
+network_map:
+  nodes:
+    leaf2:
+      role: proxmox_node
+      interfaces:
+        vmbr10:
+          vlan: 10
+          ip: 172.16.10.1
+          cidr: 172.16.10.0/24
+          description: Legacy VLAN 10 (internal servers)
+        vmbr20:
+          vlan: 20
+          ip: 172.16.20.1
+          cidr: 172.16.20.0/24
+          description: Legacy VLAN 20 (proxy network)
+        vmbr30:
+          vlan: 30
+          ip: 172.16.30.10
+          cidr: 172.16.30.0/24
+          description: Management VLAN
+        vmbrinternal:
+          vxlan: 10010
+          ip: 10.10.10.1
+          cidr: 10.10.10.0/24
+          description: VXLAN 10010 (internal overlay)
+        vmbrproxy:
+          vxlan: 10020
+          ip: 10.10.20.1
+          cidr: 10.10.20.0/24
+          description: VXLAN 10020 (proxy overlay)
+        vmbrceph_pub:
+          vxlan: 10030
+          ip: 10.10.30.1
+          cidr: 10.10.30.0/24
+          description: VXLAN 10030 (Ceph public or ZFS)
+        vmbrceph_cluster:
+          vxlan: 10031
+          ip: 10.10.31.1
+          cidr: 10.10.31.0/24
+          description: VXLAN 10031 (Ceph cluster or ZFS)
+
+    traefik:
+      role: reverse_proxy_vm
+      interface: vmbrproxy
+      ip: 172.16.20.47
+      cidr: 172.16.20.0/24
+      description: Static reservation via DHCP
+
+    pve-node1:
+      role: proxmox_node
+      ip: 172.16.30.11
+      description: Add to inventory as needed
+
+    pve-node2:
+      role: proxmox_node
+      ip: 172.16.30.12
+      description: Add to inventory as needed

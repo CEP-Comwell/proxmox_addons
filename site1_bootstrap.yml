@@ -1,0 +1,9 @@
+---
+- name: Bootstrap Site 1 Proxmox hosts
+  hosts: site1
+  become: true
+  roles:
+    - underlay
+    - vxlan
+    - frr
+    # Add other local roles as needed (ipam, vm_nic, etc.)
