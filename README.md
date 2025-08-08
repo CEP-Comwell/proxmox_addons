@@ -4,7 +4,7 @@ This repository provides advanced Ansible automation and monitoring add-ons for 
 It is organized into modular subprojects, each with its own documentation and roles.
 
 ---
-#
+
 ## 📦 Subprojects
 
 ### [Proxmox VM & Docker Traffic Mirroring](traffic_mirror.md)
