@@ -15,6 +15,12 @@ Includes dynamic discovery of tap and Docker bridge interfaces, persistent bridg
 A comprehensive Ansible framework for deploying a **spine-leaf network fabric** across multiple Proxmox nodes and locations, powered by OpenFabric.  
 Implements scalable, multi-site, zero trust, and microsegmentation strategies for hyper-converged infrastructure.
 
+### [EdgeSec-RADIUS](edgesec-radius.md)
+Modular Ansible role for multi-tenant, certificate-based authentication and integration with Vault, Authentik, Smallstep CA, FreeRADIUS, and NetBox.
+
+### [EdgeSec-REST Backend](edgesec-rest/README.md)
+Device enrollment backend following clean architecture and facade patterns. Includes CLI runner and Jest tests.
+
 ---
 
 ## 🗂 Directory Structure

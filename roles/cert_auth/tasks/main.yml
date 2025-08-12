@@ -1,0 +1,65 @@
+---
+# Main tasks for cert_auth role
+- name: Ensure Vault namespace exists
+  uri:
+    url: "{{ vault_addr }}/v1/sys/namespaces/{{ vault_namespace }}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_token }}"
+    status_code: 204, 400
+  register: vault_namespace_result
+  ignore_errors: yes
+
+- name: Configure PKI secrets engine for tenant
+  uri:
+    url: "{{ vault_addr }}/v1/{{ vault_namespace }}/pki"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_token }}"
+    body_format: json
+    body:
+      type: "pki"
+    status_code: 204, 400
+  register: vault_pki_result
+  ignore_errors: yes
+
+- name: Enroll device in Authentik
+  uri:
+    url: "{{ authentik_url }}/api/v1/devices/enroll"
+    method: POST
+    body_format: json
+    body:
+      tenant: "{{ cert_tenant }}"
+    status_code: 201, 400
+  register: authentik_enroll_result
+  ignore_errors: yes
+
+- name: Issue certificate via Smallstep CA
+  uri:
+    url: "{{ smallstep_ca_url }}/api/certificates"
+    method: POST
+    body_format: json
+    body:
+      tenant: "{{ cert_tenant }}"
+    status_code: 201, 400
+  register: step_cert_result
+  ignore_errors: yes
+
+- name: Register device in NetBox
+  uri:
+    url: "{{ netbox_url }}/api/dcim/devices/"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ inventory_hostname }}"
+      tenant: "{{ cert_tenant }}"
+    status_code: 201, 400
+  register: netbox_result
+  ignore_errors: yes
+
+- name: Reload FreeRADIUS
+  service:
+    name: freeradius
+    state: reloaded
+  become: yes
+  ignore_errors: yes

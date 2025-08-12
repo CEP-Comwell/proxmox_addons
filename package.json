@@ -1,0 +1,31 @@
+{
+  "name": "proxmox_addons",
+  "version": "1.0.0",
+  "description": "This repository provides advanced Ansible automation and monitoring add-ons for Proxmox-based hyper-converged infrastructure.   It is organized into modular subprojects, each with its own documentation and roles.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest",
+    "enroll": "ts-node src/cli/enrollDeviceCli.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CEP-Comwell/proxmox_addons.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CEP-Comwell/proxmox_addons/issues"
+  },
+  "homepage": "https://github.com/CEP-Comwell/proxmox_addons#readme",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.2.1",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.1",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,48 @@
+graph TD
+ 
+  %% Node Overview
+  subgraph Proxmox_Node[Proxmox Node - Edgesec Layout]
+    VM1[VM 1]
+    VM2[VM 2]
+ 
+    VMBridge[vmbr1 - enp2s0 - VM Bridge]
+    MgmtBridge[vmbr0 - enp1s0 - Management Bridge]
+    ExtBridge[vmbr2 - enp3s0 - External Bridge]
+ 
+    VX500[vxlan500 - Management]
+    VX501[vxlan501 - Engineering]
+    VX502[vxlan502 - Support]
+ 
+    Gateway1[Primary Gateway - ISP 1]
+    Gateway2[Backup Gateway - ISP 2]
+    LegacyVLAN[Legacy VLANs]
+ 
+    Fabricd[fabricd - IS-IS Routing]
+  end
+ 
+  %% VM to VM Bridge
+  VM1 --> VMBridge
+  VM2 --> VMBridge
+ 
+  %% VM Bridge to Management Bridge
+  VMBridge --> MgmtBridge
+ 
+  %% VM Bridge to External Bridge
+  VMBridge --> ExtBridge
+ 
+  %% Management Bridge to VXLANs
+  MgmtBridge --> VX500
+  MgmtBridge --> VX501
+  MgmtBridge --> VX502
+ 
+  %% VXLANs to fabricd
+  VX500 --> Fabricd
+  VX501 --> Fabricd
+  VX502 --> Fabricd
+ 
+  %% External Bridge to Gateways
+  ExtBridge --> Gateway1
+  ExtBridge --> Gateway2
+ 
+  %% External Bridge to Legacy VLANs
+  ExtBridge --> LegacyVLAN
