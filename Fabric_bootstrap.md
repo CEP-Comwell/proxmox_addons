@@ -229,3 +229,21 @@ Each role is designed for composability, enabling you to build a robust, multi-s
 - All variables and host-specific settings are managed in `group_vars/` and `host_vars/`.
 
 MIT © CEP-Comwell
+
+---
+
+## Security
+
+- Use Ansible Vault to encrypt sensitive variables such as BGP passwords, SNMP communities, and API tokens:
+  ```bash
+  ansible-vault encrypt group_vars/all.yml
+  ansible-vault encrypt host_vars/pve-node1.yml
+  ```
+- Never commit secrets or credentials to version control.
+- Limit access to inventory and configuration files to trusted users.
+- Regularly rotate credentials and audit playbooks for exposure.
+
+## References
+
+- [EdgeSec Platform Architecture](docs/architecture.md)
+- [Ansible Vault Documentation](https://docs.ansible.com/ansible/latest/user_guide/vault.html)

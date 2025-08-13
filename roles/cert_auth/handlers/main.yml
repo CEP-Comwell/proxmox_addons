@@ -1,7 +1,0 @@
----
-# Handler for cert_auth role
-- name: restart freeradius
-  service:
-    name: freeradius
-    state: restarted
-  become: yes
