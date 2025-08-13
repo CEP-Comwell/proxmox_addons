@@ -190,7 +190,7 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 - Common service overlays (DNS, monitoring, proxy, vault, etc.) are present at each site and use RBAC and namespace controls for isolation.
 - `vmbr0` is strictly for management, engineering, and support overlays and legacy services.
 - `vmbr1` is for tenant VM/service overlays and common access overlays (DNS, monitoring, proxy).
-- `vmbr2` is for external connectivity, gateways, and external service overlays (proxy_ext, radius, rest, vault).
+- `vmbr2` is configured as a leaf-edge gateway in the spine-leaf topology. It provides uplink connectivity to both primary and secondary Internet transit gateways, bridges legacy VLAN segments into the fabric, and enables dynamic traffic routing and integration with external networks. This interface serves as a key ingress/egress point for edge workloads and external service overlays (proxy_ext, radius, rest, vault).
 - Microsegmentation and RBAC are enforced at every level (bridge, overlay, service) using Ansible and edgesec platform controls.
 
 ### Example Overlay Assignment (Tenant 1)
