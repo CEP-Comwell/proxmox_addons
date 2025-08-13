@@ -36,11 +36,23 @@ Automates mirroring of VM and Docker network traffic to a monitoring bridge for 
 - [traffic_mirror.md](traffic_mirror.md)
 - [docs/integration-guide.md](docs/integration-guide.md)
 
+
 ### [Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric](Fabric_bootstrap.md)
 #### Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric
 
 **Overview:**
 Comprehensive Ansible framework for deploying a scalable, multi-site spine-leaf network fabric across Proxmox nodes and locations, powered by OpenFabric. Implements zero trust and microsegmentation strategies for hyper-converged infrastructure.
+
+**Network Architecture:**
+- The SDN fabric is built around three primary bridges:
+	- `vmbr0` (Management, left): Hosts management overlays and services (Vault, Monitor, Ceph).
+	- `vmbr1` (VM/Services, center): Hosts tenant/service overlays and core services (REST, RADIUS, DNS, Proxy).
+	- `vmbr2` (External, right): Connects to gateways, legacy VLANs, and provides external access (Proxy, Radius, REST, Vault).
+- Overlays (VXLANs) are mapped to these bridges for isolation and segmentation, as shown in the architecture diagram below.
+
+**Reference Diagram:**
+![Single Tenant Bridge Layout](blob/images/edgesec-node1.png)
+Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-single-tenant-bridges.mmd)
 
 **Features:**
 - Automated multi-site fabric bootstrap and configuration
@@ -51,11 +63,11 @@ Comprehensive Ansible framework for deploying a scalable, multi-site spine-leaf 
 
 **Quick Start:**
 1. Review [Fabric_bootstrap.md](Fabric_bootstrap.md) for prerequisites and setup steps.
-2. Configure your environment in `inventory` and `config.yml`.
+2. Configure your environment in `inventory` and `config.yml`, ensuring bridge and overlay assignments match the diagram.
 3. Run the provided playbooks to deploy the fabric.
 
 **Configuration Options:**
-- Centralized settings in `config.yml`
+- Centralized settings in `config.yml` (see bridge and overlay variables)
 - Per-node and per-site variables in `group_vars/` and `host_vars/`
 - Vault integration for sensitive data
 

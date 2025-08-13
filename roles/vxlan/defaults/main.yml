@@ -1,17 +1,95 @@
-# roles/vxlan/defaults/main.yml
 
-overlays:
-  - name: internal
-    vni: 10010
-    bridge: vmbrinternal
-  - name: proxy
-    vni: 10020
-    bridge: vmbrproxy
-  - name: ceph_pub
+
+# VXLAN Overlay Defaults for Multi-Tenant Proxmox SDN Fabric
+# Focused on network components: bridges, overlays, and service segmentation
+# Modular, per-tenant overlays and common service overlays
+# RBAC and microsegmentation ready
+
+# Bridge Definitions:
+mgmt_bridge: "vmbr0"   # Management (left)
+vm_bridge: "vmbr1"     # Tenant/Service (center)
+ext_bridge: "vmbr2"    # External (right)
+
+
+tenant_overlays:
+  - name: "tenant1"
+    overlays:
+      - name: "mgmt"
+        vni: 10100
+        bridge: "{{ mgmt_bridge }}"
+      - name: "service"
+        vni: 10110
+        bridge: "{{ vm_bridge }}"
+      - name: "external"
+        vni: 10120
+        bridge: "{{ ext_bridge }}"
+  - name: "tenant2"
+    overlays:
+      - name: "mgmt"
+        vni: 10200
+        bridge: "{{ mgmt_bridge }}"
+      - name: "service"
+        vni: 10210
+        bridge: "{{ vm_bridge }}"
+      - name: "external"
+        vni: 10220
+        bridge: "{{ ext_bridge }}"
+  # Add more tenants as needed
+
+
+service_overlays:
+  - name: "dns"
+    vni: 9000
+    bridge: "{{ mgmt_bridge }}"
+  - name: "monitoring"
+    vni: 9001
+    bridge: "{{ mgmt_bridge }}"
+  - name: "proxy"
+    vni: 9002
+    bridge: "{{ vm_bridge }}"
+  - name: "proxy_ext"
+    vni: 9003
+    bridge: "{{ ext_bridge }}"
+  - name: "radius"
+    vni: 9004
+    bridge: "{{ ext_bridge }}"
+  - name: "rest"
+    vni: 9005
+    bridge: "{{ ext_bridge }}"
+  - name: "vault"
+    vni: 9006
+    bridge: "{{ ext_bridge }}"
+  # Add more service overlays as needed
+
+
+
+legacy_overlays:
+  - name: "ceph_pub"
     vni: 10030
-    bridge: vmbrceph_pub
-  - name: ceph_cluster
+    bridge: "{{ mgmt_bridge }}"
+  - name: "ceph_cluster"
     vni: 10031
-    bridge: vmbrceph_cluster
+    bridge: "{{ mgmt_bridge }}"
 
+
+# Physical interface for underlay
 underlay_iface: "{{ underlay_phys_iface }}"
+
+# RBAC and Microsegmentation
+rbac_groups:
+  - name: "admin"
+    overlays: ["mgmt", "dns", "monitoring", "proxy", "proxy_ext", "radius", "rest", "vault"]
+  - name: "tenant1"
+    overlays: ["tenant1"]
+  - name: "tenant2"
+    overlays: ["tenant2"]
+
+microsegmentation:
+  enabled: true
+  policies:
+    - src: "tenant1"
+      dst: "service_overlays"
+      allow: ["dns", "monitoring", "proxy", "radius", "rest"]
+    - src: "tenant2"
+      dst: "service_overlays"
+      allow: ["dns", "monitoring", "proxy", "radius", "rest"]
