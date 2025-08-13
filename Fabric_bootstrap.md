@@ -162,7 +162,10 @@ Each role is designed for composability, enabling you to build a robust, multi-s
 ![Fabric Activation Workflow](blob/images/fabric_activation_workflow.png)
 
 
+
 ## VXLAN Overlay Structure
+
+> **Planned Feature:** In a future iteration, we intend to integrate NetBox as our authoritative source for IP address management (IPAM). Overlay network assignments will be automatically provisioned during the onboarding process, streamlining deployment and ensuring consistent address allocation across the fabric.
 
 
 
@@ -174,10 +177,10 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 | 🟦 overlay name   | overlay type   | Description/Role         | VNI Example |
 |:------------------|:--------------|:------------------------|:-----------:|
 | management        | management    | Management traffic, RBAC, remote admin | 10100 |
-| ceph_cluster      | ceph cluster  | Legacy Ceph cluster overlay | 10031 |
-| ceph_pub          | ceph pub      | Legacy Ceph public overlay | 10030 |
 | engineering       | engineering   | Engineering/ops traffic, RBAC | 10101 |
 | support           | support       | Support/field ops, RBAC | 10102 |
+| ceph_pub          | ceph pub      | Legacy Ceph public overlay | 10030 |
+| ceph_cluster      | ceph cluster  | Legacy Ceph cluster overlay | 10031 |
 
 **vmbr1 (VM/Services Bridge)**
 
@@ -219,13 +222,12 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 
 | Overlay Name | VNI   | Bridge | Description |
 |--------------|-------|--------|-------------|
-| dns          | 9000  | vmbr1  | DNS (RBAC, namespace)
-| monitoring   | 9001  | vmbr1  | Monitoring
-| proxy        | 9002  | vmbr1  | Proxy for tenant services
-| proxy_ext    | 9003  | vmbr2  | Proxy for external access
-| radius       | 9004  | vmbr2  | RADIUS for external auth
-| rest         | 9005  | vmbr2  | REST API for external access
-| vault        | 9006  | vmbr2  | edgesec-VAULT (RBAC, namespace)
+| dns          | 9000  | vmbr1  | DNS (RBAC, namespace) |
+| monitoring   | 9001  | vmbr1  | Monitoring |
+| vault        | 9006  | vmbr1  | edgesec-VAULT (RBAC, namespace) |
+| rest         | 9005  | vmbr1  | REST API for external access |
+| radius       | 9004  | vmbr1  | RADIUS for external auth |
+| proxy_ext    | 9003  | vmbr2  | Proxy for external access |
 
 ### Legacy Overlays
 
