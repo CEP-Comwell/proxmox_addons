@@ -166,24 +166,36 @@ Each role is designed for composability, enabling you to build a robust, multi-s
 
 
 
-The SDN fabric uses three primary bridges for strict segmentation. Overlays are grouped and color-coded by bridge for clarity:
 
-| Bridge   | Overlay Name      | Overlay Type   | Description/Role         | VNI Example |
-|:--------:|:------------------|:--------------|:------------------------|:-----------:|
-| <span style="background-color:#f5f5f5">vmbr0</span>    | <span style="background-color:#f5f5f5">management</span>        | <span style="background-color:#f5f5f5">Management</span>    | <span style="background-color:#f5f5f5">Management traffic, RBAC, remote admin</span> | <span style="background-color:#f5f5f5">10100</span> |
-| <span style="background-color:#f5f5f5">vmbr0</span>    | <span style="background-color:#f5f5f5">engineering</span>       | <span style="background-color:#f5f5f5">Engineering</span>   | <span style="background-color:#f5f5f5">Engineering/ops traffic, RBAC</span> | <span style="background-color:#f5f5f5">10101</span> |
-| <span style="background-color:#f5f5f5">vmbr0</span>    | <span style="background-color:#f5f5f5">support</span>           | <span style="background-color:#f5f5f5">Support</span>       | <span style="background-color:#f5f5f5">Support/field ops, RBAC</span> | <span style="background-color:#f5f5f5">10102</span> |
-| <span style="background-color:#f5f5f5">vmbr0</span>    | <span style="background-color:#f5f5f5">ceph_pub</span>          | <span style="background-color:#f5f5f5">Ceph Pub</span>      | <span style="background-color:#f5f5f5">Legacy Ceph public overlay</span> | <span style="background-color:#f5f5f5">10030</span> |
-| <span style="background-color:#f5f5f5">vmbr0</span>    | <span style="background-color:#f5f5f5">ceph_cluster</span>      | <span style="background-color:#f5f5f5">Ceph Cluster</span>  | <span style="background-color:#f5f5f5">Legacy Ceph cluster overlay</span> | <span style="background-color:#f5f5f5">10031</span> |
-| <span style="background-color:#e0e0e0">vmbr1</span>    | <span style="background-color:#e0e0e0">service</span>           | <span style="background-color:#e0e0e0">VM/Service</span>    | <span style="background-color:#e0e0e0">Tenant VM/service overlay (one per host)</span> | <span style="background-color:#e0e0e0">10110</span> |
-| <span style="background-color:#e0e0e0">vmbr1</span>    | <span style="background-color:#e0e0e0">dns</span>               | <span style="background-color:#e0e0e0">DNS</span>           | <span style="background-color:#e0e0e0">Common DNS overlay, RBAC/namespace</span> | <span style="background-color:#e0e0e0">9000</span> |
-| <span style="background-color:#e0e0e0">vmbr1</span>    | <span style="background-color:#e0e0e0">monitoring</span>        | <span style="background-color:#e0e0e0">Monitoring</span>    | <span style="background-color:#e0e0e0">Common monitoring overlay</span> | <span style="background-color:#e0e0e0">9001</span> |
-| <span style="background-color:#e0e0e0">vmbr1</span>    | <span style="background-color:#e0e0e0">proxy</span>             | <span style="background-color:#e0e0e0">Proxy</span>         | <span style="background-color:#e0e0e0">Proxy overlay for tenant services</span> | <span style="background-color:#e0e0e0">9002</span> |
-| <span style="background-color:#bdbdbd">vmbr2</span>    | <span style="background-color:#bdbdbd">external</span>          | <span style="background-color:#bdbdbd">External</span>      | <span style="background-color:#bdbdbd">Tenant external/gateway overlay</span> | <span style="background-color:#bdbdbd">10120</span> |
-| <span style="background-color:#bdbdbd">vmbr2</span>    | <span style="background-color:#bdbdbd">proxy_ext</span>         | <span style="background-color:#bdbdbd">Proxy Ext</span>     | <span style="background-color:#bdbdbd">Proxy overlay for external access</span> | <span style="background-color:#bdbdbd">9003</span> |
-| <span style="background-color:#bdbdbd">vmbr2</span>    | <span style="background-color:#bdbdbd">radius</span>            | <span style="background-color:#bdbdbd">Radius</span>        | <span style="background-color:#bdbdbd">RADIUS overlay for external auth</span> | <span style="background-color:#bdbdbd">9004</span> |
-| <span style="background-color:#bdbdbd">vmbr2</span>    | <span style="background-color:#bdbdbd">rest</span>              | <span style="background-color:#bdbdbd">REST</span>          | <span style="background-color:#bdbdbd">REST API overlay for external access</span> | <span style="background-color:#bdbdbd">9005</span> |
-| <span style="background-color:#bdbdbd">vmbr2</span>    | <span style="background-color:#bdbdbd">vault</span>             | <span style="background-color:#bdbdbd">Vault</span>         | <span style="background-color:#bdbdbd">edgesec-VAULT overlay, RBAC/namespace</span> | <span style="background-color:#bdbdbd">9006</span> |
+The SDN fabric uses three primary bridges for strict segmentation. Overlays are grouped by bridge for clarity:
+
+**vmbr0 (Management Bridge)**
+
+| 🟦 overlay name   | overlay type   | Description/Role         | VNI Example |
+|:------------------|:--------------|:------------------------|:-----------:|
+| management        | management    | Management traffic, RBAC, remote admin | 10100 |
+| ceph_cluster      | ceph cluster  | Legacy Ceph cluster overlay | 10031 |
+| ceph_pub          | ceph pub      | Legacy Ceph public overlay | 10030 |
+| engineering       | engineering   | Engineering/ops traffic, RBAC | 10101 |
+| support           | support       | Support/field ops, RBAC | 10102 |
+
+**vmbr1 (VM/Services Bridge)**
+
+| 🟨 overlay name   | overlay type   | Description/Role         | VNI Example |
+|:------------------|:--------------|:------------------------|:-----------:|
+| services          | dns           | Common DNS overlay, RBAC/namespace | 9000 |
+| services          | monitoring    | Common monitoring overlay | 9001 |
+| services          | vault         | edgesec-VAULT overlay, RBAC/namespace | 9006 |
+| services          | rest          | REST API overlay for external access | 9005 |
+| services          | radius        | RADIUS overlay for external auth | 9004 |
+| tenant            | vm/service    | Tenant VM/service overlay (one per host) | 10110 |
+
+**vmbr2 (External/Leaf-Edge Gateway Bridge)**
+
+| 🟥 overlay name   | overlay type   | Description/Role         | VNI Example |
+|:------------------|:--------------|:------------------------|:-----------:|
+| external          | external      | Tenant external/gateway overlay | 10120 |
+| proxy_ext         | proxy ext     | Proxy overlay for external access | 9003 |
 
 **Notes:**
 - Each tenant (Proxmox host) has its own set of management, engineering, support, service, and external overlays, with unique VNIs.
