@@ -1,13 +1,13 @@
-# EdgeSec Platform Architecture
+# edgesec Platform Architecture
 
 This document provides a high-level overview of the EdgeSec HCI platform, its modular subprojects, and integration points.
 
 ## Subprojects
 - **Traffic Mirroring:** VM & Docker network traffic mirroring for DPI/IDS.
 - **SDN Fabric:** Automated multi-site spine-leaf network with OpenFabric.
-- **EdgeSec-RADIUS:** Multi-tenant certificate-based authentication and integration with Vault, Authentik, Smallstep CA, FreeRADIUS, NetBox.
-- **EdgeSec-REST Backend:** Device enrollment backend using clean architecture.
-- **EdgeSec-Vault:** Centralized secrets management with HashiCorp Vault, supporting tenant namespaces.
+- **edgesec-RADIUS:** Multi-tenant certificate-based authentication and integration with Vault, Authentik, Smallstep CA, FreeRADIUS, NetBox.
+- **edgesec-REST Backend:** Device enrollment backend using clean architecture.
+- **edgesec-Vault:** Centralized secrets management with HashiCorp Vault, supporting tenant namespaces.
 
 ## Integration Diagram
 ```
@@ -15,7 +15,7 @@ This document provides a high-level overview of the EdgeSec HCI platform, its mo
    |
 [SDN Fabric (OpenFabric)]
    |
-[Traffic Mirroring]---[EdgeSec-RADIUS]---[EdgeSec-REST]---[EdgeSec-Vault]
+[Traffic Mirroring]---[edgesec-RADIUS]---[edgesec-REST]---[edgesec-Vault]
    |                        |                |
    |                        |                |
 [NetBox]               [Authentik]      [Smallstep CA]

@@ -1,10 +1,10 @@
 src/
 tests/
 
-# EdgeSec-RADIUS Role
+# edgesec-RADIUS Role
 
 ## Overview
-Implements a modular, multi-tenant, certificate-based authentication system for Proxmox environments. Integrates with Vault, Authentik, Smallstep CA, FreeRADIUS, NetBox, and the EdgeSec-REST backend.
+Implements a modular, multi-tenant, certificate-based authentication system for Proxmox environments. Integrates with Vault, Authentik, Smallstep CA, FreeRADIUS, NetBox, and the edgesec-REST backend.
 
 ## Features
 - Vault namespace and PKI engine setup per tenant
@@ -12,7 +12,7 @@ Implements a modular, multi-tenant, certificate-based authentication system for 
 - Automated certificate issuance with Smallstep CA
 - Device registration and metadata updates in NetBox
 - FreeRADIUS reload and configuration sync for EAP-TLS authentication
-- Integration with the EdgeSec-REST backend for device enrollment and orchestration
+- Integration with the edgesec-REST backend for device enrollment and orchestration
 
 ## Quick Start
 1. **Configure endpoints and credentials:**
@@ -28,7 +28,7 @@ Implements a modular, multi-tenant, certificate-based authentication system for 
 	 ansible-playbook -i inventory your_playbook.yml
 	 ```
 4. **Integration with backend:**
-	 - The role can call the EdgeSec-REST backend via REST API or CLI for device enrollment and certificate operations.
+	- The role can call the edgesec-REST backend via REST API or CLI for device enrollment and certificate operations.
 	 - Example:
 		 ```yaml
 		 - name: Enroll device via REST backend
@@ -51,11 +51,11 @@ Implements a modular, multi-tenant, certificate-based authentication system for 
 - Issues certificates via Smallstep CA.
 - Updates device metadata in NetBox.
 - Reloads FreeRADIUS for EAP-TLS authentication.
-- Communicates with EdgeSec-REST backend for device orchestration.
+- Communicates with edgesec-REST backend for device orchestration.
 
 ## References
 - [import/edgesec-radius.md](import/edgesec-radius.md) — Conceptual design and architecture
-- [EdgeSec-REST Backend](edgesec-rest/README.md)
-- [EdgeSec-Vault](edgesec-vault/README.md)
+- [edgesec-REST Backend](edgesec-rest/README.md)
+- [edgesec-Vault](edgesec-vault/README.md)
 - [docs/integration-guide.md](docs/integration-guide.md)
 - [docs/security-best-practices.md](docs/security-best-practices.md)

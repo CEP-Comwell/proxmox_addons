@@ -1,11 +1,11 @@
-# EdgeSec-Vault
+# edgesec-Vault
 
-This project provides a HashiCorp Vault deployment for the EdgeSec HCI platform, serving as the central source of truth for all credentials and secrets. It is designed for multi-tenant environments and integrates with the Proxmox SDN Fabric and other EdgeSec platform components.
+This project provides a HashiCorp Vault deployment for the edgesec HCI platform, serving as the central source of truth for all credentials and secrets. It is designed for multi-tenant environments and integrates with the Proxmox SDN Fabric and other edgesec platform components.
 
 ## Features
-- Centralized secrets management for EdgeSec HCI
+- Centralized secrets management for edgesec HCI
 - Multi-tenant isolation using Vault namespaces
-- Ready for integration with EdgeSec-RADIUS, EdgeSec-REST, and other platform services
+- Ready for integration with edgesec-RADIUS, edgesec-REST, and other platform services
 - Easy deployment via Docker Compose
 
 ## Quick Start
@@ -36,4 +36,4 @@ See `docker-compose.yml` in this directory for a production-ready Vault deployme
 ## References
 - [Vault Namespaces Documentation](https://developer.hashicorp.com/vault/docs/enterprise/namespaces)
 - [Vault Docker Documentation](https://hub.docker.com/_/vault)
-- [EdgeSec Platform Overview](../README.md)
+- [edgesec Platform Overview](../README.md)

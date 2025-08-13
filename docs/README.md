@@ -1,6 +1,6 @@
-# EdgeSec Platform Documentation
+# edgesec Platform Documentation
 
-This folder contains cross-cutting documentation for the EdgeSec HCI platform, including architecture diagrams, integration guides, and best practices.
+This folder contains cross-cutting documentation for the edgesec HCI platform, including architecture diagrams, integration guides, and best practices.
 
 ## Contents
 - `architecture.md` — High-level overview and integration diagram

@@ -15,11 +15,9 @@ Briefly describe the purpose and scope of this subproject.
 - List configuration files, environment variables, and secrets management practices.
 
 ## Integration
-- Describe how this subproject interfaces with other EdgeSec platform components.
-
+# edgesec Subproject: <NAME>
 ## Real-World Example
-- Provide a sample workflow, playbook, or CLI command with expected output.
-
+ This document describes the edgesec <NAME> subproject, its features, and integration points.
 ## Security
 - Document how sensitive information is managed and best practices for secure deployment.
 

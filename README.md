@@ -48,9 +48,9 @@ Comprehensive Ansible framework for deploying a scalable, multi-site spine-leaf 
 
 **Network Architecture:**
 - The SDN fabric is built around three primary bridges:
-	- `vmbr0` (Management, left): Hosts management overlays and services (Vault, Monitor, Ceph).
+	- `vmbr0` (Management, left): Hosts management overlays and services (edgesec-VAULT, Monitor, Ceph).
 	- `vmbr1` (VM/Services, center): Hosts tenant/service overlays and core services (REST, RADIUS, DNS, Proxy).
-	- `vmbr2` (External, right): Connects to gateways, legacy VLANs, and provides external access (Proxy, Radius, REST, Vault).
+	- `vmbr2` (External, right): Connects to gateways, legacy VLANs, and provides external access (Proxy, Radius, REST, edgesec-VAULT).
 - Overlays (VXLANs) are mapped to these bridges for isolation and segmentation, as shown in the architecture diagram below.
 
 
@@ -64,7 +64,7 @@ graph LR
 	ExtBridge[vmbr2 - External Bridge]
 
 	%% Services
-	VaultVM[edgesec-vault]
+	VaultVM[edgesec-VAULT]
 	MonitorVM[monitor-vm]
 	RestVM[edgesec-rest]
 	RadiusVM[edgesec-radius]
@@ -149,7 +149,7 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 - Spine-leaf topology with OpenFabric integration
 - Zero trust, microsegmentation, and RBAC support
 - Dynamic inventory and network map generation
-- Integration with Vault for secrets management
+	- Integration with edgesec-VAULT for secrets management
 
 **Quick Start:**
 1. Review [Fabric_bootstrap.md](Fabric_bootstrap.md) for prerequisites and setup steps.
@@ -159,11 +159,11 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 **Configuration Options:**
 - Centralized settings in `config.yml` (see bridge and overlay variables)
 - Per-node and per-site variables in `group_vars/` and `host_vars/`
-- Vault integration for sensitive data
+	- edgesec-VAULT integration for sensitive data
 
 **Integration Points:**
-- Works with EdgeSec-RADIUS for authentication
-- Integrates with EdgeSec-REST backend for device enrollment
+- Works with edgesec-RADIUS for authentication
+- Integrates with edgesec-REST backend for device enrollment
 - Supports traffic mirroring for DPI/IDS via VM & Docker roles
 
 **References:**
@@ -171,8 +171,8 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 - [docs/architecture.md](docs/architecture.md)
 - [docs/integration-guide.md](docs/integration-guide.md)
 
-### [EdgeSec-RADIUS](edgesec-radius.md)
-#### EdgeSec-RADIUS
+### [edgesec-RADIUS](edgesec-radius.md)
+#### edgesec-RADIUS
 
 **Overview:**
 Modular Ansible role for multi-tenant, certificate-based authentication and integration with Vault, Authentik, Smallstep CA, FreeRADIUS, and NetBox.
@@ -195,14 +195,14 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 
 **Integration Points:**
 - Works with SDN Fabric for network access control
-- Integrates with EdgeSec-REST for device onboarding
+- Integrates with edgesec-REST for device onboarding
 
 **References:**
 - [edgesec-radius.md](edgesec-radius.md)
 - [docs/security-best-practices.md](docs/security-best-practices.md)
 
-### [EdgeSec-REST Backend](edgesec-rest/README.md)
-#### EdgeSec-REST Backend
+### [edgesec-REST Backend](edgesec-rest/README.md)
+#### edgesec-REST Backend
 
 **Overview:**
 Device enrollment backend following clean architecture and facade patterns. Provides REST API, CLI runner, and Jest tests for device onboarding and management.
@@ -223,7 +223,7 @@ Device enrollment backend following clean architecture and facade patterns. Prov
 - Config files for API and CLI options
 
 **Integration Points:**
-- Integrates with EdgeSec-RADIUS for device authentication
+- Integrates with edgesec-RADIUS for device authentication
 - Supports SDN Fabric for network provisioning
 
 **References:**

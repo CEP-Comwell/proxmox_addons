@@ -1,4 +1,4 @@
-# EdgeSec-REST Backend
+# edgesec-REST Backend
 
 Implements the backend for device enrollment and integration, following clean architecture and facade patterns.
 
