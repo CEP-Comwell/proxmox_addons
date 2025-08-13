@@ -50,8 +50,95 @@ Comprehensive Ansible framework for deploying a scalable, multi-site spine-leaf 
 	- `vmbr2` (External, right): Connects to gateways, legacy VLANs, and provides external access (Proxy, Radius, REST, Vault).
 - Overlays (VXLANs) are mapped to these bridges for isolation and segmentation, as shown in the architecture diagram below.
 
-**Reference Diagram:**
-![Single Tenant Bridge Layout](blob/images/edgesec-node1.png)
+
+**Reference Diagram (Mermaid):**
+```mermaid
+graph LR
+
+	%% Bridges (ordered left to right)
+	MgmtBridge[vmbr0 - Management Bridge]
+	VMBridge[vmbr1 - VM Bridge]
+	ExtBridge[vmbr2 - External Bridge]
+
+	%% Services
+	VaultVM[edgesec-vault]
+	MonitorVM[monitor-vm]
+	RestVM[edgesec-rest]
+	RadiusVM[edgesec-radius]
+	DNSVM[edgesec-dns]
+	ProxyVM[Traefik Proxy VM]
+
+	%% Overlays
+	VX10100[vxlan10100 - Management]
+	VX10101[vxlan10101 - Engineering]
+	VX10102[vxlan10102 - Support]
+	VX10110[vxlan10110 - VM]
+	VX10111[vxlan10111 - DNS]
+	VX10112[vxlan10112 - Monitoring]
+	VX10113[vxlan10113 - Proxy]
+	VXCEPH1[vxlan10030 - Ceph Pub]
+	VXCEPH2[vxlan10031 - Ceph Cluster]
+
+	Gateway1[Primary Gateway - ISP 1]
+	Gateway2[Backup Gateway - ISP 2]
+	LegacyVLAN[Legacy VLANs]
+
+	Fabricd[fabricd - IS-IS Routing]
+
+	%% Explicit bridge ordering
+	MgmtBridge --> VMBridge --> ExtBridge
+
+	%% Service VMs to bridges
+	VaultVM --> MgmtBridge
+	MonitorVM --> MgmtBridge
+	RestVM --> VMBridge
+	RadiusVM --> VMBridge
+	DNSVM --> VMBridge
+	ProxyVM --> VMBridge
+	ProxyVM --> ExtBridge
+
+	%% VM Bridge overlays
+	VMBridge --> VX10110
+	VMBridge --> VX10111
+	VMBridge --> VX10112
+	VMBridge --> VX10113
+
+	%% Management Bridge overlays
+	MgmtBridge --> VX10100
+	MgmtBridge --> VX10101
+	MgmtBridge --> VX10102
+	MgmtBridge --> VXCEPH1
+	MgmtBridge --> VXCEPH2
+
+	%% VXLANs to fabricd
+	VX10100 --> Fabricd
+	VX10101 --> Fabricd
+	VX10102 --> Fabricd
+	VX10110 --> Fabricd
+	VX10111 --> Fabricd
+	VX10112 --> Fabricd
+	VX10113 --> Fabricd
+	VXCEPH1 --> Fabricd
+	VXCEPH2 --> Fabricd
+
+	%% External Bridge to Gateways
+	ExtBridge --> Gateway1
+	ExtBridge --> Gateway2
+
+	%% External Bridge to Legacy VLANs
+	ExtBridge --> LegacyVLAN
+
+	%% Custom bridge colors
+	classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
+	classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
+	classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
+	classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+
+	class MgmtBridge,VaultVM,MonitorVM,VX10100,VX10101,VX10102,VXCEPH1,VXCEPH2 mgmt;
+	class VMBridge,RestVM,RadiusVM,DNSVM,VX10110,VX10111,VX10112,VX10113 vm;
+	class ExtBridge,Gateway1,Gateway2,LegacyVLAN ext;
+	class ProxyVM proxy;
+```
 Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-single-tenant-bridges.mmd)
 
 **Features:**
