@@ -1,7 +1,4 @@
 
-%% Proxmox Node - Edgesec Layout (Single Tenant, Color-Coded by Bridge)
-
-```mermaid
 graph LR
 
 	%% Bridges (ordered left to right)
@@ -87,5 +84,4 @@ graph LR
 	class VMBridge,RestVM,RadiusVM,DNSVM,VX10110,VX10111,VX10112,VX10113 vm;
 	class ExtBridge,Gateway1,Gateway2,LegacyVLAN ext;
 	class ProxyVM proxy;
-```
 
