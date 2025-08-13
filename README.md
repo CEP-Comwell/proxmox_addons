@@ -46,11 +46,12 @@ Automates mirroring of VM and Docker network traffic to a monitoring bridge for 
 **Overview:**
 Comprehensive Ansible framework for deploying a scalable, multi-site spine-leaf network fabric across Proxmox nodes and locations, powered by OpenFabric. Implements zero trust and microsegmentation strategies for hyper-converged infrastructure.
 
+
 **Network Architecture:**
 - The SDN fabric is built around three primary bridges:
-	- `vmbr0` (Management, left): Hosts management overlays and services (edgesec-VAULT, Monitor, Ceph).
-	- `vmbr1` (VM/Services, center): Hosts tenant/service overlays and core services (REST, RADIUS, DNS, Proxy).
-	- `vmbr2` (External, right): Connects to gateways, legacy VLANs, and provides external access (Proxy, Radius, REST, edgesec-VAULT).
+	- `vmbr0` (Management, left): Hosts management, engineering, and support overlays, as well as storage overlays (ceph_pub, ceph_cluster).
+	- `vmbr1` (VM/Services, center): Hosts tenant/service overlays and all core service overlays (DNS, Monitoring, Vault, REST, RADIUS).
+	- `vmbr2` (External, right): Connects to external gateways and legacy VLANs, and provides external access overlays (proxy_ext, external).
 - Overlays (VXLANs) are mapped to these bridges for isolation and segmentation, as shown in the architecture diagram below.
 
 
