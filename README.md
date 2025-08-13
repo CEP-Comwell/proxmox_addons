@@ -7,8 +7,10 @@ It is organized into modular subprojects, each with its own documentation and ro
 
 ## 📦 Subprojects
 
-### [Proxmox VM & Docker Traffic Mirroring](traffic_mirror.md)
-#### Proxmox VM & Docker Traffic Mirroring
+
+### [edgesec-TAPX](traffic_mirror.md)
+#### edgesec-TAPX
+*Modular traffic mirroring with SIEM-triggered full packet visibility.*
 
 **Overview:**
 Automates mirroring of VM and Docker network traffic to a monitoring bridge for DPI, IDS, or security analysis. Supports dynamic discovery and persistent setup of tap and Docker bridge interfaces.

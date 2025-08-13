@@ -2,7 +2,7 @@
 
 This guide explains how the major subprojects of the EdgeSec HCI platform interact, share data, and integrate securely.
 
-# Note: The project formerly referred to as "Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric" is now named **edgesec-SDN**. All documentation and references have been updated accordingly. Existing links and filenames remain unchanged for backward compatibility.
+# Note: The project formerly referred to as "Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric" is now named **edgesec-SDN**. The project formerly referred to as "Proxmox VM & Docker Traffic Mirroring" is now named **edgesec-TAPX** (Modular traffic mirroring with SIEM-triggered full packet visibility). All documentation and references have been updated accordingly. Existing links and filenames remain unchanged for backward compatibility.
 
 ## Integration Points
 - **Vault:** Central source of truth for credentials and secrets, used by RADIUS, REST backend, and SDN fabric roles.
