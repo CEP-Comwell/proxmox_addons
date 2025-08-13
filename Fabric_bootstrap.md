@@ -229,7 +229,7 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 | radius       | 9004  | vmbr1  | RADIUS for external auth |
 | proxy_ext    | 9003  | vmbr2  | Proxy for external access |
 
-### Legacy Overlays
+### Storage Overlays
 
 | Overlay Name | VNI    | Bridge |
 |--------------|--------|--------|
