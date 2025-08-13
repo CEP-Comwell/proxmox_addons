@@ -1,4 +1,4 @@
-# Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric
+# edgesec-SDN
 
 ![Spine-Leaf Fabric Architecture](blob/images/fabric_architecture.png)
 

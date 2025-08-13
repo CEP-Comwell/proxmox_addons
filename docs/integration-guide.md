@@ -2,11 +2,13 @@
 
 This guide explains how the major subprojects of the EdgeSec HCI platform interact, share data, and integrate securely.
 
+# Note: The project formerly referred to as "Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric" is now named **edgesec-SDN**. All documentation and references have been updated accordingly. Existing links and filenames remain unchanged for backward compatibility.
+
 ## Integration Points
 - **Vault:** Central source of truth for credentials and secrets, used by RADIUS, REST backend, and SDN fabric roles.
 - **EdgeSec-RADIUS:** Authenticates devices and users, issues certificates, and updates NetBox metadata. Interfaces with Vault and REST backend.
 - **EdgeSec-REST:** Device enrollment backend, provides API/CLI for device onboarding, certificate requests, and metadata updates. Integrates with Vault and RADIUS.
-- **SDN Fabric:** Uses Ansible roles to automate network provisioning, can consume secrets from Vault and update device metadata via REST backend.
+- **EdgeSec-SDN Fabric:** Uses Ansible roles to automate network provisioning, can consume secrets from Vault and update device metadata via REST backend.
 - **NetBox:** Source of truth for device metadata, referenced by RADIUS and SDN fabric roles.
 
 ## Example Workflow

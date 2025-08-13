@@ -37,8 +37,9 @@ Automates mirroring of VM and Docker network traffic to a monitoring bridge for 
 - [docs/integration-guide.md](docs/integration-guide.md)
 
 
-### [Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric](Fabric_bootstrap.md)
-#### Proxmox SDN Fabric: Automated Multi-Site Spine-Leaf with OpenFabric
+
+### [edgesec-SDN](Fabric_bootstrap.md)
+#### edgesec-SDN
 
 **Overview:**
 Comprehensive Ansible framework for deploying a scalable, multi-site spine-leaf network fabric across Proxmox nodes and locations, powered by OpenFabric. Implements zero trust and microsegmentation strategies for hyper-converged infrastructure.
