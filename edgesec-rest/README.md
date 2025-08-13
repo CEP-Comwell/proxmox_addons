@@ -8,7 +8,8 @@ Implements the backend for device enrollment and integration, following clean ar
 - Integration hub and adapters for external systems (Vault, Authentik, etc.)
 - CLI runner and Jest tests
 
-See `import/edgesec-radius.md` for conceptual design.
+See [../import/edgesec-radius.md](../import/edgesec-radius.md) for conceptual design.
+
 ## Directory Structure
 - `src/application/` — Business logic and use cases
 - `src/infrastructure/` — Integrations, adapters, facades
@@ -50,4 +51,4 @@ See `import/edgesec-radius.md` for conceptual design.
   - Adapters (e.g., `DeviceAdapter.ts`) import settings from `src/config.ts`.
 
 ## References
-See `./import/edgesec-radius.md` for conceptual design and architecture.
+See [../import/edgesec-radius.md](../import/edgesec-radius.md) for conceptual design and architecture.
