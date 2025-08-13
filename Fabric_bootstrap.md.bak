@@ -161,66 +161,29 @@ Each role is designed for composability, enabling you to build a robust, multi-s
 
 ![Fabric Activation Workflow](blob/images/fabric_activation_workflow.png)
 
-
 ## VXLAN Overlay Structure
 
-The SDN fabric uses three primary bridges for strict segmentation:
+Each tenant is assigned dedicated VXLAN overlays for:
+- Management (vmbr0)
+- Engineering (vmbr0)
+- Support (vmbr0)
+- VM connectivity (vmbr1)
+- External connectivity (vmbr2)
 
-| Overlay Type   | Overlay Name      | VNI Example | Bridge   | Description/Role         |
-|---------------|-------------------|-------------|----------|-------------------------|
-| Management    | management        | 10100       | vmbr0    | Management traffic, RBAC, remote admin
-| Engineering   | engineering       | 10101       | vmbr0    | Engineering/ops traffic, RBAC
-| Support       | support           | 10102       | vmbr0    | Support/field ops, RBAC
-| VM/Service    | service           | 10110       | vmbr1    | Tenant VM/service overlay (one per host)
-| External      | external          | 10120       | vmbr2    | Tenant external/gateway overlay
-| DNS           | dns               | 9000        | vmbr1    | Common DNS overlay, RBAC/namespace
-| Monitoring    | monitoring        | 9001        | vmbr1    | Common monitoring overlay
-| Proxy         | proxy             | 9002        | vmbr1    | Proxy overlay for tenant services
-| Proxy Ext     | proxy_ext         | 9003        | vmbr2    | Proxy overlay for external access
-| Radius        | radius            | 9004        | vmbr2    | RADIUS overlay for external auth
-| REST          | rest              | 9005        | vmbr2    | REST API overlay for external access
-| Vault         | vault             | 9006        | vmbr2    | edgesec-VAULT overlay, RBAC/namespace
-| Ceph Pub      | ceph_pub          | 10030       | vmbr0    | Legacy Ceph public overlay
-| Ceph Cluster  | ceph_cluster      | 10031       | vmbr0    | Legacy Ceph cluster overlay
+Example:
+  tenant1_management   (vni: 10100, bridge: vmbr0)
+  tenant1_engineering  (vni: 10101, bridge: vmbr0)
+  tenant1_support      (vni: 10102, bridge: vmbr0)
+  tenant1_vm           (vni: 10110, bridge: vmbr1)
+  tenant1_external     (vni: 10120, bridge: vmbr2)
 
-**Notes:**
-- Each tenant (Proxmox host) has its own set of management, engineering, support, service, and external overlays, with unique VNIs.
-- Common service overlays (DNS, monitoring, proxy, vault, etc.) are present at each site and use RBAC and namespace controls for isolation.
-- `vmbr0` is strictly for management, engineering, and support overlays and legacy services.
-- `vmbr1` is for tenant VM/service overlays and common access overlays (DNS, monitoring, proxy).
-- `vmbr2` is for external connectivity, gateways, and external service overlays (proxy_ext, radius, rest, vault).
-- Microsegmentation and RBAC are enforced at every level (bridge, overlay, service) using Ansible and edgesec platform controls.
+Common services (e.g., DNS, monitoring) use universal overlays with reserved VNIs:
+  dns_service   (vni: 9000, bridge: vmbr0)
+  monitoring    (vni: 9001, bridge: vmbr0)
 
-### Example Overlay Assignment (Tenant 1)
-
-| Overlay Name         | VNI   | Bridge |
-|---------------------|-------|--------|
-| tenant1_management  | 10100 | vmbr0  |
-| tenant1_engineering | 10101 | vmbr0  |
-| tenant1_support     | 10102 | vmbr0  |
-| tenant1_service     | 10110 | vmbr1  |
-| tenant1_external    | 10120 | vmbr2  |
-
-### Common Service Overlays (per site)
-
-| Overlay Name | VNI   | Bridge | Description |
-|--------------|-------|--------|-------------|
-| dns          | 9000  | vmbr1  | DNS (RBAC, namespace)
-| monitoring   | 9001  | vmbr1  | Monitoring
-| proxy        | 9002  | vmbr1  | Proxy for tenant services
-| proxy_ext    | 9003  | vmbr2  | Proxy for external access
-| radius       | 9004  | vmbr2  | RADIUS for external auth
-| rest         | 9005  | vmbr2  | REST API for external access
-| vault        | 9006  | vmbr2  | edgesec-VAULT (RBAC, namespace)
-
-### Legacy Overlays
-
-| Overlay Name | VNI    | Bridge |
-|--------------|--------|--------|
-| ceph_pub     | 10030  | vmbr0  |
-| ceph_cluster | 10031  | vmbr0  |
-
-For a visual reference, see the architecture diagram and `blob/mmd/edgesec-single-tenant-bridges.mmd`.
+Legacy overlays (e.g., Ceph) are assigned to the management bridge for isolation:
+  ceph_pub      (vni: 10030, bridge: vmbr0)
+  ceph_cluster  (vni: 10031, bridge: vmbr0)
 
 ---
 
@@ -239,3 +202,4 @@ For a visual reference, see the architecture diagram and `blob/mmd/edgesec-singl
 
 - [EdgeSec Platform Architecture](docs/architecture.md)
 - [Ansible Vault Documentation](https://docs.ansible.com/ansible/latest/user_guide/vault.html)
+

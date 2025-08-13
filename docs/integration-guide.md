@@ -9,7 +9,7 @@ This guide explains how the major subprojects of the edgesec HCI platform intera
 - **edgesec-RADIUS:** Authenticates devices and users, issues certificates, and updates NetBox metadata. Interfaces with Vault and REST backend.
 - **edgesec-REST:** Device enrollment backend, provides API/CLI for device onboarding, certificate requests, and metadata updates. Integrates with Vault and RADIUS.
 - **edgesec-TAPx:** Modular traffic mirroring with SIEM-triggered full packet visibility. Integrates with SDN fabric and can be triggered by SIEM or security events for dynamic packet capture and analysis.
-- **edgesec-SDN Fabric:** Uses Ansible roles to automate network provisioning, can consume secrets from Vault and update device metadata via REST backend.
+- **edgesec-SDN:** Uses Ansible roles to automate network provisioning, can consume secrets from Vault and update device metadata via REST backend.
 - **NetBox:** Source of truth for device metadata, referenced by RADIUS and SDN fabric roles.
 
 ## Example Workflow
