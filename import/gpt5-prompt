@@ -1,0 +1,595 @@
+Prompt You are an expert engineer specialized in Infrastructure as code using tools like ansible, as well as a node.js backend for interfacing with REST API's with a redis cache and forward to interconnect business systems such as datto rmm and netbox. your objective is to create a modern AI driven framework that follows modular clean architecture priciples. Can you review this code(still within a conceptual design phase): https://github.com/CEP-Comwell/proxmox_addons and create a phased approach including: -infrastructure deployments using docker on proxmox; using either ansible(including cli commands) and/or the proxmox api, and - develop key services first which are dns, edgesec-VAULT credential store, followed by edgesec-REST backend, and with this information generate hostname, generate (naming convention:compliant suggestions) vni and vxlan assignments using netbox IPAM, and store device metadata in netbox , edgesec-RADIUS. Again this project is at a conceptual design phase, and I'm looking to develop the best strategy and explore the best way to achieve it in phases. 
+
+Reviewing project details 
+
+I am planning to review the GitHub repo content provided, formulate a phased approach with Docker and Proxmox, and incorporate key tools like Ansible, NetBox, and Vault for deployment and configuration. 
+
+Gathering documentation 
+
+I am preparing to search for relevant documentation on the GitHub repo URL, Proxmox API, Ansible modules, Vault, NetBox, and other tools like Redis and Node.js to inform the project approach. 
+
+Searching 
+
+OK, I'll search for 'site:github.com CEP-Comwell proxmox\_addons'... 
+
+Searching 
+
+OK, I'll search for 'Proxmox VE 9 API documentation'... 
+
+Searching 
+
+OK, I'll search for 'Ansible proxmox collection modules documentation'... 
+
+Searching 
+
+OK, I'll search for 'Proxmox SDN VXLAN documentation'... 
+
+Searching 
+
+OK, I'll search for 'NetBox API documentation pynetbox'... 
+
+Searching 
+
+OK, I'll search for 'HashiCorp Vault best practices AppRole tokens'... 
+
+Searching 
+
+OK, I'll search for 'CoreDNS deployment docker'... 
+
+Searching 
+
+OK, I'll search for 'Bind9 docker image best practices'... 
+
+Searching 
+
+OK, I'll search for 'NetBox IPAM VLAN VXLAN VNI documentation'... 
+
+Searching 
+
+OK, I'll search for 'FreeRADIUS Docker compose example'... 
+
+Searching 
+
+OK, I'll search for 'Proxmox deploy docker on VM LXC recommendations'... 
+
+Searching 
+
+OK, I'll search for 'Node.js clean architecture modular monorepo best practices'... 
+
+Searching 
+
+OK, I'll search for 'Datto RMM API documentation'... 
+
+Searching 
+
+OK, I'll search for 'Redis best practices docker production'... 
+
+Searching 
+
+OK, I'll search for 'Proxmox API create VM via CLI qm create examples'... 
+
+Reviewing code repository 
+
+I'll proceed by clicking into the GitHub repository to examine the code in more detail. 
+
+Retrying search attempt 
+
+The search attempt failed, so I'm trying again or performing a re-search to find relevant results. 
+
+Searching 
+
+OK, I'll search for 'CEP-Comwell proxmox\_addons GitHub'... 
+
+Searching 
+
+OK, I'll search for '"proxmox\_addons" GitHub CEP-Comwell'... 
+
+Searching 
+
+OK, I'll search for 'Christopher Peterson proxmox addons GitHub'... 
+
+Retrying repository access 
+
+I'm attempting to click on the repository listing again, as the earlier attempt failed. It might require a login, so I’ll give it another try. 
+
+Analyzing repo content 
+
+The repo seems minimal with only a README, license, and one commit. A phased approach for Proxmox infrastructure deployment using Docker, Ansible, and various services needs to be proposed. 
+
+Planning architecture and integrations 
+
+The architecture will involve modular Node.js services with Redis, BullMQ, and REST, potentially moving to gRPC. The naming conventions, VNI assignment formula, and NetBox integration with custom fields for VXLAN/VNI will be highlighted. 
+
+Searching 
+
+OK, I'll search for 'NetBox webhooks documentation'... 
+
+Searching 
+
+OK, I'll search for 'NetBox custom fields documentation'... 
+
+Searching 
+
+OK, I'll search for 'NetBox plugins jobs scripting documentation'... 
+
+Gathering citation sources 
+
+I've collected various sources for citations, including multiple Proxmox documentation, NetBox, Vault, CoreDNS, FreeRADIUS, and other technical resources. I'll consider searching through Proxmox qm CLI docs as well. 
+
+Searching 
+
+OK, I'll search for 'Proxmox qm CLI create VM documentation'... 
+
+Searching 
+
+OK, I'll search for 'Proxmox API tokens documentation'... 
+
+Searching 
+
+OK, I'll search for 'Proxmox VE cloud-init documentation create cloud-init template'... 
+
+Planning structured response 
+
+I’m structuring feedback based on a repo check, focusing on naming, repo setup, and module structure, followed by a phased roadmap for implementation starting with foundational decisions. 
+
+Drafting phased roadmap 
+
+I’m outlining further phases for the project, detailing services like DNS, Vault, Redis, and integration with NetBox, as well as adding observability and security considerations. 
+
+Finalizing response structure 
+
+I’m finalizing the structured response with clear headings, including a repo review, phased roadmap, architecture principles, VNI assignment, Ansible snippets, Docker Compose, and edgesec service scaffolding. I’m also noting risks and next actions/questions. 
+
+Christopher, I dug through your repo and then built a phased plan that gets you from “concept” to a clean, modular, AI‑assisted framework with NetBox as source‑of‑truth, Proxmox as the substrate, and an edgesec service stack (Vault → REST → RADIUS). I’ve woven in your IPv6‑only SDN with VXLAN overlays + IS‑IS/fabricd and highlighted what to automate with Ansible vs. the Proxmox API. 
+
+ 
+
+Quick repo review (what’s there today) 
+
+The proxmox_addons repo currently looks like an initial scaffold (license + README; 1 commit; no code yet). That’s perfect for setting conventions early before you accumulate tech debt.  1Recommendation: lock in structure and CI/CD in Phase 0 (below) so everything after inherits quality bars. 
+
+ 
+
+Principles & target architecture 
+
+Single source of truth: NetBox drives names, VRFs, VLANs, and VXLAN/VNI allocation; downstream systems reconcile to it. 
+
+Idempotent infra: Ansible for day‑0/1 host prep and service configuration; Proxmox API (or qm/pvesh) for VM/LXC lifecycle to keep infra declarative and scriptable.  2 3 4 
+
+Clean, modular services (Node.js): 
+
+edgesec-vault: small service/SDK wrapping Vault (AppRole + short‑lived batch tokens). 
+
+edgesec-rest: REST backend (Fastify or NestJS), Redis cache, NetBox integration, name/VNI allocators. 
+
+edgesec-radius: FreeRADIUS adapter (authz via edgesec-rest, secrets via Vault). 
+
+IPv6‑native + overlays: Use Proxmox SDN VXLAN zones and keep routing under FRR/fabricd/IS‑IS as you do today (note: complex routing via FRR controller integration is still “tech preview” per docs).  5 
+
+ 
+
+Phased roadmap 
+
+Phase 0 — Repo, CI, and conventions (1–2 days) 
+
+Goals: Make the repo(s) host future growth without pain. 
+
+Monorepo layout (example): 
+
+/infra /ansible 
+
+/proxmox # API utilities & scripts 
+
+/compose # per-service docker-compose 
+
+/services /edgesec-vault /edgesec-rest /edgesec-radius 
+
+/lib # shared TS libs (NetBox/Vault clients, naming/VNI alloc) 
+
+/docs 
+
+Standards: Conventional Commits + semantic‑release; ESLint/Prettier; pre-commit hooks; Renovate. 
+
+CI/CD: GitHub Actions—lint, test, build Docker images; publish to GHCR. 
+
+Secrets pattern: local dev uses .env with dummy values; in prod everything comes from Vault (AppRole + batch tokens). HashiCorp recommends AppRole with short‑lived tokens and minimal blast radius.  6 7 
+
+ 
+
+Phase 1 — Proxmox substrate & golden images (2–4 days) 
+
+Deliverables: 
+
+Cloud‑Init golden VM template (Ubuntu 24.04/22.04) with QEMU agent, Docker, and your baseline hardening. 
+
+Ansible inventory for Proxmox nodes + playbooks to prep nodes and provision service VMs. 
+
+API token + automation glue. 
+
+Key steps & references 
+
+Create Cloud‑Init template (CLI or Ansible): 
+
+Follow Proxmox Cloud‑Init guide; import a cloud image, set --scsihw, --net0, and convert to template for fast linked clones.  8 
+
+qm create, qm importdisk, qm set --ide2 cloudinit, qm template as per qm(1).  9 
+
+Automate via API or Ansible: 
+
+Use Proxmox API tokens (least privilege) for automation; pvesh exposes the REST API from CLI.  10 
+
+Ansible options: 
+
+community.general.proxmox (VM/LXC lifecycle) or the maxhoesel.proxmox collection (node/bootstrap tasks).  11 12 
+
+Example (Ansible) – clone a template VM and pass Cloud‑Init): 
+
+1     - name: Provision service VM 
+
+2       hosts: localhost 
+
+3       collections: [community.general] 
+
+4       tasks: 
+
+5         - name: Clone from template 
+
+6           community.general.proxmox_kvm: 
+
+7             api_host: "{{ pve_api_host }}" 
+
+8             api_user: "{{ pve_api_user }}" 
+
+9             api_token_id: "{{ pve_token_id }}" 
+
+10             api_token_secret: "{{ pve_token_secret }}" 
+
+11             node: "{{ pve_node }}" 
+
+12             name: "svc-dns-a-001" 
+
+13             vmid: 2101 
+
+14             clone: 9000                 # cloud-init template VMID 
+
+15             storage: "local-lvm" 
+
+16             cores: 2 
+
+17             memory: 2048 
+
+18             net: '{"net0":"virtio,bridge=vnet-dns"}' 
+
+19             ciuser: "ubuntu" 
+
+20             sshkeys: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}" 
+
+21             onboot: true 
+
+22      
+
+(Uses community collection for VM lifecycle.)  13 
+
+ 
+
+Phase 2 — Core services (DNS, Vault, NetBox, Redis, Postgres) (3–6 days) 
+
+Why these first? Naming, IPAM, and credential flows must exist before downstream services. 
+
+DNS 
+
+CoreDNS (lightweight, plugin‑driven) or BIND9 (if you need traditional zone tooling/AXFR). Official images exist for both.  14 15 16 
+
+For IPv6‑only, ensure CoreDNS/BIND is listening on :: and AAAA glue is present. 
+
+Minimal CoreDNS compose: 
+
+1     services: 
+
+2       coredns: 
+
+3         image: coredns/coredns:latest 
+
+4         command: ["-conf", "/etc/coredns/Corefile"] 
+
+5         volumes: 
+
+6           - ./Corefile:/etc/coredns/Corefile:ro 
+
+7           - ./zones:/zones:ro 
+
+8         network_mode: "host"     # or map 53/udp,53/tcp 
+
+9         restart: unless-stopped 
+
+10      
+
+(Official image availability & usage) 
+
+17 18 
+
+Vault (edgesec‑VAULT) 
+
+Enable AppRole, issue batch tokens, short TTLs, and narrow policies; avoid “proxy secrets” anti‑pattern.  19 20 
+
+Compose skeleton (single node to start; later HA with Raft): 
+
+1     services: 
+
+2       vault: 
+
+3         image: hashicorp/vault:latest 
+
+4         cap_add: [IPC_LOCK] 
+
+5         environment: 
+
+6           VAULT_LOCAL_CONFIG: | 
+
+7             { "backend": { "raft": { "path": "/vault/file" } }, 
+
+8               "listener": { "tcp": { "address": "0.0.0.0:8200","tls_disable": 1 } } } 
+
+9         ports: ["8200:8200"] 
+
+10         volumes: ["./vault:/vault"] 
+
+11      
+
+(Use AppRole: vault auth enable approle, vault write auth/approle/role/... token_type=batch ...) 
+
+21 
+
+NetBox + Postgres + Redis 
+
+Deploy official NetBox container stack; NetBox is the SoT for sites, tenants, VRFs, VLANs, prefixes, and custom fields (we’ll add VXLAN/VNI via custom fields). Docs: VLAN/IPAM features; pynetbox for automation; webhooks to trigger downstream config.  22 23 24 
+
+ 
+
+Phase 3 — Data model & automation in NetBox (2–4 days) 
+
+Goal: Make NetBox authoritative for hostname generation, VNI/VXLAN assignments, and device metadata. 
+
+Objects to define 
+
+Sites, locations, tenants. 
+
+VRFs (per tenant or per env), VLAN groups/VLANs. 
+
+Custom fields (since VXLAN/VNI not first‑class in NetBox core): 
+
+vni (integer), vxlan_zone (string), vnet_id (string), fabric_name (string).\ 
+
+NetBox supports custom fields on built‑in models. 
+
+25\ (Historical note: VXLAN/VNI isn’t a native first‑class entity; many folks add it via custom fields.)  26 
+
+Eventing 
+
+Use Webhooks to call edgesec-rest when a device/VM/VLAN/VRF is created/updated—payload includes object data via Jinja templating.  27 
+
+Automation client 
+
+For Python tasks (reports/one‑off jobs), use pynetbox (threaded mode is supported). For Node, call NetBox REST directly.  28 29 
+
+ 
+
+Phase 4 — edgesec‑REST (3–7 days) 
+
+Scope: 
+
+Clean architecture (domain/use‑case/adapters): 
+
+Domain: naming policy; VNI allocator; IPAM adapter; credentials broker. 
+
+Adapters: NetBox client; Vault client; Redis cache; RADIUS adapter. 
+
+Interface: REST (OpenAPI), background jobs (BullMQ), and webhook consumer. 
+
+Flows: 
+
+Generate hostname on VM provision request (from webhook or API): 
+
+Read context (site, role, env, sequence) from NetBox → apply naming template → write back to NetBox name. 
+
+Generate VNI/VXLAN for a VNet/VRF/VLAN: 
+
+Deterministic allocator: 
+
+Reserve ranges per purpose (e.g., 10000–19999 for mgmt, 20000–34999 for tenants). 
+
+Default formula: vni = base(env) + (vlan_id or hash(vrf_name) % block_size). 
+
+Persist vni to NetBox custom field; attach to VLAN/VRF as appropriate. 
+
+Create or update Proxmox SDN VNet with that VNI (via Ansible/Proxmox API).  30 
+
+Secrets: retrieve per‑service credentials via Vault AppRole → issue batch token with tight TTL for the operation.  31 
+
+Caching: Use Redis for read‑through cache of NetBox lookups and idempotency keys for webhook processing. 
+
+ 
+
+Phase 5 — edgesec‑RADIUS (2–4 days) 
+
+Deliverables: 
+
+Containerized FreeRADIUS (1812/1813/UDP) with configs mounted granularly (don’t replace the entire /etc/raddb or symlinked dirs—mount specific files to avoid module init errors).  32 33 
+
+Secrets (RADIUS shared secrets, DB creds) sourced at runtime from Vault (via edgesec-vault helper). 
+
+Compose sketch: 
+
+1     services: 
+
+2       freeradius: 
+
+3         image: freeradius/freeradius-server:latest 
+
+4         ports: ["1812:1812/udp","1813:1813/udp"] 
+
+5         volumes: 
+
+6           - ./raddb/clients.conf:/etc/freeradius/3.0/clients.conf:ro 
+
+7           - ./raddb/users:/etc/freeradius/3.0/users:ro 
+
+8         environment: 
+
+9           - RADIUS_SHARED_SECRET_FILE=/run/secrets/radius_key 
+
+10         secrets: 
+
+11           - radius_key 
+
+12         restart: unless-stopped 
+
+13     secrets: 
+
+14       radius_key: 
+
+15         file: ./secrets/radius.key 
+
+16      
+
+(Official image; mounting specific config files is a known working pattern.)  34 35Integration paths: 
+
+Accounting to Postgres if needed; optionally have edgesec-rest manage user/device policies and render FreeRADIUS users from NetBox metadata. 
+
+ 
+
+Phase 6 — Proxmox SDN & service wiring (2–4 days) 
+
+Define SDN zone (VXLAN), VNets, and subnets in PVE; program bridges for service VNets (dns, vault, mgmt, tenant overlays). Proxmox SDN VXLAN zones are supported; complex routing/FRR controllers remain tech preview—your fabricd/IS‑IS choice fits well here.  36 
+
+Automate VNet creation/updates from edgesec-rest via Ansible tasks or straight Proxmox REST (with API tokens).  37 
+
+ 
+
+Naming & addressing standards (proposed) 
+
+Hostnames 
+
+{scope}-{role}-{zone?}-{ordinal} 
+
+scope: svc (service), edge, pod, ctrl, or tenant code. 
+
+role: dns, vault, rest, rad. 
+
+zone: site/az code (sea1, den2, etc.) if you need multi‑site uniqueness. 
+
+Example: svc-dns-sea1-001, svc-vault-sea1-001, svc-rest-sea1-001, svc-rad-sea1-001. 
+
+edgesec-rest implements this as a templated policy and writes back to NetBox name. 
+
+VNI/VXLAN allocation (deterministic) 
+
+Reserve blocks: 
+
+10000–10999: fabric/internal 
+
+11000–12999: mgmt 
+
+20000–39999: tenant overlays 
+
+Allocator (example): 
+
+For mgmt VLAN x: vni = 11000 + x. 
+
+For tenant VRF T: vni = 20000 + (fnv1a64(T) % 20000). 
+
+Store in NetBox custom field vni on the VLAN or VRF. NetBox custom fields appear in the REST API and UI.  38 
+
+Note: VXLANs aren’t first‑class in NetBox core; the custom field approach is common.  39 
+
+ 
+
+NetBox integration examples 
+
+Custom fields (via API):\ Create a CF vni (integer) on models ipam.vlan and/or ipam.vrf. NetBox supports CFs on built‑ins and exposes them through its API.  40Webhooks:\ On created/updated events for VLAN/VRF/VM, POST to edgesec-rest with a Jinja2‑templated payload (e.g., site, role, vlan\_id, current name). Webhooks allow templated bodies with object data.  41Python jobs (optional):\ Run periodic NetBox scripts to audit missing VNIs or names (NetBox “custom scripts” + “background jobs” in plugins).  42 43 
+
+ 
+
+Proxmox provisioning options (which to use when) 
+
+Ansible: Faster to iterate; works great with Cloud‑Init templates; community.general.proxmox covers VM/LXC lifecycle; maxhoesel.proxmox helps with node/PBS management.  44 45 
+
+**Proxmox REST / pvesh / **qm: Use for finer control or where Ansible coverage lags; qm man page documents all creation flags (boot, disks, NICs, cloud‑init).  46 47 
+
+ 
+
+Service bootstraps (compose snippets) 
+
+Vault (single‑node dev or PoC; graduate to HA with Raft later). See Phase 2 sample. Best practice: AppRole with batch tokens and constrained policies for each service.  48CoreDNS vs BIND9: both have maintained images; CoreDNS is easier to plugin/extend (e.g., hosts, forward, cache).  49 50FreeRADIUS: official image; mount specific config files instead of replacing directories to avoid symlink/module init issues (community note).  51 52 
+
+ 
+
+edgesec service scaffolding (Node.js) 
+
+Tech stack: TypeScript, Fastify/NestJS, Zod for schema, OpenAPI, Redis (ioredis), BullMQ for jobs, node‑vault (or wrap curl; I usually write a tiny SDK), axios for NetBox REST, or a generated client from the OpenAPI. 
+
+Clean architecture: 
+
+/domain (policy + pure logic): HostnamePolicy, VniAllocator 
+
+/usecases: AllocateVniForVlan, GenerateHostnameForVm 
+
+/adapters: NetBoxClient, VaultClient, ProxmoxClient, RadiusConfigWriter 
+
+/interfaces: REST controllers + webhook handlers 
+
+Secrets: authenticate to Vault via AppRole at startup → exchange for short‑lived batch token; renew proactively; never persist static secrets. (HashiCorp guidance)  53 
+
+NetBox client: query/patch devices/VLANs; webhook idempotency via Redis keys. 
+
+Proxmox client: either call Ansible runner or direct API to create SDN VNets and attach bridges. Proxmox API docs & tokens.  54 
+
+ 
+
+Risks & decisions to lock down early 
+
+DNS engine: CoreDNS (pluginable, lightweight) vs. BIND9 (traditional).  55 56 
+
+Where to run services: Docker on VMs (my default) rather than LXCs for the services that need tighter kernel/user‑ns controls or where upstream expects cgroup features. (Your call if you want LXC for DNS/RADIUS.) 
+
+NetBox VNI modeling: custom fields + tags vs. a plugin. The custom field path is simplest; VXLAN/VNI has historically not been first‑class.  57 
+
+SDN control: Keep fabricd/IS‑IS; avoid FRR controller features until they graduate from tech preview.  58 
+
+ 
+
+Concrete “definition of done” per phase 
+
+P0: CI passes; repo scaffold merged; release pipeline publishes containers to GHCR. 
+
+P1: Golden template + Ansible playbook can spin svc-dns-* VM in one command. 
+
+P2: DNS, Vault, NetBox, Redis, Postgres running; Vault AppRole for edgesec-rest. 
+
+P3: NetBox has sites/VRFs/VLANs; custom fields defined; webhook → edgesec-rest call observable. 
+
+P4: edgesec-rest allocates hostnames & VNIs, writes back to NetBox, exposes OpenAPI. 
+
+P5: FreeRADIUS authenticates a test user; secrets delivered from Vault. 
+
+P6: Proxmox SDN VXLAN zone + VNet creation automated for new tenants/environments. 
+
+ 
+
+What I need from you to tailor this 
+
+DNS choice: CoreDNS or BIND9? (I’ll template either stack.)  59 60 
+
+VM vs LXC for service containers on Proxmox? (I’ll set the Ansible role accordingly.) 
+
+NetBox scope: Are you already on NetBox 3.6+? (For pynetbox threading & features.)  61 
+
+If you’d like, I can push: 
+
+An Ansible skeleton that: prepares a Proxmox node, creates the Cloud‑Init template, and provisions svc-dns-001, svc-vault-001, and svc-netbox-001. 
+
+A NetBox bootstrap script to create the custom fields and a few sample VLANs/VRFs. 
+
+The edgesec‑REST starter (Fastify + OpenAPI + Redis + Vault/NetBox clients) with the hostname/VNI allocators wired up. 
+
+Just say which DNS path and VM/LXC you prefer, and I’ll generate the initial code & playbooks. 
