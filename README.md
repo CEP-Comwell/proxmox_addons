@@ -8,8 +8,8 @@ It is organized into modular subprojects, each with its own documentation and ro
 ## 📦 Subprojects
 
 
-### [edgesec-TAPX](traffic_mirror.md)
-#### edgesec-TAPX
+### [edgesec-TAPx](traffic_mirror.md)
+#### edgesec-TAPx
 *Modular traffic mirroring with SIEM-triggered full packet visibility.*
 
 **Overview:**

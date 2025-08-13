@@ -1,4 +1,4 @@
-# edgesec-TAPX
+# edgesec-TAPx
 *Modular traffic mirroring with SIEM-triggered full packet visibility.*
 
 This subproject provides modular Ansible automation for mirroring both VM and Docker network traffic to a monitoring bridge (such as `brdpi`) on Proxmox hosts.  
