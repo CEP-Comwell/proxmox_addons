@@ -50,4 +50,4 @@ See `import/edgesec-radius.md` for conceptual design.
   - Adapters (e.g., `DeviceAdapter.ts`) import settings from `src/config.ts`.
 
 ## References
-See `/import/edgesec-radius.md` for conceptual design and architecture.
+See `./import/edgesec-radius.md` for conceptual design and architecture.
