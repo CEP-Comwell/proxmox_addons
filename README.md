@@ -232,6 +232,7 @@ npm start          # run compiled build
 
 ---
 
+
 ## 🗂 Directory Structure
 
 - `roles/` — Ansible roles for each feature or subproject
@@ -239,6 +240,27 @@ npm start          # run compiled build
 - `Fabric_bootstrap.md` — Documentation for the Proxmox SDN Fabric system
 - `config.yml` — Central configuration for playbooks
 - `inventory` — Ansible inventory file for your environment
+
+### edgesec-REST
+
+```
+edgesec-rest/
+├─ src/
+│  ├─ server.ts
+│  ├─ plugins/            # Fastify plugins (Datto, NetBox, NetBird, Proxmox, Ollama, Teams)
+│  ├─ routes/
+│  │  └─ v1/              # API routes grouped by version
+│  ├─ schemas/            # JSON Schemas for validation
+│  ├─ lib/                # Shared utilities
+│  └─ tests/              # Unit/integration tests
+├─ package.json
+├─ tsconfig.json
+├─ eslint.config.js       # ESLint v9 flat config
+├─ Dockerfile
+├─ docker-compose.yml     # Optional Ollama/OpenWebUI services
+└─ README.md
+```
+> **edgesec-REST**: Fastify v5 + TypeScript API hub for edge security automation. Integrates Datto RMM, NetBox, NetBird, Proxmox VE, Ollama, and Teams.
 
 ---
 
