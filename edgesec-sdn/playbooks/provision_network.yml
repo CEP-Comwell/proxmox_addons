@@ -1,0 +1,15 @@
+---
+- name: Provision Proxmox network overlays
+	hosts: proxmox_nodes
+	become: true
+
+	roles:
+		- underlay
+		- bgp
+		- vxlan
+		- ipam
+		- vm_nic
+		- nat
+		- proxy
+		- ceph_network
+

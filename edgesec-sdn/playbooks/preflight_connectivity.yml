@@ -1,0 +1,15 @@
+---
+- name: Preflight connectivity check between Proxmox hosts
+	hosts: proxmox
+	gather_facts: false
+	tasks:
+		- name: Ping all other Proxmox hosts
+			ansible.builtin.shell: ping -c1 -W1 {{ hostvars[item].ansible_host }}
+			loop: "{{ groups['proxmox'] | difference([inventory_hostname]) }}"
+			register: ping_results
+			failed_when: ping_results.failed
+			ignore_errors: false
+
+		- name: Show ping results
+			ansible.builtin.debug:
+				var: ping_results

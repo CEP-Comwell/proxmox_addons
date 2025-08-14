@@ -1,9 +1,0 @@
----
-- name: Bootstrap Site 3 Proxmox hosts
-  hosts: site3
-  become: true
-  roles:
-    - underlay
-    - vxlan
-    - frr
-    # Add other local roles as needed (ipam, vm_nic, etc.)
