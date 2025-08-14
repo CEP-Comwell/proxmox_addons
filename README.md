@@ -202,34 +202,33 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 - [edgesec-radius.md](edgesec-radius.md)
 - [docs/security-best-practices.md](docs/security-best-practices.md)
 
-### [edgesec-REST Backend](edgesec-rest/README.md)
-#### edgesec-REST Backend
 
-**Overview:**
-Device enrollment backend following clean architecture and facade patterns. Provides REST API, CLI runner, and Jest tests for device onboarding and management.
+### [edgesec-REST](edgesec-rest/README.md)
+#### edgesec-REST
 
-**Features:**
-- REST API for device enrollment and management
-- CLI runner for automation
-- Jest-based test suite
-- Facade pattern for integration
+A Fastify v5 + TypeScript API hub for edge security automation and orchestration.  
+Key integrations:
+- **Datto RMM**: Device inventory ingestion
+- **NetBox**: Source of truth for device metadata
+- **NetBird**: SDN and ACL automation
+- **Proxmox VE 9**: HCI orchestration (VM lifecycle, SDN, ZFS datasets)
+- **Ollama + OpenWebUI**: Local LLM inference (Mistral, etc.)
+- **Microsoft Teams**: Notifications via Graph API or Workflows webhooks
 
-**Quick Start:**
-1. See [edgesec-rest/README.md](edgesec-rest/README.md) for setup and usage.
-2. Configure backend settings in environment variables and config files.
-3. Run the backend and CLI tools as described in the documentation.
+**Tech Highlights**
+- Fastify v5 with JSON Schema validation
+- Plugin-based architecture for connectors
+- Node.js 20+, TypeScript, ESLint v9 flat config
+- Docker & Docker Compose support (optional Ollama/OpenWebUI services)
 
-**Configuration Options:**
-- Environment variables for backend settings
-- Config files for API and CLI options
-
-**Integration Points:**
-- Integrates with edgesec-RADIUS for device authentication
-- Supports SDN Fabric for network provisioning
-
-**References:**
-- [edgesec-rest/README.md](edgesec-rest/README.md)
-- [docs/architecture.md](docs/architecture.md)
+**Quick Start**
+```bash
+cd edgesec-rest
+npm ci
+npm run dev        # start dev server
+npm run build      # compile TypeScript
+npm start          # run compiled build
+```
 
 ---
 
