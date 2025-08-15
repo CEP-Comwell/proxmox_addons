@@ -204,6 +204,28 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 <!-- - [docs/security-best-practices.md](docs/security-best-practices.md) -->
 
 
+### [edgesec-VAULT](edgesec-vault/README.md)
+#### edgesec-VAULT
+
+A HashiCorp Vault deployment for the edgesec HCI platform, serving as the central source of truth for all credentials and secrets. Designed for multi-tenant environments and integrates with the Proxmox SDN Fabric and all edgesec platform components.
+
+**Features:**
+- Centralized secrets management for edgesec HCI
+- Multi-tenant isolation using Vault namespaces
+- Integrates with edgesec-RADIUS, edgesec-REST, and other platform services
+- Easy deployment via Docker Compose
+
+**Quick Start:**
+1. See [edgesec-vault/README.md](edgesec-vault/README.md) for setup and usage.
+2. Start Vault with Docker Compose and initialize/unseal as described.
+3. Create tenant namespaces and configure PKI, policies, and authentication as needed.
+
+**References:**
+- [Vault Namespaces Documentation](https://developer.hashicorp.com/vault/docs/enterprise/namespaces)
+- [Vault Docker Documentation](https://hub.docker.com/_/vault)
+- [edgesec-vault/README.md](edgesec-vault/README.md)
+
+
 ### [edgesec-REST](edgesec-rest/README.md)
 #### edgesec-REST
 
@@ -231,64 +253,61 @@ npm run build      # compile TypeScript
 npm start          # run compiled build
 ```
 
-### [edgesec-VAULT](edgesec-vault/README.md)
-#### edgesec-VAULT
-
-A HashiCorp Vault deployment for the edgesec HCI platform, serving as the central source of truth for all credentials and secrets. Designed for multi-tenant environments and integrates with the Proxmox SDN Fabric and all edgesec platform components.
-
-**Features:**
-- Centralized secrets management for edgesec HCI
-- Multi-tenant isolation using Vault namespaces
-- Integrates with edgesec-RADIUS, edgesec-REST, and other platform services
-- Easy deployment via Docker Compose
-
-**Quick Start:**
-1. See [edgesec-vault/README.md](edgesec-vault/README.md) for setup and usage.
-2. Start Vault with Docker Compose and initialize/unseal as described.
-3. Create tenant namespaces and configure PKI, policies, and authentication as needed.
-
-**References:**
-- [Vault Namespaces Documentation](https://developer.hashicorp.com/vault/docs/enterprise/namespaces)
-- [Vault Docker Documentation](https://hub.docker.com/_/vault)
-- [edgesec-vault/README.md](edgesec-vault/README.md)
-
 ---
+
 
 ## 🗂 Directory Structure
 
-- `roles/` — Ansible roles for each feature or subproject
-- [edgesec-vault/README.md](edgesec-vault/README.md) — Documentation for VM & Docker traffic mirroring
-- `Fabric_bootstrap.md` — Documentation for the Proxmox SDN Fabric system
-- `config.yml` — Central configuration for playbooks
-- `inventory` — Ansible inventory file for your environment
-
-### edgesec-REST
-
 ```
-edgesec-rest/
-├─ src/
-│  ├─ server.ts
-│  ├─ plugins/            # Fastify plugins (Datto, NetBox, NetBird, Proxmox, Ollama, Teams)
-│  ├─ routes/
-│  │  └─ v1/              # API routes grouped by version
-│  ├─ schemas/            # JSON Schemas for validation
-│  ├─ lib/                # Shared utilities
-│  └─ tests/              # Unit/integration tests
-├─ package.json
-├─ tsconfig.json
-├─ eslint.config.js       # ESLint v9 flat config
-├─ Dockerfile
-├─ docker-compose.yml     # Optional Ollama/OpenWebUI services
-└─ README.md
+proxmox_addons/
+├── config.yml                # Central configuration for all playbooks and roles
+├── inventory                 # Ansible inventory for your environment
+├── group_vars/               # Group variables for Ansible
+├── host_vars/                # Host-specific variables for Ansible
+├── roles/                    # Shared and project-specific Ansible roles
+│
+├── edgesec-tapx/             # Modular traffic/probe automation (VM, Docker, VXLAN, HCI agent)
+│   ├── playbooks/
+│   ├── roles/
+│   └── README.md
+│
+├── edgesec-sdn/              # SDN fabric automation (multi-site, overlays, microsegmentation)
+│   ├── playbooks/
+│   ├── roles/
+│   └── README.md
+│
+├── edgesec-radius/           # Multi-tenant RADIUS authentication and device onboarding
+│   ├── playbooks/
+│   ├── roles/
+│   └── README.md
+│
+├── edgesec-vault/            # HashiCorp Vault deployment for secrets management
+│   ├── docker-compose.yml
+│   └── README.md
+│
+├── edgesec-rest/             # Core integration hub (Fastify v5 + TypeScript API)
+│   ├── src/
+│   │   ├── server.ts
+│   │   ├── plugins/
+│   │   ├── routes/
+│   │   ├── schemas/
+│   │   ├── lib/
+│   │   └── tests/
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── README.md
+│
+├── Fabric_bootstrap.md       # SDN fabric documentation
+├── ...other docs...
+└── README.md                 # Main project overview (this file)
 ```
-> **edgesec-REST**: Fastify v5 + TypeScript API hub for edge security automation. Integrates Datto RMM, NetBox, NetBird, Proxmox VE, Ollama, and Teams.
 
----
+**Key Integration Hub:**  
+- `edgesec-rest/` is the central API and automation hub, integrating with all other subprojects (Vault, SDN, TAPx, RADIUS) and external systems (NetBox, Datto RMM, NetBird, etc).
 
-## 🚀 Getting Started
-
-Each subproject has its own quick start and requirements.  
-See [edgesec-vault/README.md](edgesec-vault/README.md) and [Fabric_bootstrap.md](Fabric_bootstrap.md) for details.
+**Each subproject** has its own `README.md` and quick start, with roles and playbooks organized for modular use and cross-integration.
 
 ---
 
