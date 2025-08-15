@@ -11,8 +11,10 @@ It is organized into modular subprojects, each with its own documentation and ro
 
 ## 🛰️ [edgesec-TAPx](edgesec-tapx/README.md)
 *Modular traffic and probe automation for full packet visibility and DPI in Proxmox and Docker environments.*
+
+
 <details>
-  <summary>   
+  <summary> 
 
 **Overview:**
 Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traffic to a monitoring bridge for DPI, IDS, or security analysis. Supports dynamic discovery and persistent setup of tap, Docker, and VXLAN interfaces, with modular roles for each probe type.
@@ -23,7 +25,7 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 - Persistent traffic mirroring and probe routines for DPI/IDS
 - Automated cleanup routines for each probe role
 - Modular, extensible Ansible roles for each probe type
-</summary>
+  </summary>
 
 **Quick Start:**
 1. See [edgesec-tapx/README.md](edgesec-tapx/README.md) for setup instructions and usage details.
