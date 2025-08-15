@@ -38,8 +38,7 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 
 **References:**
 - [edgesec-tapx/README.md](edgesec-tapx/README.md)
-- [docs/integration-guide.md](docs/integration-guide.md)
-
+<!-- - [docs/integration-guide.md](docs/integration-guide.md) -->
 
 
 ### [edgesec-SDN](Fabric_bootstrap.md)
@@ -171,8 +170,8 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 
 **References:**
 - [Fabric_bootstrap.md](Fabric_bootstrap.md)
-- [docs/architecture.md](docs/architecture.md)
-- [docs/integration-guide.md](docs/integration-guide.md)
+<!-- - [docs/architecture.md](docs/architecture.md) -->
+<!-- - [docs/integration-guide.md](docs/integration-guide.md) -->
 
 ### [edgesec-RADIUS](edgesec-radius/README.md)
 #### edgesec-RADIUS
@@ -188,7 +187,7 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 - NetBox asset management
 
 **Quick Start:**
-1. Review [edgesec-radius.md](edgesec-radius/README.md) for setup and requirements.
+1. Review [edgesec-radius/README.md](edgesec-radius/README.md) for setup and requirements.
 2. Configure tenants and secrets in Vault and Ansible variables.
 3. Deploy the role using the provided playbooks.
 
@@ -201,8 +200,8 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 - Integrates with edgesec-REST for device onboarding
 
 **References:**
-- [edgesec-radius.md](edgesec-radius/README.md)
-- [docs/security-best-practices.md](docs/security-best-practices.md)
+- [edgesec-radius/README.md](edgesec-radius/README.md)
+<!-- - [docs/security-best-practices.md](docs/security-best-practices.md) -->
 
 
 ### [edgesec-REST](edgesec-rest/README.md)
@@ -232,13 +231,33 @@ npm run build      # compile TypeScript
 npm start          # run compiled build
 ```
 
----
+### [edgesec-VAULT](edgesec-vault/README.md)
+#### edgesec-VAULT
 
+A HashiCorp Vault deployment for the edgesec HCI platform, serving as the central source of truth for all credentials and secrets. Designed for multi-tenant environments and integrates with the Proxmox SDN Fabric and all edgesec platform components.
+
+**Features:**
+- Centralized secrets management for edgesec HCI
+- Multi-tenant isolation using Vault namespaces
+- Integrates with edgesec-RADIUS, edgesec-REST, and other platform services
+- Easy deployment via Docker Compose
+
+**Quick Start:**
+1. See [edgesec-vault/README.md](edgesec-vault/README.md) for setup and usage.
+2. Start Vault with Docker Compose and initialize/unseal as described.
+3. Create tenant namespaces and configure PKI, policies, and authentication as needed.
+
+**References:**
+- [Vault Namespaces Documentation](https://developer.hashicorp.com/vault/docs/enterprise/namespaces)
+- [Vault Docker Documentation](https://hub.docker.com/_/vault)
+- [edgesec-vault/README.md](edgesec-vault/README.md)
+
+---
 
 ## 🗂 Directory Structure
 
 - `roles/` — Ansible roles for each feature or subproject
-- `traffic_mirror.md` — Documentation for VM & Docker traffic mirroring
+- [edgesec-vault/README.md](edgesec-vault/README.md) — Documentation for VM & Docker traffic mirroring
 - `Fabric_bootstrap.md` — Documentation for the Proxmox SDN Fabric system
 - `config.yml` — Central configuration for playbooks
 - `inventory` — Ansible inventory file for your environment
@@ -269,7 +288,7 @@ edgesec-rest/
 ## 🚀 Getting Started
 
 Each subproject has its own quick start and requirements.  
-See [traffic_mirror.md](traffic_mirror.md) and [Fabric_bootstrap.md](Fabric_bootstrap.md) for details.
+See [edgesec-vault/README.md](edgesec-vault/README.md) and [Fabric_bootstrap.md](Fabric_bootstrap.md) for details.
 
 ---
 
