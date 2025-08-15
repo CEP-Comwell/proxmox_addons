@@ -60,6 +60,7 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 	- `vmbr2` (External, right): Connects to external gateways and legacy VLANs, and provides external access overlays (proxy_ext, external).
 - Overlays (VXLANs) are mapped to these bridges for isolation and segmentation, as shown in the architecture diagram below.
 
+ </summary>
 
 **Reference Diagram (Mermaid):**
 ```mermaid
@@ -157,8 +158,7 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 - Zero trust, microsegmentation, and RBAC support
 - Dynamic inventory and network map generation
 	- Integration with edgesec-VAULT for secrets management
- </summary>
- 
+
 **Quick Start:**
 1. Review [Fabric_bootstrap.md](Fabric_bootstrap.md) for prerequisites and setup steps.
 2. Configure your environment in `inventory` and `config.yml`, ensuring bridge and overlay assignments match the diagram.
