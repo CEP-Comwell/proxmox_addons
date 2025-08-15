@@ -16,6 +16,7 @@
   ├── Fabric_bootstrap.md
   └── README.md
   ```
+  </details>
 
 <img src="blob/images/edgesec.png" alt="edgesec logo" width="240" align="right"/>  
 
