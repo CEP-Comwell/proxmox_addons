@@ -1,6 +1,21 @@
 <details>
-  <summary>📁 Project Directory Structure</summary>
-</details>
+  <summary>📂 Directory Structure</summary>
+
+  ```text
+  proxmox_addons/
+  ├── config.yml
+  ├── inventory/
+  ├── group_vars/
+  ├── host_vars/
+  ├── roles/
+  │   ├── edgesec-tapx/
+  │   ├── edgesec-sdn/
+  │   ├── edgesec-radius/
+  │   ├── edgesec-vault/
+  │   └── edgesec-rest/
+  ├── Fabric_bootstrap.md
+  └── README.md
+  ```
 
 <img src="blob/images/edgesec.png" alt="edgesec logo" width="240" align="right"/>  
 
