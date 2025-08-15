@@ -1,23 +1,3 @@
-<details>
-  <summary>📂 Directory Structure</summary>
-
-  ```text
-  proxmox_addons/
-  ├── config.yml
-  ├── inventory/
-  ├── group_vars/
-  ├── host_vars/
-  ├── roles/
-  │   ├── edgesec-tapx/
-  │   ├── edgesec-sdn/
-  │   ├── edgesec-radius/
-  │   ├── edgesec-vault/
-  │   └── edgesec-rest/
-  ├── Fabric_bootstrap.md
-  └── README.md
-  ```
-  </details>
-
 <img src="blob/images/edgesec.png" alt="edgesec logo" width="240" align="right"/>  
 
 
@@ -292,8 +272,10 @@ npm start          # run compiled build
 ## 🗂 Directory Structure
 
 > **Note:** Each subproject has its own `README.md` and quick start. Roles and playbooks are organized for modular use and cross-integration. The `edgesec-rest` directory is the core integration hub.
+<details>
+  <summary>📂 Directory Structure</summary>
 
-```
+  ```text
 proxmox_addons/
 ├── config.yml                # Central configuration for all playbooks and roles
 ├── inventory                 # Ansible inventory for your environment
@@ -337,6 +319,8 @@ proxmox_addons/
 ├── Fabric_bootstrap.md       # SDN fabric documentation
 ├── ...other docs...
 └── README.md                 # Main project overview (this file)
+```
+  </details>
 ```
 
 **Key Integration Hub:**  
