@@ -1,0 +1,28 @@
+---
+- hosts: all
+  become: true
+  roles:
+    - role: docker_app_deploy
+      vars:
+        app_name: dashy
+        image: lissy93/dashy:latest
+        env_vars:
+          NODE_ENV: "production"
+          UID: "1000"
+          GID: "1000"
+        volumes:
+          - ./conf.yml:/app/public/conf.yml:ro
+          - ./data:/data
+        ports:
+          - "8081:80"
+        docker_app_deploy__traefik_router_host: "dashy.mydomain.com"
+        docker_app_deploy__traefik_entrypoints: "websecure"
+        docker_app_deploy__traefik_labels_extra:
+          - "traefik.http.routers.dashy.tls=true"
+          - "traefik.http.routers.dashy.middlewares=authentik@docker"
+        configs:
+          - src: conf.yml.j2
+            dest: /opt/dashy/conf.yml
+            mode: "0640"
+        vault_secrets:
+          dashy_conf: "secret/data/dashy/conf conf"

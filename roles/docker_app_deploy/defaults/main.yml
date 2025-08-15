@@ -1,0 +1,19 @@
+# Universal defaults for docker_app_deploy role
+app_name: ""
+image: ""
+env_vars: {}
+volumes: []
+ports: []
+labels: []
+configs: []
+vault_secrets: {}
+use_portainer: false
+portainer_url: ""
+portainer_token: ""
+
+# Traefik integration
+docker_app_deploy__traefik_enable: true
+docker_app_deploy__traefik_router_host: "{{ app_name }}.example.com"
+docker_app_deploy__traefik_entrypoints: "web"
+docker_app_deploy__traefik_service_port: "{{ (ports[0].split(':')[1]) if ports|length > 0 else '80' }}"
+docker_app_deploy__traefik_labels_extra: []

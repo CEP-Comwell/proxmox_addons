@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  {{ app_name }}:
+    image: {{ image }}
+    container_name: {{ app_name }}
+    environment:
+      {% for key, value in env_vars.items() %}
+      {{ key }}: "{{ value }}"
+      {% endfor %}
+    volumes:
+      {% for volume in volumes %}
+      - {{ volume }}
+      {% endfor %}
+    ports:
+      {% for port in ports %}
+      - "{{ port }}"
+      {% endfor %}
+    restart: unless-stopped
+    labels:
+      {% if docker_app_deploy__traefik_enable %}
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ app_name }}.rule=Host(`{{ docker_app_deploy__traefik_router_host }}`)"
+      - "traefik.http.routers.{{ app_name }}.entrypoints={{ docker_app_deploy__traefik_entrypoints }}"
+      - "traefik.http.services.{{ app_name }}.loadbalancer.server.port={{ docker_app_deploy__traefik_service_port }}"
+      {% for label in docker_app_deploy__traefik_labels_extra %}
+      - "{{ label }}"
+      {% endfor %}
+      {% endif %}
+      {% for label in labels %}
+      - "{{ label }}"
+      {% endfor %}

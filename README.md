@@ -232,6 +232,38 @@ A HashiCorp Vault deployment for the edgesec HCI platform, serving as the centra
 
 ---
 
+## 🐳 [edgesec-DEPLOY](/edgesec-deploy/README.md)
+*Universal, Vault-integrated Docker app deployment with Traefik and Portainer support.*
+
+**Overview:**
+This module provides a universal Ansible role for deploying any Dockerized application securely and flexibly. It supports dynamic docker-compose generation, HashiCorp Vault secret injection, Traefik label auto-injection for reverse proxying, and Portainer or native Compose deployment. App-specific config templating is also supported.
+
+**Features:**
+- Deploy any Docker app by setting variables (no code changes needed)
+- Dynamic Compose file generation
+- Secure secret injection from Vault
+- Traefik-ready by default (auto-labeling)
+- Portainer or native Compose deployment
+- App config templating with Jinja2
+
+**Quick Start:**
+1. See [edgesec-deploy/README.md](edgesec-deploy/README.md) for setup and usage.
+2. Add app-specific config templates to `roles/docker_app_deploy/templates/` as needed.
+3. Set per-app variables in your playbook, `group_vars/`, or `host_vars/`.
+4. Deploy with a single command:
+	 ```sh
+	 # Example: Deploy Plex with this universal role
+	 ansible-playbook -i inventory edgesec-deploy/edgesec-deploy-docker.yml \
+		 -e app_name=plex \
+		 -e image=linuxserver/plex
+	 ```
+
+**Integration Points:**
+- Works with Vault for secrets
+- Traefik for reverse proxying
+- Portainer for container management
+
+---
 ## 🧩 [edgesec-REST](edgesec-rest/README.md)
 *Fastify v5 + TypeScript API hub for edge security automation and orchestration.*
 

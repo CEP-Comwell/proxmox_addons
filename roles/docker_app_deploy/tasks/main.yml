@@ -1,0 +1,3 @@
+---
+- import_tasks: fetch_secrets.yml
+- import_tasks: deploy_app.yml
