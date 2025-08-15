@@ -8,23 +8,24 @@ It is organized into modular subprojects, each with its own documentation and ro
 ## 📦 Subprojects
 
 
-### [edgesec-TAPx](traffic_mirror.md)
+### [edgesec-TAPx](edgesec-tapx/README.md)
 #### edgesec-TAPx
-*Modular traffic mirroring with SIEM-triggered full packet visibility.*
+*Modular traffic and probe automation for full packet visibility and DPI in Proxmox and Docker environments.*
 
 **Overview:**
-Automates mirroring of VM and Docker network traffic to a monitoring bridge for DPI, IDS, or security analysis. Supports dynamic discovery and persistent setup of tap and Docker bridge interfaces.
+Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traffic to a monitoring bridge for DPI, IDS, or security analysis. Supports dynamic discovery and persistent setup of tap, Docker, and VXLAN interfaces, with modular roles for each probe type.
 
 **Features:**
-- Dynamic tap and Docker bridge discovery
+- Dynamic discovery of VM, Docker, and VXLAN interfaces
 - Automated veth/bridge setup and teardown
-- Persistent traffic mirroring for DPI/IDS
-- Automated cleanup routines
+- Persistent traffic mirroring and probe routines for DPI/IDS
+- Automated cleanup routines for each probe role
+- Modular, extensible Ansible roles for each probe type
 
 **Quick Start:**
-1. See [traffic_mirror.md](traffic_mirror.md) for setup instructions.
+1. See [edgesec-tapx/README.md](edgesec-tapx/README.md) for setup instructions and usage details.
 2. Configure monitoring bridge and interfaces in `config.yml`.
-3. Run the relevant playbooks to enable mirroring.
+3. Run the relevant probe playbooks to enable mirroring and traffic analysis.
 
 **Configuration Options:**
 - Monitoring bridge and interface settings in `config.yml`
@@ -33,9 +34,10 @@ Automates mirroring of VM and Docker network traffic to a monitoring bridge for 
 **Integration Points:**
 - Integrates with SDN Fabric for network topology
 - Supports DPI/IDS tools via mirrored traffic
+- Designed for orchestration via edgesec-REST API
 
 **References:**
-- [traffic_mirror.md](traffic_mirror.md)
+- [edgesec-tapx/README.md](edgesec-tapx/README.md)
 - [docs/integration-guide.md](docs/integration-guide.md)
 
 
@@ -172,7 +174,7 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 - [docs/architecture.md](docs/architecture.md)
 - [docs/integration-guide.md](docs/integration-guide.md)
 
-### [edgesec-RADIUS](edgesec-radius.md)
+### [edgesec-RADIUS](edgesec-radius/README.md)
 #### edgesec-RADIUS
 
 **Overview:**
@@ -186,7 +188,7 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 - NetBox asset management
 
 **Quick Start:**
-1. Review [edgesec-radius.md](edgesec-radius.md) for setup and requirements.
+1. Review [edgesec-radius.md](edgesec-radius/README.md) for setup and requirements.
 2. Configure tenants and secrets in Vault and Ansible variables.
 3. Deploy the role using the provided playbooks.
 
@@ -199,7 +201,7 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 - Integrates with edgesec-REST for device onboarding
 
 **References:**
-- [edgesec-radius.md](edgesec-radius.md)
+- [edgesec-radius.md](edgesec-radius/README.md)
 - [docs/security-best-practices.md](docs/security-best-practices.md)
 
 
