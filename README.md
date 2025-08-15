@@ -9,7 +9,7 @@ It is organized into modular subprojects, each with its own documentation and ro
 
 ---
 
-## 🚦 edgesec-TAPx
+## 🛰️ edgesec-TAPx
 
 ### [edgesec-TAPx](edgesec-tapx/README.md)
 *Modular traffic and probe automation for full packet visibility and DPI in Proxmox and Docker environments.*
@@ -45,7 +45,7 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 
 ---
 
-## 🌐 edgesec-SDN
+## 🕸️ edgesec-SDN
 
 ### [edgesec-SDN](Fabric_bootstrap.md)
 *Comprehensive SDN fabric automation for scalable, multi-site Proxmox deployments.*
@@ -178,7 +178,7 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 
 ---
 
-## 🔐 edgesec-RADIUS
+## 🆔 edgesec-RADIUS
 
 ### [edgesec-RADIUS](edgesec-radius/README.md)
 *Multi-tenant, certificate-based authentication and device onboarding.*
@@ -213,7 +213,7 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 
 ---
 
-## 🗝️ edgesec-VAULT
+## 🛡️ edgesec-VAULT
 
 ### [edgesec-VAULT](edgesec-vault/README.md)
 *Centralized secrets management for the edgesec HCI platform using HashiCorp Vault.*
