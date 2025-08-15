@@ -1,4 +1,4 @@
-<img src="blob/images/edgesec.png" alt="edgesec logo" width="180" align="right"/>  
+<img src="blob/images/edgesec.png" alt="edgesec logo" width="240" align="right"/>  
 
 
 
