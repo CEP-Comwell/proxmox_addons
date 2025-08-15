@@ -197,7 +197,6 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 |:------------------|:--------------|:------------------------|:-----------:|
 | services          | dns           | Common DNS overlay, RBAC/namespace | 9000 |
 | services          | monitoring    | Common monitoring overlay | 9001 |
-| services          | vault         | edgesec-VAULT overlay, RBAC/namespace | 9006 |
 | services          | rest          | REST API overlay for external access | 9005 |
 | services          | radius        | RADIUS overlay for external auth | 9004 |
 | tenant            | vm/service    | Tenant VM/service overlay (one per host) | 10110 |
