@@ -1,6 +1,6 @@
 <table width="100%">
 <tr>
-<td align="center" style="font-size:2em; font-weight:bold;">PROXMOX_ADDONS</td>
+<td align="center" style="font-size:2em; font-weight:bold;"> # PROXMOX_ADDONS</td>
 <td align="right" width="120">
 <img src="blob/images/edgesec.png" alt="edgesec logo" width="120"/>
 </td>
