@@ -8,6 +8,10 @@ It is organized into modular subprojects, each with its own documentation and ro
 
 ## 🧬 Integration Modules
 ---
+<details>
+  <summary> edgesec_TAPx</summary>
+</details>
+
 ## 🛰️ [edgesec-TAPx](edgesec-tapx/README.md)
 *Modular traffic and probe automation for full packet visibility and DPI in Proxmox and Docker environments.*
 
@@ -39,7 +43,7 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 - [edgesec-tapx/README.md](edgesec-tapx/README.md)
 <!-- - [docs/integration-guide.md](docs/integration-guide.md) -->
 
-
+</details>
 ---
 
 ## 🕸️ [edgesec-SDN](Fabric_bootstrap.md)
