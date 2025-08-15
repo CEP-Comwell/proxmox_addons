@@ -50,6 +50,8 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 
 ## 🕸️ [edgesec-SDN](Fabric_bootstrap.md)
 *Comprehensive SDN fabric automation for scalable, multi-site Proxmox deployments.*
+<details>
+  <summary> 
 
 **Network Architecture:**
 - The SDN fabric is built around three primary bridges:
@@ -155,7 +157,8 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 - Zero trust, microsegmentation, and RBAC support
 - Dynamic inventory and network map generation
 	- Integration with edgesec-VAULT for secrets management
-
+ </summary>
+ 
 **Quick Start:**
 1. Review [Fabric_bootstrap.md](Fabric_bootstrap.md) for prerequisites and setup steps.
 2. Configure your environment in `inventory` and `config.yml`, ensuring bridge and overlay assignments match the diagram.
