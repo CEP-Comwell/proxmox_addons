@@ -93,7 +93,6 @@ graph LR
 	MgmtBridge --> VMBridge --> ExtBridge
 
 	%% Service VMs to bridges
-	VaultVM --> MgmtBridge
 	MonitorVM --> MgmtBridge
 	RestVM --> VMBridge
 	RadiusVM --> VMBridge
