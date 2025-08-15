@@ -8,7 +8,6 @@ graph LR
   VMBridge[vmbr1 - VM Bridge]
   ExtBridge[vmbr2 - External Bridge]
 
-
   %% Services
   VaultVM[edgesec-vault]
   RestVM[edgesec-rest]
@@ -40,8 +39,6 @@ graph LR
   %% Explicit bridge ordering
   MgmtBridge --> VMBridge --> ExtBridge
 
-
-
   %% Service VMs to bridges
   VaultVM --> MgmtBridge
   RestVM --> VMBridge
@@ -49,7 +46,6 @@ graph LR
   DNSVM --> VMBridge
   ProxyVM --> VMBridge
   ProxyVM --> ExtBridge
-
 
   %% VM Bridge overlays (tenant/service and core services)
   VMBridge --> VX10110
@@ -59,14 +55,12 @@ graph LR
   VMBridge --> VX9005
   VMBridge --> VX9006
 
-
   %% Management Bridge overlays (management, engineering, support, storage)
   MgmtBridge --> VX10100
   MgmtBridge --> VX10101
   MgmtBridge --> VX10102
   MgmtBridge --> VXCEPH1
   MgmtBridge --> VXCEPH2
-
 
   %% VXLANs to fabricd
   VX10100 --> Fabricd
@@ -82,7 +76,6 @@ graph LR
   VX10120 --> Fabricd
   VXCEPH1 --> Fabricd
   VXCEPH2 --> Fabricd
-
 
   %% External Bridge overlays (external, proxy_ext)
   ExtBridge --> VX9003
