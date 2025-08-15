@@ -60,7 +60,8 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 	- `vmbr2` (External, right): Connects to external gateways and legacy VLANs, and provides external access overlays (proxy_ext, external).
 - Overlays (VXLANs) are mapped to these bridges for isolation and segmentation, as shown in the architecture diagram below.
 
- </summary>
+  </summary>
+</details>
 
 **Reference Diagram (Mermaid):**
 ```mermaid
