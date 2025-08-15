@@ -3,8 +3,6 @@
 <td>
 
 # PROXMOX_ADDONS
-
-</td>
 <td align="right">
 <img src="blob/images/edgesec.png" alt="edgesec logo" width="120"/>
 </td>
