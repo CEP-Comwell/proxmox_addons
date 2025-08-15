@@ -179,6 +179,7 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 - **vmbr1 (VM/Services, center):** Hosts tenant/service overlays and all core service overlays (DNS, Monitoring, Vault, REST, RADIUS).
 - **vmbr2 (External, right):** Connects to external gateways and legacy VLANs, and provides external access overlays (proxy_ext, external).
 
+
 **vmbr0 (Management Bridge)**
 
 | 🟦 overlay name   | overlay type   | Description/Role         | VNI Example |
@@ -188,6 +189,7 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 | support           | support       | Support/field ops, RBAC | 10102 |
 | ceph_pub          | ceph pub      | Storage overlay (Ceph public) | 10030 |
 | ceph_cluster      | ceph cluster  | Storage overlay (Ceph cluster) | 10031 |
+| core-services     | core services | Core platform services (e.g., Vault) | 10032 |
 
 **vmbr1 (VM/Services Bridge)**
 

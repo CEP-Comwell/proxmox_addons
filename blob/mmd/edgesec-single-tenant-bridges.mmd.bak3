@@ -8,14 +8,12 @@ graph LR
   VMBridge[vmbr1 - VM Bridge]
   ExtBridge[vmbr2 - External Bridge]
 
-
   %% Services
   VaultVM[edgesec-vault]
   RestVM[edgesec-rest]
   RadiusVM[edgesec-radius]
   DNSVM[edgesec-dns]
   ProxyVM[Traefik Proxy VM]
-
 
   %% Overlays
   VX10100[vxlan10100 - Management]
@@ -31,7 +29,7 @@ graph LR
   VX10120[vxlan10120 - External]
   VXCEPH1[vxlan10030 - Ceph Pub]
   VXCEPH2[vxlan10031 - Ceph Cluster]
-  VX10032[vxlan10032 - Core Services]
+  VX9100[vxlan9100 - Core Services]
 
   Gateway1[Primary Gateway - ISP 1]
   Gateway2[Backup Gateway - ISP 2]
@@ -42,20 +40,17 @@ graph LR
   %% Explicit bridge ordering
   MgmtBridge --> VMBridge --> ExtBridge
 
-
-
-
   %% Service VMs to bridges
   VaultVM --> MgmtBridge
-  VaultVM --> VX10032
+  VaultVM --> VX9100
   RestVM --> VMBridge
   RadiusVM --> VMBridge
   DNSVM --> VMBridge
   ProxyVM --> VMBridge
   ProxyVM --> ExtBridge
-  %% Core Services VXLAN (new)
-  MgmtBridge --> VX10032
 
+  %% Core Services VXLAN (new)
+  MgmtBridge --> VX9100
 
   %% VM Bridge overlays (tenant/service and core services)
   VMBridge --> VX10110
@@ -65,15 +60,12 @@ graph LR
   VMBridge --> VX9005
   VMBridge --> VX9006
 
-
   %% Management Bridge overlays (management, engineering, support, storage)
   MgmtBridge --> VX10100
   MgmtBridge --> VX10101
   MgmtBridge --> VX10102
   MgmtBridge --> VXCEPH1
   MgmtBridge --> VXCEPH2
-
-
 
   %% VXLANs to fabricd
   VX10100 --> Fabricd
@@ -89,8 +81,7 @@ graph LR
   VX10120 --> Fabricd
   VXCEPH1 --> Fabricd
   VXCEPH2 --> Fabricd
-  VX10032 --> Fabricd
-
+  VX9100 --> Fabricd
 
   %% External Bridge overlays (external, proxy_ext)
   ExtBridge --> VX9003
@@ -109,7 +100,7 @@ graph LR
   classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
   classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
 
-  class MgmtBridge,VaultVM,VX10100,VX10101,VX10102,VXCEPH1,VXCEPH2,VX10032 mgmt;
+  class MgmtBridge,VaultVM,VX10100,VX10101,VX10102,VXCEPH1,VXCEPH2,VX9100 mgmt;
   class VMBridge,RestVM,RadiusVM,DNSVM,ProxyVM,VX10110,VX9000,VX9001,VX9004,VX9005,VX9006 vm;
   class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ```
