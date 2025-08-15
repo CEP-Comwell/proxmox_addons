@@ -1,0 +1,8 @@
+---
+# Main tasks for establish_fabric role
+# TODO: Add tasks to set up overlay networks, BGP, VXLAN, etc.
+# Example:
+# - name: Configure overlay network
+#   import_role:
+#     name: vxlan
+#   tags: [fabric, verify_fabric]

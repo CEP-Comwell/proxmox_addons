@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for IPAM (remove IPAM pools/assignments)
+# TODO: Add logic to deregister IPAM pools if needed.

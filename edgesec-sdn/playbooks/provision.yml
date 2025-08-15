@@ -1,0 +1,13 @@
+---
+# Playbook: provision.yml
+# Description: Provisions each Proxmox node (networks, bridges, base services)
+# Usage: ansible-playbook -i ../../inventory provision.yml
+
+- name: Provision Proxmox node
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Provision node
+      import_role:
+        name: provision

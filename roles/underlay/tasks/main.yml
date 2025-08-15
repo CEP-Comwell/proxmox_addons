@@ -1,3 +1,7 @@
+
+# TODO: Integrate with edgesec-REST API for underlay provisioning
+# TODO: Integrate with Netbox for underlay network registration
+# TODO: Integrate with Datto RMM for device onboarding
 # roles/underlay/tasks/main.yml
 
 - name: Create Linux bridges for underlay VLANs

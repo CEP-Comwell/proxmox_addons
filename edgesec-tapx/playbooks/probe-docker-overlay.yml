@@ -1,0 +1,9 @@
+---
+# Probe Docker overlay network traffic
+- name: Probe Docker overlay network traffic
+  hosts: docker-hosts
+  gather_facts: false
+  vars_files:
+    - ../../config.yml
+  roles:
+    - probe-docker-overlay

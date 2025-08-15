@@ -1,0 +1,51 @@
+---
+- name: Check if Docker bridge exists
+  shell: "ip link show {{ docker_bridge }}"
+  register: docker_bridge_exists
+  changed_when: false
+  failed_when: false
+
+- name: Ensure Docker bridge is up
+  shell: ip link set {{ docker_bridge }} up
+  when: docker_bridge_exists.rc == 0
+  changed_when: false
+
+- name: Check if mirror target interface exists
+  shell: "ip link show {{ mirror_target }}"
+  register: mirror_target_exists
+  changed_when: false
+  failed_when: false
+
+- name: Ensure mirror target interface is up
+  shell: ip link set {{ mirror_target }} up
+  when: mirror_target_exists.rc == 0
+  changed_when: false
+
+- name: Add ingress qdisc to Docker bridge if not present
+  shell: |
+    tc qdisc show dev {{ docker_bridge }} | grep "ingress" || tc qdisc add dev {{ docker_bridge }} ingress
+  when: docker_bridge_exists.rc == 0 and mirror_target_exists.rc == 0
+  changed_when: false
+  ignore_errors: true
+
+- name: Add mirroring filter from Docker bridge to {{ mirror_target }}
+  shell: |
+    tc filter show dev {{ docker_bridge }} parent ffff: | grep "mirred egress mirror dev {{ mirror_target }}" || \
+    tc filter add dev {{ docker_bridge }} ingress matchall action mirred egress mirror dev {{ mirror_target }}
+  when: docker_bridge_exists.rc == 0 and mirror_target_exists.rc == 0
+  changed_when: true
+  ignore_errors: true
+
+- name: Warn if Docker bridge or mirror target interface does not exist
+  debug:
+    msg: "Skipping mirroring for {{ docker_bridge }}: bridge or mirror target interface does not exist."
+  when: docker_bridge_exists.rc != 0 or mirror_target_exists.rc != 0
+
+- name: Add tc ingress qdisc to {{ docker_bridge }}
+  shell: "tc qdisc add dev {{ docker_bridge }} ingress"
+  ignore_errors: true
+
+- name: Mirror traffic from {{ docker_bridge }} to brdpi
+  shell: "tc filter add dev {{ docker_bridge }} parent ffff: protocol all u32 match u32 0 0 action mirred egress mirror dev brdpi"
+  ignore_errors: true
+  notify: Reload networking

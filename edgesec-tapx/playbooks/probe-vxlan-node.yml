@@ -1,0 +1,9 @@
+---
+# Probe VXLAN node-level traffic (template)
+- name: Probe VXLAN node-level traffic
+  hosts: vxlan-nodes
+  gather_facts: false
+  vars_files:
+    - ../../config.yml
+  roles:
+    - probe-vxlan-node

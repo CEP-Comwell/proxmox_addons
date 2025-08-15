@@ -1,3 +1,7 @@
+
+# TODO: Integrate with edgesec-REST API for IPAM pool management
+# TODO: Integrate with Netbox for IPAM pool/host registration
+# TODO: Integrate with Datto RMM for IPAM device onboarding
 # roles/ipam/tasks/main.yml
 
 - name: Register IPAM pools in Proxmox

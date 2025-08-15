@@ -1,3 +1,7 @@
+
+# TODO: Integrate with edgesec-REST API for VM NIC provisioning
+# TODO: Integrate with Netbox for VM NIC registration
+# TODO: Integrate with Datto RMM for VM NIC device onboarding
 # roles/vm_nic/tasks/main.yml
 
 - name: Attach VM NICs using Proxmox API

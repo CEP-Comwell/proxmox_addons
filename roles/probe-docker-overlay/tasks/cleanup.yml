@@ -1,0 +1,4 @@
+---
+# Cleanup tasks for probe-docker-overlay (Docker overlay mirroring)
+- name: Cleanup Docker tc mirroring rules
+  include_tasks: cleanup_docker_traffic_mirror.yml

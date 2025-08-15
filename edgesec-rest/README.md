@@ -127,6 +127,19 @@ See [../import/edgesec-radius.md](../import/edgesec-radius.md) for conceptual de
 
 	---
 
+	## Release Notes
+
+	### v0.1.0 (2025-08-14)
+	- Initial scaffold of edgesec-REST backend.
+	- Added SDN automation endpoint:
+	  - `POST /api/v1/sdn/recommend/subnet`
+	    - Inputs: `site`, `tenant_id`, `purpose`, `device_id`, `metadata`
+	    - Returns: Recommended subnet and metadata for SDN automation
+	    - Auth: Placeholder for Vault integration
+	    - Response is flexible and ready for future AI/org logic
+
+	---
+
 	## License
 
 	<!-- Keep existing license/legal info below this line -->

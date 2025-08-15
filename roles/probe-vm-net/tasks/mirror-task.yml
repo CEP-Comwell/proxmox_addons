@@ -1,0 +1,69 @@
+---
+# This task file is a subtask of mirror_vmbr0_to_br_dpi.yml
+# It configures traffic mirroring from a given tap interface (tap_if)
+# to a designated mirror target interface (mirror_target), typically veth0.
+
+# Step 1: Check if tap interface exists
+- name: Check if tap interface exists
+  shell: "ip link show {{ tap_if }}"
+  register: tap_if_exists
+  changed_when: false
+  failed_when: false
+
+# Step 2: Check if mirror target interface exists
+- name: Check if mirror target interface exists
+  shell: "ip link show {{ mirror_target }}"
+  register: mirror_target_exists
+  changed_when: false
+  failed_when: false
+
+# Step 3: Ensure the tap interface is up
+- name: Ensure tap interface is up
+  shell: ip link set {{ tap_if }} up
+  when: tap_if_exists.rc == 0
+  changed_when: false
+
+# Step 4: Ensure mirror target interface is up
+- name: Ensure mirror target interface is up
+  shell: ip link set {{ mirror_target }} up
+  when: mirror_target_exists.rc == 0
+  changed_when: false
+
+# Step 5: Add an ingress qdisc to the tap interface
+- name: Add mirroring qdisc if not present
+  shell: |
+    tc qdisc show dev {{ tap_if }} | grep "ingress" || tc qdisc add dev {{ tap_if }} ingress
+  when: tap_if_exists.rc == 0 and mirror_target_exists.rc == 0
+  changed_when: false
+  ignore_errors: true
+
+# Step 6: Check for existing mirroring filter
+- name: Check if tc mirror filter already exists on {{ tap_if }}
+  shell: "tc filter show dev {{ tap_if }} ingress | grep '{{ mirror_target }}'"
+  register: mirror_filter_check
+  failed_when: false
+
+# Step 7: Add a tc mirror filter to mirror traffic to the mirror target
+- name: Add mirroring filter if not present
+  shell: |
+    tc filter add dev {{ tap_if }} ingress matchall action mirred egress mirror dev {{ mirror_target }}
+  when: tap_if_exists.rc == 0 and mirror_target_exists.rc == 0
+  changed_when: true
+  ignore_errors: true
+
+# Step 8: Warn if tap or mirror target interface does not exist
+- name: Warn if tap or mirror target interface does not exist
+  debug:
+    msg: "Skipping mirroring for {{ tap_if }}: tap or mirror target interface does not exist."
+  when: tap_if_exists.rc != 0 or mirror_target_exists.rc != 0
+
+# Step 9: Display active tc filters on the tap interface
+- name: Show active tc filters on {{ tap_if }}
+  shell: "tc filter show dev {{ tap_if }} parent ffff:"
+  register: active_tc_filters
+  changed_when: false
+
+- name: Print active tc filters for {{ tap_if }}
+  debug:
+    msg: "{{ active_tc_filters.stdout_lines }}"
+

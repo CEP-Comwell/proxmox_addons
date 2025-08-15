@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for NAT (remove SNAT rules)
+# TODO: Add logic to remove SNAT rules if needed.

@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for BGP (remove BGP sessions/config)
+# TODO: Add logic to remove BGP config and stop FRR if needed.

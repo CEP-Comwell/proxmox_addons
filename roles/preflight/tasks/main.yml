@@ -1,0 +1,9 @@
+---
+# Main tasks for preflight role
+# TODO: Add tasks to verify connectivity (ping, SSH, API)
+# Example:
+# - name: Ping remote nodes
+#   ansible.builtin.ping:
+#   delegate_to: "{{ item }}"
+#   loop: "{{ groups['all'] }}"
+#   tags: [preflight, verify_preflight]

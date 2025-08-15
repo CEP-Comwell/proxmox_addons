@@ -21,3 +21,26 @@ Place SDN-related Docker Compose files in the `docker/` subdirectory. Each file 
 3. Use Docker Compose files from the `docker/` directory for SDN-related services.
 
 See the main repo README and `Fabric_bootstrap.md` for more details.
+
+## Future Integration:
+
+The edgesec-SDN automation platform is designed for seamless integration with organizational intelligence and external APIs. Planned future integrations include:
+
+- **edgesec-REST:**
+  - Centralizes all SDN decisions (subnet selection, VXLAN ID, firewall rules) using AI-driven and organizational policy logic.
+  - Ansible playbooks will query edgesec-REST for dynamic recommendations, ensuring compliance, agility, and security.
+  - Enables policy-driven, real-time automation—playbooks become thin clients executing org-approved actions.
+
+- **Netbox:**
+  - Used for authoritative IPAM, device, and network topology data.
+  - Playbooks will register, update, or decommission resources in Netbox as part of the workflow.
+
+- **Netbird API:**
+  - Automates remote access provisioning for users and devices.
+  - Playbooks will request, manage, and revoke secure remote access via Netbird, as directed by edgesec-REST or org policy.
+
+**Benefits:**
+- Centralized, AI-augmented decision-making for all SDN actions.
+- Consistent, policy-compliant automation across the organization.
+- Rapid adaptation to changing org needs—update logic in edgesec-REST, not in every playbook.
+- Full auditability and security for all automated actions.

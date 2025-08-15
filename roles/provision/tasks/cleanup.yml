@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for provision role
+# TODO: Add tasks to remove provisioned resources (bridges, configs)

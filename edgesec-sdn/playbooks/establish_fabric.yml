@@ -1,30 +1,13 @@
 ---
-- name: Interactive confirmation before enabling BGP peering
-	hosts: localhost
-	gather_facts: false
-	tasks:
-		- name: Prompt for BGP peer activation
-			ansible.builtin.pause:
-				prompt: |
-					All preflight checks should have passed.
-					Type 'yes' to activate BGP peering across all Proxmox hosts:
-			register: confirm
+# Playbook: establish_fabric.yml
+# Description: Sets up overlay networks, BGP, VXLAN, etc. across nodes
+# Usage: ansible-playbook -i ../../inventory establish_fabric.yml
 
-		- name: Fail if not confirmed
-			ansible.builtin.fail:
-				msg: "Aborted by user."
-			when: confirm.user_input != 'yes'
-
-- name: Set peer_active to true on all Proxmox hosts and apply BGP config
-	hosts: proxmox
-	become: true
-	gather_facts: false
-	tasks:
-		- name: Set peer_active fact for this run
-			ansible.builtin.set_fact:
-				peer_active: true
-
-		- name: Apply BGP config and restart FRR
-			ansible.builtin.include_role:
-				name: bgp
-			when: peer_active | default(false)
+- name: Establish SDN fabric
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Establish fabric
+      import_role:
+        name: establish_fabric

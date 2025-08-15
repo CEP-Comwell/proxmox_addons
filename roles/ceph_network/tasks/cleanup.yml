@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for Ceph network (remove Ceph bridges)
+# TODO: Add logic to remove Ceph network bridges if needed.

@@ -1,0 +1,9 @@
+---
+# Probe HCI agent-based active response (template)
+- name: Probe HCI agent-based active response
+  hosts: hci-agents
+  gather_facts: false
+  vars_files:
+    - ../../config.yml
+  roles:
+    - probe-hci-agent

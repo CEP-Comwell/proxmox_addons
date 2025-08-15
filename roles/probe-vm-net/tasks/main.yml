@@ -1,0 +1,27 @@
+
+# Main orchestration for VM traffic probing (mirroring)
+
+- name: Include DPI monitor setup role
+	import_role:
+		name: dpi_monitor_setup
+
+- name: Discover tap interfaces for probing
+	include_tasks: tap-discover.yml
+
+- name: Debug list of discovered tap interfaces
+	debug:
+		msg: "Tap interfaces to process: {{ tap_interfaces }}"
+
+- name: Skip probing setup if no tap interfaces are found
+	debug:
+		msg: "No tap interfaces found for probing. Skipping setup."
+	when: tap_interfaces | length == 0
+
+- name: Set up probing for each tap interface
+	include_tasks: mirror-task.yml
+	loop: "{{ tap_interfaces }}"
+	loop_control:
+		loop_var: tap_if
+	when: tap_interfaces | length > 0
+# probe-vm-net: Active probing of VM network traffic
+# Add tasks for VM network traffic inspection and response here.

@@ -1,0 +1,10 @@
+---
+# Main tasks for provision role
+# TODO: Add tasks to configure Proxmox node (networks, bridges, base services)
+# Example:
+# - name: Ensure base bridge exists
+#   community.general.nmcli:
+#     conn_name: vmbr0
+#     type: bridge
+#     state: present
+#   tags: [provision, verify_provision]

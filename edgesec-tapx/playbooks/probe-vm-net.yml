@@ -1,0 +1,9 @@
+---
+# Probe VM network traffic (mirror vmbr0 to brdpi)
+- name: Probe VM network traffic
+  hosts: proxmox-hosts
+  gather_facts: false
+  vars_files:
+    - ../../config.yml
+  roles:
+    - probe-vm-net

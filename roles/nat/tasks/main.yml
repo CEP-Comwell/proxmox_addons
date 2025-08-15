@@ -1,3 +1,7 @@
+
+# TODO: Integrate with edgesec-REST API for NAT rule management
+# TODO: Integrate with Netbox for NAT mapping registration
+# TODO: Integrate with Datto RMM for NAT device onboarding
 # roles/nat/tasks/main.yml
 
 - name: Enable SNAT for internal network

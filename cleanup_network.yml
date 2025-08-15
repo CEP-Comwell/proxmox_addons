@@ -1,0 +1,53 @@
+---
+# Playbook: cleanup_network.yml
+# Description: Cleans up all SDN-related resources provisioned by provision_network.yml
+# Usage: ansible-playbook -i inventory cleanup_network.yml
+
+- name: Cleanup SDN network resources
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Cleanup underlay
+      import_role:
+        name: underlay
+        tasks_from: cleanup
+
+    - name: Cleanup BGP
+      import_role:
+        name: bgp
+        tasks_from: cleanup
+
+    - name: Cleanup VXLAN
+      import_role:
+        name: vxlan
+        tasks_from: cleanup
+
+    - name: Cleanup IPAM
+      import_role:
+        name: ipam
+        tasks_from: cleanup
+
+    - name: Cleanup VM NIC
+      import_role:
+        name: vm_nic
+        tasks_from: cleanup
+
+    - name: Cleanup NAT
+      import_role:
+        name: nat
+        tasks_from: cleanup
+
+    - name: Cleanup Proxy
+      import_role:
+        name: proxy
+        tasks_from: cleanup
+
+    - name: Cleanup Ceph Network
+      import_role:
+        name: ceph_network
+        tasks_from: cleanup
+
+# TODO: Add REST API integration for external cleanup triggers
+# TODO: Add Netbox integration for IPAM/host deregistration
+# TODO: Add Datto RMM integration for device decommissioning

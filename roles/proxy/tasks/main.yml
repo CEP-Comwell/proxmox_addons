@@ -1,3 +1,7 @@
+
+# TODO: Integrate with edgesec-REST API for proxy rule management
+# TODO: Integrate with Netbox for proxy registration
+# TODO: Integrate with Datto RMM for proxy device onboarding
 # roles/proxy/tasks/main.yml
 
 - name: Allow HTTP to proxy VM

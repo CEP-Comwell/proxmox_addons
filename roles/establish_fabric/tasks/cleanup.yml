@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for establish_fabric role
+# TODO: Add tasks to tear down overlay networks, BGP, VXLAN, etc.

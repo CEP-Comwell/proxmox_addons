@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for preflight role
+# (Usually not needed unless temporary resources are created)

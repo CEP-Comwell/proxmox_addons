@@ -1,3 +1,7 @@
+
+# TODO: Integrate with edgesec-REST API for Ceph network provisioning
+# TODO: Integrate with Netbox for Ceph network registration
+# TODO: Integrate with Datto RMM for Ceph device onboarding
 # roles/ceph_network/tasks/main.yml
 
 - name: Ensure Ceph public network bridge exists

@@ -1,0 +1,4 @@
+---
+# Cleanup tasks for probe-vm-net (VM traffic mirroring)
+- name: Cleanup tc mirroring rules from tap interfaces
+  include_tasks: cleanup_vm_traffic_mirror.yml

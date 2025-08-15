@@ -1,3 +1,7 @@
+
+# TODO: Integrate with edgesec-REST API for VXLAN provisioning
+# TODO: Integrate with Netbox for VXLAN segment registration
+# TODO: Integrate with Datto RMM for VXLAN device onboarding
 # roles/vxlan/tasks/main.yml
 
 - name: Create Linux bridges for overlays

@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for underlay (remove underlay bridges and VLANs)
+# TODO: Add logic to remove bridges/VLANs if needed.

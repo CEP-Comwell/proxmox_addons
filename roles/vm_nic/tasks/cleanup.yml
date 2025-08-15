@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for VM NIC (detach NICs from VMs)
+# TODO: Add logic to detach NICs from VMs if needed.

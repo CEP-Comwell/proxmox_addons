@@ -1,3 +1,7 @@
+
+# TODO: Integrate with edgesec-REST API for BGP session management
+# TODO: Integrate with Netbox for BGP peer registration
+# TODO: Integrate with Datto RMM for BGP device monitoring
 # roles/bgp/tasks/main.yml
 
 - name: Ensure FRR BGP daemon is installed

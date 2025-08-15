@@ -1,0 +1,3 @@
+---
+# Cleanup tasks for VXLAN (remove VXLAN devices and bridges)
+# TODO: Add logic to remove VXLAN interfaces and bridges if needed.
