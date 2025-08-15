@@ -1,3 +1,7 @@
+<details>
+  <summary>📁 Project Directory Structure</summary>
+</details>
+
 <img src="blob/images/edgesec.png" alt="edgesec logo" width="240" align="right"/>  
 
 
