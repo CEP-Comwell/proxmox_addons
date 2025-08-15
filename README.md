@@ -42,9 +42,7 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 
 ---
 
-## 🕸️ edgesec-SDN
-
-### [edgesec-SDN](Fabric_bootstrap.md)
+## 🕸️ [edgesec-SDN](Fabric_bootstrap.md)
 *Comprehensive SDN fabric automation for scalable, multi-site Proxmox deployments.*
 
 **Network Architecture:**
@@ -175,9 +173,7 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 
 ---
 
-## 🆔 edgesec-RADIUS
-
-### [edgesec-RADIUS](edgesec-radius/README.md)
+## 🆔 [edgesec-RADIUS](edgesec-radius/README.md)
 *Multi-tenant, certificate-based authentication and device onboarding.*
 
 **Overview:**
@@ -210,9 +206,7 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 
 ---
 
-## 🛡️ edgesec-VAULT
-
-### [edgesec-VAULT](edgesec-vault/README.md)
+## 🛡️ [edgesec-VAULT](edgesec-vault/README.md)
 *Centralized secrets management for the edgesec HCI platform using HashiCorp Vault.*
 
 A HashiCorp Vault deployment for the edgesec HCI platform, serving as the central source of truth for all credentials and secrets. Designed for multi-tenant environments and integrates with the Proxmox SDN Fabric and all edgesec platform components.
@@ -236,9 +230,7 @@ A HashiCorp Vault deployment for the edgesec HCI platform, serving as the centra
 
 ---
 
-## 🧩 edgesec-REST
-
-### [edgesec-REST](edgesec-rest/README.md)
+## 🧩 [edgesec-REST](edgesec-rest/README.md)
 *Fastify v5 + TypeScript API hub for edge security automation and orchestration.*
 
 A Fastify v5 + TypeScript API hub for edge security automation and orchestration.  
