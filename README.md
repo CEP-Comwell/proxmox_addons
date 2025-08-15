@@ -1,4 +1,15 @@
+<table>
+<tr>
+<td>
+
 # PROXMOX_ADDONS
+
+</td>
+<td align="right">
+<img src="blob/images/edgesec.png" alt="edgesec logo" width="120"/>
+</td>
+</tr>
+</table>
 
 This repository provides advanced Ansible automation and monitoring add-ons for Proxmox-based hyper-converged infrastructure.  
 It is organized into modular subprojects, each with its own documentation and roles.
