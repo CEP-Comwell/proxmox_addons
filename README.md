@@ -6,9 +6,9 @@
 This repository provides advanced Ansible automation and monitoring add-ons for Proxmox-based hyper-converged infrastructure.  
 It is organized into modular subprojects, each with its own documentation and roles. 
 
-## 📦 Subprojects
-
 ---
+## 🛰️ [edgesec-TAPx](edgesec-tapx/README.md)\ 🕸️ [edgesec-SDN](Fabric_bootstrap.md)
+## 📦 Subprojects
 
 ## 🛰️ edgesec-TAPx
 
