@@ -7,9 +7,11 @@ It is organized into modular subprojects, each with its own documentation and ro
 
 ## 📦 Subprojects
 
+---
+
+## 🚦 edgesec-TAPx
 
 ### [edgesec-TAPx](edgesec-tapx/README.md)
-#### edgesec-TAPx
 *Modular traffic and probe automation for full packet visibility and DPI in Proxmox and Docker environments.*
 
 **Overview:**
@@ -41,12 +43,12 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 <!-- - [docs/integration-guide.md](docs/integration-guide.md) -->
 
 
+---
+
+## 🌐 edgesec-SDN
+
 ### [edgesec-SDN](Fabric_bootstrap.md)
-#### edgesec-SDN
-
-**Overview:**
-Comprehensive Ansible framework for deploying a scalable, multi-site spine-leaf network fabric across Proxmox nodes and locations, powered by OpenFabric. Implements zero trust and microsegmentation strategies for hyper-converged infrastructure.
-
+*Comprehensive SDN fabric automation for scalable, multi-site Proxmox deployments.*
 
 **Network Architecture:**
 - The SDN fabric is built around three primary bridges:
@@ -173,8 +175,13 @@ Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-
 <!-- - [docs/architecture.md](docs/architecture.md) -->
 <!-- - [docs/integration-guide.md](docs/integration-guide.md) -->
 
+
+---
+
+## 🔐 edgesec-RADIUS
+
 ### [edgesec-RADIUS](edgesec-radius/README.md)
-#### edgesec-RADIUS
+*Multi-tenant, certificate-based authentication and device onboarding.*
 
 **Overview:**
 Modular Ansible role for multi-tenant, certificate-based authentication and integration with Vault, Authentik, Smallstep CA, FreeRADIUS, and NetBox.
@@ -204,8 +211,12 @@ Modular Ansible role for multi-tenant, certificate-based authentication and inte
 <!-- - [docs/security-best-practices.md](docs/security-best-practices.md) -->
 
 
+---
+
+## 🗝️ edgesec-VAULT
+
 ### [edgesec-VAULT](edgesec-vault/README.md)
-#### edgesec-VAULT
+*Centralized secrets management for the edgesec HCI platform using HashiCorp Vault.*
 
 A HashiCorp Vault deployment for the edgesec HCI platform, serving as the central source of truth for all credentials and secrets. Designed for multi-tenant environments and integrates with the Proxmox SDN Fabric and all edgesec platform components.
 
@@ -226,8 +237,12 @@ A HashiCorp Vault deployment for the edgesec HCI platform, serving as the centra
 - [edgesec-vault/README.md](edgesec-vault/README.md)
 
 
+---
+
+## 🧩 edgesec-REST
+
 ### [edgesec-REST](edgesec-rest/README.md)
-#### edgesec-REST
+*Fastify v5 + TypeScript API hub for edge security automation and orchestration.*
 
 A Fastify v5 + TypeScript API hub for edge security automation and orchestration.  
 Key integrations:
@@ -255,8 +270,9 @@ npm start          # run compiled build
 
 ---
 
-
 ## 🗂 Directory Structure
+
+> **Note:** Each subproject has its own `README.md` and quick start. Roles and playbooks are organized for modular use and cross-integration. The `edgesec-rest` directory is the core integration hub.
 
 ```
 proxmox_addons/
