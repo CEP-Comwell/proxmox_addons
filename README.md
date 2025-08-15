@@ -321,7 +321,6 @@ proxmox_addons/
 └── README.md                 # Main project overview (this file)
 ```
   </details>
-```
 
 **Key Integration Hub:**  
 - `edgesec-rest/` is the central API and automation hub, integrating with all other subprojects (Vault, SDN, TAPx, RADIUS) and external systems (NetBox, Datto RMM, NetBird, etc).
