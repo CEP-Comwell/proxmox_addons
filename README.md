@@ -8,9 +8,7 @@ It is organized into modular subprojects, each with its own documentation and ro
 
 ## 🧬 Integration Modules
 ---
-## 🛰️ edgesec-TAPx
-
-### [edgesec-TAPx](edgesec-tapx/README.md)
+## 🛰️ [edgesec-TAPx](edgesec-tapx/README.md)
 *Modular traffic and probe automation for full packet visibility and DPI in Proxmox and Docker environments.*
 
 **Overview:**
