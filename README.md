@@ -3,11 +3,8 @@
 
 ## PROXMOX_ADDONS
 
-
 This repository provides advanced Ansible automation and monitoring add-ons for Proxmox-based hyper-converged infrastructure.  
 It is organized into modular subprojects, each with its own documentation and roles. 
-
----
 
 ## 📦 Subprojects
 
