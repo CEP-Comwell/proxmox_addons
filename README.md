@@ -7,7 +7,7 @@ This repository provides advanced Ansible automation and monitoring add-ons for 
 It is organized into modular subprojects, each with its own documentation and roles. 
 
 ---
-## 🛰️ [edgesec-TAPx](edgesec-tapx/README.md)\ 🕸️ [edgesec-SDN](Fabric_bootstrap.md)
+## 🛰️ [edgesec-TAPx] 🕸️ [edgesec-SDN]
 ## 📦 Subprojects
 
 ## 🛰️ edgesec-TAPx
