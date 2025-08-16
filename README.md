@@ -59,67 +59,69 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 ```mermaid
 graph TD
 
-  %% Management Zone (top left)
-  subgraph MgmtZone[vmbr0 - Management Zone]
-    direction TB
-    style MgmtZone fill:#f0f7ff,stroke:#1976d2,stroke-width:2px
-    MgmtBridge[vmbr0 - Management Bridge]
-    VX10100[vxlan10100 - Management]
-    VX10101[vxlan10101 - Engineering]
-    VX10102[vxlan10102 - Support]
-    VXCEPH2[vxlan10031 - Ceph Cluster]
-    VX10032[vxlan10032 - Core Services]
-    MgmtBridge --> VX10100
-    MgmtBridge --> VX10101
-    MgmtBridge --> VX10102
-    MgmtBridge --> VXCEPH2
-    MgmtBridge --> VX10032
-    VaultVM[edgesec-vault]
-    VaultVM --> VX10032
-  end
 
-  %% VM/Services Zone (middle, indented)
-  subgraph VMZone[vmbr1 - VM/Services Zone]
-    direction TB
-    style VMZone fill:#fffde7,stroke:#fbc02d,stroke-width:2px
-    VMBridge[vmbr1 - VM Bridge]
-    VX10110[vxlan10110 - Tenant VM/Service]
-    VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
-    VX9006[vxlan9006 - edgesec-vault]
-    VMBridge --> VX10110
-    VMBridge --> VX9000
-    VMBridge --> VX9006
-    RestVM[edgesec-rest]
-    RadiusVM[edgesec-radius]
-    DNSVM[edgesec-dns]
-    RestVM --> VX9000
-    RadiusVM --> VX9000
-    DNSVM --> VX9000
-  end
+%% Strict vertical stacking: each bridge group is in its own subgraph, one after the other
 
-  %% External Zone (bottom, more indented)
-  subgraph ExtZone[vmbr2 - External Zone]
-    direction TB
-    style ExtZone fill:#fff3e0,stroke:#d84315,stroke-width:2px
-    ExtBridge[vmbr2 - External Bridge]
-    VX9003[vxlan9003 - Proxy Ext]
-    VX10120[vxlan10120 - External]
-    ExtBridge --> VX9003
-    ExtBridge --> VX10120
-    ProxyVM[Traefik Proxy VM]
-    ProxyVM --> VX9003
-    ProxyVM --> ExtBridge
-    Gateway1[Primary Gateway - ISP 1]
-    Gateway2[Backup Gateway - ISP 2]
-    LegacyVLAN[Legacy VLANs]
-    ExtBridge --> Gateway1
-    ExtBridge --> Gateway2
-    ExtBridge --> LegacyVLAN
-  end
+%% Management Zone (top)
+subgraph MgmtZone[vmbr0 - Management Zone]
+  style MgmtZone fill:#f0f7ff,stroke:#1976d2,stroke-width:2px
+  MgmtBridge[vmbr0 - Management Bridge]
+  VX10100[vxlan10100 - Management]
+  VX10101[vxlan10101 - Engineering]
+  VX10102[vxlan10102 - Support]
+  VXCEPH2[vxlan10031 - Ceph Cluster]
+  VX10032[vxlan10032 - Core Services]
+  MgmtBridge --> VX10100
+  MgmtBridge --> VX10101
+  MgmtBridge --> VX10102
+  MgmtBridge --> VXCEPH2
+  MgmtBridge --> VX10032
+  VaultVM[edgesec-vault]
+  VaultVM --> VX10032
+end
 
-  %% Waterfall connections for strict vertical stacking
-  MgmtBridge --> VMBridge
-  VMBridge --> ExtBridge
+%% Connect Management to VM/Services
+MgmtBridge --> VMBridge
+
+%% VM/Services Zone (middle)
+subgraph VMZone[vmbr1 - VM/Services Zone]
+  style VMZone fill:#fffde7,stroke:#fbc02d,stroke-width:2px
+  VMBridge[vmbr1 - VM Bridge]
+  VX10110[vxlan10110 - Tenant VM/Service]
+  VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
+  VX9006[vxlan9006 - edgesec-vault]
+  VMBridge --> VX10110
+  VMBridge --> VX9000
+  VMBridge --> VX9006
+  RestVM[edgesec-rest]
+  RadiusVM[edgesec-radius]
+  DNSVM[edgesec-dns]
+  RestVM --> VX9000
+  RadiusVM --> VX9000
+  DNSVM --> VX9000
+end
+
+%% Connect VM/Services to External
+VMBridge --> ExtBridge
+
+%% External Zone (bottom)
+subgraph ExtZone[vmbr2 - External Zone]
+  style ExtZone fill:#fff3e0,stroke:#d84315,stroke-width:2px
+  ExtBridge[vmbr2 - External Bridge]
+  VX9003[vxlan9003 - Proxy Ext]
+  VX10120[vxlan10120 - External]
+  ExtBridge --> VX9003
+  ExtBridge --> VX10120
+  ProxyVM[Traefik Proxy VM]
+  ProxyVM --> VX9003
+  ProxyVM --> ExtBridge
+  Gateway1[Primary Gateway - ISP 1]
+  Gateway2[Backup Gateway - ISP 2]
+  LegacyVLAN[Legacy VLANs]
+  ExtBridge --> Gateway1
+  ExtBridge --> Gateway2
+  ExtBridge --> LegacyVLAN
+end
 
   %% VXLANs to fabricd (global, not in subgraph)
   Fabricd[fabricd - IS-IS Routing]
