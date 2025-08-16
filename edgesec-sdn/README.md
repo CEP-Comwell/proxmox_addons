@@ -1,3 +1,8 @@
+<p align="right">
+  <img src="../blob/images/fabric_architecture.png" alt="Multi-site Proxmox SDN Architecture" width="400" />
+</p>
+
+
 # edgesec-SDN
 
 This directory contains playbooks, Docker Compose files, and documentation for the edgesec-SDN (Software Defined Networking) automation stack.
