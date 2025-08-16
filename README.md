@@ -139,7 +139,7 @@ Anchor3 --> ExtBridge
   classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
   classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
   classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
-  classDef invisible fill=transparent,stroke=transparent;
+  classDef invisible fill:#ffffff00,stroke:#ffffff00;
 
   class MgmtBridge,VaultVM,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
   class VMBridge,RestVM,RadiusVM,DNSVM,VX10110,VX9000,VX9006 vm;
