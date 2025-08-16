@@ -73,6 +73,9 @@ class VMBridge,VX10110,VX9000,VX9006 vm;
 class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ```
 
+</details>
+<details>
+
 ### vmbr0 (Management Bridge)
 ```mermaid
 graph TD
@@ -92,6 +95,9 @@ VaultVM --> VX10032
 classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
 class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ```
+
+</details>
+<details>
 
 ### vmbr1 (VM/Services Bridge)
 ```mermaid
@@ -121,6 +127,9 @@ class VMBridge,VX10110,VX9000,CustVM,RestVM,RadiusVM,DNSVM vm;
 class VX9003,ProxyVM proxy;
 ```
 
+</details>
+<details>
+
 ### vmbr2 (External/Leaf-Edge Gateway Bridge)
 ```mermaid
 graph LR
@@ -146,7 +155,6 @@ class VX9003,ProxyVM proxy;
 ```
 
 </details>
-
 
 **Features:**
 - Automated multi-site fabric bootstrap and configuration
