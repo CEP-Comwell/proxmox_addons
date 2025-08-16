@@ -37,6 +37,7 @@ subgraph VXLANs
 	Gateway2[Backup Gateway]
 	LegacyVLAN[Legacy VLANs]
 end
+Fabricd[fabricd - IS-IS Routing]
 MgmtBridge --> VX10100
 MgmtBridge --> VX10101
 MgmtBridge --> VX10102
@@ -50,6 +51,16 @@ ExtBridge --> VX10120
 ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
+VX10100 --> Fabricd
+VX10101 --> Fabricd
+VX10102 --> Fabricd
+VX10110 --> Fabricd
+VX9000 --> Fabricd
+VX9006 --> Fabricd
+VX9003 --> Fabricd
+VX10120 --> Fabricd
+VXCEPH2 --> Fabricd
+VX10032 --> Fabricd
 ```
 
 ### vmbr0 (Management Bridge)
