@@ -122,7 +122,7 @@ class VX9003,ProxyVM proxy;
 ### vmbr2 (External/Leaf-Edge Gateway Bridge)
 ```mermaid
 graph LR
-ExtBridge[vmbr2 - External Bridge]
+ExtBridge[vmbr2 - External (Hybrid-Leaf Gateway)]
 VX9003[vxlan9003 - proxy_ext]
 VX10120[vxlan10120 - External]
 ProxyVM[Traefik Proxy VM]
