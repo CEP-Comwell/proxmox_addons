@@ -39,7 +39,7 @@ subgraph VXLANs
 	Gateway2[Backup Gateway]
 	LegacyVLAN[Legacy VLANs]
 end
-Fabricd{fabricd - IS-IS Routing}
+Fabricd{fabricd\nIS-IS Routing}
 MgmtBridge --> VX10100
 MgmtBridge --> VX10101
 MgmtBridge --> VX10102
@@ -87,7 +87,7 @@ VX10102(vxlan10102 - Support)
 VXCEPH2(vxlan10031 - Ceph Cluster)
 VX10032(vxlan10032 - Core Services)
 VaultVM[edgesec-vault]
-Fabricd{fabricd - IS-IS Routing}
+Fabricd{fabricd\nIS-IS Routing}
 MgmtBridge --> VX10100
 MgmtBridge --> VX10101
 MgmtBridge --> VX10102
@@ -119,7 +119,7 @@ RestVM[edgesec-rest]
 RadiusVM[edgesec-radius]
 DNSVM[edgesec-dns]
 ProxyVM[Traefik Proxy VM]
-Fabricd{fabricd - IS-IS Routing}
+Fabricd{fabricd\nIS-IS Routing}
 
 VMBridge --> VX10110
 VMBridge --> VX9000
@@ -153,7 +153,7 @@ Gateway1[Primary Gateway-ISP1]
 Gateway2[Backup Gateway-ISP2]
 LegacyVLAN[Legacy VLANs]
 ProxyVM[Traefik Proxy VM]
-Fabricd{fabricd - IS-IS Routing}
+Fabricd{fabricd\nIS-IS Routing}
 
 ExtBridge --> VX9003
 ExtBridge --> VX10120
