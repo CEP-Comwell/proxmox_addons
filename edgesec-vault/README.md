@@ -1,4 +1,5 @@
 <img src="../blob/images/vault_oss.webp" alt="HashiCorp Vault OSS" width="240" align="right"/>
+
 # edgesec-Vault
 
 This project provides a HashiCorp Vault deployment for the edgesec HCI platform, serving as the central source of truth for all credentials and secrets. It is designed for multi-tenant environments and integrates with the Proxmox SDN Fabric and other edgesec platform components.
