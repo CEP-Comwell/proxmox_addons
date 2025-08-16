@@ -60,7 +60,8 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 graph TD
 
 
-%% Strict vertical stacking: each bridge group is in its own subgraph, one after the other
+%% Invisible anchor nodes to enforce vertical stacking
+Anchor1[ ]:::invisible --> Anchor2[ ]:::invisible --> Anchor3[ ]:::invisible
 
 %% Management Zone (top)
 subgraph MgmtZone[vmbr0 - Management Zone]
@@ -79,9 +80,7 @@ subgraph MgmtZone[vmbr0 - Management Zone]
   VaultVM[edgesec-vault]
   VaultVM --> VX10032
 end
-
-%% Connect Management to VM/Services
-MgmtBridge --> VMBridge
+Anchor1 --> MgmtBridge
 
 %% VM/Services Zone (middle)
 subgraph VMZone[vmbr1 - VM/Services Zone]
@@ -100,9 +99,7 @@ subgraph VMZone[vmbr1 - VM/Services Zone]
   RadiusVM --> VX9000
   DNSVM --> VX9000
 end
-
-%% Connect VM/Services to External
-VMBridge --> ExtBridge
+Anchor2 --> VMBridge
 
 %% External Zone (bottom)
 subgraph ExtZone[vmbr2 - External Zone]
@@ -122,6 +119,7 @@ subgraph ExtZone[vmbr2 - External Zone]
   ExtBridge --> Gateway2
   ExtBridge --> LegacyVLAN
 end
+Anchor3 --> ExtBridge
 
   %% VXLANs to fabricd (global, not in subgraph)
   Fabricd[fabricd - IS-IS Routing]
@@ -141,9 +139,11 @@ end
   classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
   classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
   classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+  classDef invisible fill=transparent,stroke=transparent;
 
   class MgmtBridge,VaultVM,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
   class VMBridge,RestVM,RadiusVM,DNSVM,VX10110,VX9000,VX9006 vm;
+  class Anchor1,Anchor2,Anchor3 invisible;
   class ExtBridge,ProxyVM,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ```
 Mermaid source: [`blob/mmd/edgesec-single-tenant-bridges.mmd`](blob/mmd/edgesec-single-tenant-bridges.mmd)
