@@ -25,16 +25,16 @@ subgraph Bridges
 	ExtBridge[vmbr2 - Hybrid-Leaf GW]
 end
 subgraph VXLANs
-	VX10100[vxlan10100 - tenant1_management]
-	VX10101[vxlan10101 - tenant1_engineering]
-	VX10102[vxlan10102 - tenant1_support]
-	VXCEPH2[vxlan10031 - ceph_cluster]
-	VX10032[vxlan10032 - core-services]
-	VX10110[vxlan10110 - tenant1_services]
-	VX9000[vxlan9000 - Common service overlay]
-	VX9006[vxlan9006 - edgesec-vault]
-	VX9003[vxlan9003 - proxy_ext]
-	VX10120[vxlan10120 - tenant1_ext]
+	VX10100(vxlan10100 - tenant1_management)
+	VX10101(vxlan10101 - tenant1_engineering)
+	VX10102(vxlan10102 - tenant1_support)
+	VXCEPH2(vxlan10031 - ceph_cluster)
+	VX10032(vxlan10032 - core-services)
+	VX10110(vxlan10110 - tenant1_services)
+	VX9000(vxlan9000 - Common service overlay)
+	VX9006(vxlan9006 - edgesec-vault)
+	VX9003(vxlan9003 - proxy_ext)
+	VX10120(vxlan10120 - tenant1_ext)
 	Gateway1[Primary Gateway]
 	Gateway2[Backup Gateway]
 	LegacyVLAN[Legacy VLANs]
@@ -81,11 +81,11 @@ class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ```mermaid
 graph TD
 MgmtBridge[vmbr0 - Management Bridge]
-VX10100[vxlan10100 - Management]
-VX10101[vxlan10101 - Engineering]
-VX10102[vxlan10102 - Support]
-VXCEPH2[vxlan10031 - Ceph Cluster]
-VX10032[vxlan10032 - Core Services]
+VX10100(vxlan10100 - Management)
+VX10101(vxlan10101 - Engineering)
+VX10102(vxlan10102 - Support)
+VXCEPH2(vxlan10031 - Ceph Cluster)
+VX10032(vxlan10032 - Core Services)
 VaultVM[edgesec-vault]
 MgmtBridge --> VX10100
 MgmtBridge --> VX10101
@@ -105,9 +105,9 @@ class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ```mermaid
 graph LR
 VMBridge[vmbr1 - VM/Services Bridge]
-VX10110[vxlan10110 - tenant1_services]
-VX9000[vxlan9000 - edgesec tenant1 services]
-VX9003[vxlan9003 - proxy_ext]
+VX10110(vxlan10110 - tenant1_services)
+VX9000(vxlan9000 - edgesec tenant1 services)
+VX9003(vxlan9003 - proxy_ext)
 CustVM[tenant1_customer_vm]
 RestVM[edgesec-rest]
 RadiusVM[edgesec-radius]
@@ -137,8 +137,8 @@ class VX9003,ProxyVM proxy;
 ```mermaid
 graph LR
 ExtBridge[vmbr2 - Hybrid-Leaf GW]
-VX9003[vxlan9003 - proxy_ext]
-VX10120[vxlan10120 - tenant1_ext]
+VX9003(vxlan9003 - proxy_ext)
+VX10120(vxlan10120 - tenant1_ext)
 Gateway1[Primary Gateway-ISP1]
 Gateway2[Backup Gateway-ISP2]
 LegacyVLAN[Legacy VLANs]
