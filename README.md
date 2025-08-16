@@ -109,7 +109,6 @@ VX9000 --> RestVM
 VX9000 --> RadiusVM
 VX9000 --> DNSVM
 ProxyVM --> VX9003
-VX10110 -.-> VX9000
 classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
 classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
 class VMBridge,VX10110,VX9000,VX9006,RestVM,RadiusVM,DNSVM vm;
