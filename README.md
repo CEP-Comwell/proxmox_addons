@@ -26,45 +26,13 @@ VMBridge[vmbr1 - VM Bridge]
 VMBridge --> VX10110[vxlan10110 - Tenant VM/Service]
 VX10110 --> VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
 VX9000 --> VX9006[vxlan9006 - edgesec-vault]
-RestVM[edgesec-rest]
-RadiusVM[edgesec-radius]
-DNSVM[edgesec-dns]
-RestVM --> VX9000
-RadiusVM --> VX9000
-DNSVM --> VX9000
 
-Spacer2[" "]:::spacer
-
-%% External Zone (vertical chain)
-ExtBridge[vmbr2 - External Bridge]
-ExtBridge --> VX9003[vxlan9003 - Proxy Ext]
-VX9003 --> VX10120[vxlan10120 - External]
-ProxyVM[Traefik Proxy VM]
-ProxyVM --> VX9003
-ProxyVM --> ExtBridge
-Gateway1[Primary Gateway - ISP 1]
-Gateway2[Backup Gateway - ISP 2]
-LegacyVLAN[Legacy VLANs]
-ExtBridge --> Gateway1
-ExtBridge --> Gateway2
-ExtBridge --> LegacyVLAN
-
-%% Bridge-to-bridge connections for vertical flow using spacers
-MgmtBridge --> Spacer1 --> VMBridge
-VMBridge --> Spacer2 --> ExtBridge
-
-  %% VXLANs to fabricd (global, not in subgraph)
+## 🛰️ [edgesec-SDN](edgesec-sdn/README.md)
   Fabricd[fabricd - IS-IS Routing]
   VX10100 --> Fabricd
   VX10101 --> Fabricd
   VX10102 --> Fabricd
   VX10110 --> Fabricd
-  VX9000 --> Fabricd
-  VX9006 --> Fabricd
-  VX9003 --> Fabricd
-  VX10120 --> Fabricd
-  VXCEPH2 --> Fabricd
-  VX10032 --> Fabricd
 
   %% Custom bridge colors (for nodes)
   classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
@@ -72,39 +40,19 @@ VMBridge --> Spacer2 --> ExtBridge
   classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
   classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
   classDef spacer fill:#ffffff00,stroke:#ffffff00;
-
-  class MgmtBridge,VaultVM,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
-  class VMBridge,RestVM,RadiusVM,DNSVM,VX10110,VX9000,VX9006 vm;
   class ExtBridge,ProxyVM,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
   class Spacer1,Spacer2 spacer;
-```
-
-
 **Reference Diagram (Mermaid):**
 ```mermaid
-graph TD
-
-%% Management Zone
 MgmtBridge[vmbr0 - Management Bridge]
-VX10100[vxlan10100 - Management]
 VX10101[vxlan10101 - Engineering]
 VX10102[vxlan10102 - Support]
 VXCEPH2[vxlan10031 - Ceph Cluster]
 VX10032[vxlan10032 - Core Services]
 MgmtBridge --> VX10100
 MgmtBridge --> VX10101
-MgmtBridge --> VX10102
-MgmtBridge --> VXCEPH2
-MgmtBridge --> VX10032
-VaultVM[edgesec-vault]
-VaultVM --> VX10032
-
 %% VM/Services Zone
 VMBridge[vmbr1 - VM Bridge]
-VX10110[vxlan10110 - Tenant VM/Service]
-VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
-VX9006[vxlan9006 - edgesec-vault]
-VMBridge --> VX10110
 VMBridge --> VX9000
 VMBridge --> VX9006
 RestVM[edgesec-rest]
@@ -115,7 +63,6 @@ RadiusVM --> VX9000
 DNSVM --> VX9000
 
 %% External Zone
-ExtBridge[vmbr2 - External Bridge]
 VX9003[vxlan9003 - Proxy Ext]
 VX10120[vxlan10120 - External]
 ExtBridge --> VX9003
