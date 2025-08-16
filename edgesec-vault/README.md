@@ -1,4 +1,4 @@
-<img src="../blob/images/vault_oss.webp" alt="HashiCorp Vault OSS" width="300" align="right"/>
+<img src="../blob/images/vault_oss.webp" alt="HashiCorp Vault OSS" width="340" align="right"/>
 
 # edgesec-Vault
 
