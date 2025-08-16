@@ -53,16 +53,16 @@ ExtBridge --> VX10120
 ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
-VX10100 --> Fabricd
-VX10101 --> Fabricd
-VX10102 --> Fabricd
-VX10110 --> Fabricd
-VX9000 --> Fabricd
-VX9006 --> Fabricd
-VX9003 --> Fabricd
-VX10120 --> Fabricd
-VXCEPH2 --> Fabricd
-VX10032 --> Fabricd
+VX10100 <--> Fabricd
+VX10101 <--> Fabricd
+VX10102 <--> Fabricd
+VX10110 <--> Fabricd
+VX9000 <--> Fabricd
+VX9006 <--> Fabricd
+VX9003 <--> Fabricd
+VX10120 <--> Fabricd
+VXCEPH2 <--> Fabricd
+VX10032 <--> Fabricd
 
 %% Color coding
 classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
@@ -94,6 +94,11 @@ MgmtBridge --> VX10102
 MgmtBridge --> VXCEPH2
 MgmtBridge --> VX10032
 VaultVM --> VX10032
+VX10100 <--> Fabricd
+VX10101 <--> Fabricd
+VX10102 <--> Fabricd
+VXCEPH2 <--> Fabricd
+VX10032 <--> Fabricd
 classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
 class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ```
@@ -124,6 +129,9 @@ VX9000 --> RestVM
 VX9000 --> RadiusVM
 VX9000 --> DNSVM
 VX9003 --> ProxyVM
+VX10110 <--> Fabricd
+VX9000 <--> Fabricd
+VX9003 <--> Fabricd
 
 classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
 classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
@@ -153,6 +161,8 @@ ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
 VX9003 --> ProxyVM
+VX9003 <--> Fabricd
+VX10120 <--> Fabricd
 
 classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
 classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
