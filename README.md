@@ -115,19 +115,23 @@ class VMBridge,VX10110,VX9000,VX9006,RestVM,RadiusVM,DNSVM vm;
 
 ### vmbr2 (External/Leaf-Edge Gateway Bridge)
 ```mermaid
-graph TD
+graph LR
 ExtBridge[vmbr2 - External Bridge]
-ExtBridge --> VX9003[vxlan9003 - Proxy Ext]
-VX9003 --> VX10120[vxlan10120 - External]
+VX9003[vxlan9003 - Proxy Ext]
+VX10120[vxlan10120 - External]
 ProxyVM[Traefik Proxy VM]
-ProxyVM --> VX9003
-ProxyVM --> ExtBridge
 Gateway1[Primary Gateway - ISP 1]
 Gateway2[Backup Gateway - ISP 2]
 LegacyVLAN[Legacy VLANs]
+ExtBridge --> VX9003
+ExtBridge --> VX10120
 ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
+ProxyVM --> VX9003
+ProxyVM --> ExtBridge
+classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
+class ExtBridge,VX9003,VX10120,ProxyVM,Gateway1,Gateway2,LegacyVLAN ext;
 ```
 
 
