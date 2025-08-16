@@ -124,19 +124,19 @@ class VX9003,ProxyVM proxy;
 graph LR
 ExtBridge[vmbr2 - Hybrid-Leaf GW]
 VX9003[vxlan9003 - proxy_ext]
-VX10110[vxlan10110 - tenant1_services]
 VX10120[vxlan10120 - External]
-ProxyVM[Traefik Proxy VM]
 Gateway1[Primary Gateway-ISP1]
 Gateway2[Backup Gateway-ISP2]
 LegacyVLAN[Legacy VLANs]
+ProxyVM[Traefik Proxy VM]
+
 ExtBridge --> VX9003
 ExtBridge --> VX10120
 ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
-ProxyVM --> VX9003
-ProxyVM --> VX10110
+VX9003 --> ProxyVM
+
 classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
 classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
 class ExtBridge,VX10120,Gateway1,Gateway2,LegacyVLAN ext;
