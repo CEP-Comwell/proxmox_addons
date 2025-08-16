@@ -93,17 +93,24 @@ class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 
 ### vmbr1 (VM/Services Bridge)
 ```mermaid
-graph TD
+graph LR
 VMBridge[vmbr1 - VM Bridge]
-VMBridge --> VX10110[vxlan10110 - Tenant VM/Service]
-VX10110 --> VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
-VX9000 --> VX9006[vxlan9006 - edgesec-vault]
+VX10110[vxlan10110 - Tenant VM/Service]
+VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
+VX9006[vxlan9006 - edgesec-vault]
 RestVM[edgesec-rest]
 RadiusVM[edgesec-radius]
 DNSVM[edgesec-dns]
-RestVM --> VX9000
-RadiusVM --> VX9000
-DNSVM --> VX9000
+VMBridge --> VX10110
+VMBridge --> VX9000
+VMBridge --> VX9006
+VX9000 --> RestVM
+VX9000 --> RadiusVM
+VX9000 --> DNSVM
+VX10110 -.-> VX9000
+VX9000 -.-> VX9006
+classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
+class VMBridge,VX10110,VX9000,VX9006,RestVM,RadiusVM,DNSVM vm;
 ```
 
 ### vmbr2 (External/Leaf-Edge Gateway Bridge)
