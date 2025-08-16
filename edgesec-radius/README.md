@@ -1,5 +1,4 @@
-src/
-tests/
+<img src="../blob/images/cloud_radius.png" alt="EZRADIUS Cloud" width="320" align="right"/>
 
 # edgesec-RADIUS Role
 
