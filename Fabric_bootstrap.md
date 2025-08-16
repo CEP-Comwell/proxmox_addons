@@ -187,7 +187,6 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 | management        | management    | Management traffic, RBAC, remote admin | 10100 |
 | engineering       | engineering   | Engineering/ops traffic, RBAC | 10101 |
 | support           | support       | Support/field ops, RBAC | 10102 |
-| ceph_pub          | ceph pub      | Storage overlay (Ceph public) | 10030 |
 | ceph_cluster      | ceph cluster  | Storage overlay (Ceph cluster) | 10031 |
 | core-services     | core services | Core platform services (e.g., Vault) | 10032 |
 
@@ -195,10 +194,7 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 
 | 🟨 overlay name   | overlay type   | Description/Role         | VNI Example |
 |:------------------|:--------------|:------------------------|:-----------:|
-| services          | dns           | Common DNS overlay, RBAC/namespace | 9000 |
-| services          | monitoring    | Common monitoring overlay | 9001 |
-| services          | rest          | REST API overlay for external access | 9005 |
-| services          | radius        | RADIUS overlay for external auth | 9004 |
+| services          | services      | Common service overlay: DNS, Monitoring, REST, RADIUS | 9000 |
 | tenant            | vm/service    | Tenant VM/service overlay (one per host) | 10110 |
 
 **vmbr2 (External/Leaf-Edge Gateway Bridge)**
@@ -228,20 +224,19 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 
 ### Common Service Overlays (per site)
 
-| Overlay Name | VNI   | Bridge | Description |
-|--------------|-------|--------|-------------|
-| dns          | 9000  | vmbr1  | DNS (RBAC, namespace) |
-| monitoring   | 9001  | vmbr1  | Monitoring |
-| vault        | 9006  | vmbr1  | edgesec-VAULT (RBAC, namespace) |
-| rest         | 9005  | vmbr1  | REST API for external access |
-| radius       | 9004  | vmbr1  | RADIUS for external auth |
-| proxy_ext    | 9003  | vmbr2  | Proxy for external access |
+| Overlay Name    | VNI   | Bridge | Description |
+|-----------------|-------|--------|-------------|
+| dns             | 9000  | vmbr1  | DNS (RBAC, namespace) |
+| monitoring      | 9000  | vmbr1  | Monitoring |
+| edgesec-rest    | 9000  | vmbr1  | edgesec-REST API for external access |
+| edgesec-radius  | 9000  | vmbr1  | edgesec-RADIUS for external auth |
+| edgesec-vault   | 9006  | vmbr1  | edgesec-VAULT (RBAC, namespace) |
+| proxy_ext       | 9003  | vmbr2  | Proxy for external access |
 
 ### Storage Overlays
 
 | Overlay Name | VNI    | Bridge |
 |--------------|--------|--------|
-| ceph_pub     | 10030  | vmbr0  |
 | ceph_cluster | 10031  | vmbr0  |
 
 For a visual reference, see the architecture diagram and `blob/mmd/edgesec-single-tenant-bridges.mmd`.
