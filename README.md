@@ -87,6 +87,8 @@ MgmtBridge --> VX10102
 MgmtBridge --> VXCEPH2
 MgmtBridge --> VX10032
 VaultVM --> VX10032
+classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
+class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ```
 
 ### vmbr1 (VM/Services Bridge)
