@@ -61,6 +61,14 @@ VX9003 --> Fabricd
 VX10120 --> Fabricd
 VXCEPH2 --> Fabricd
 VX10032 --> Fabricd
+
+%% Color coding
+classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
+classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
+classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
+class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
+class VMBridge,VX10110,VX9000,VX9006 vm;
+class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ```
 
 ### vmbr0 (Management Bridge)
