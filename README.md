@@ -28,7 +28,7 @@ subgraph VXLANs
 	VX10102[vxlan10102 - tenant1_support]
 	VXCEPH2[vxlan10031 - ceph_cluster]
 	VX10032[vxlan10032 - core-services]
-	VX10110[vxlan10110 - tenant1_service]
+	VX10110[vxlan10110 - tenant1_services]
 	VX9000[vxlan9000 - Common service overlay]
 	VX9006[vxlan9006 - edgesec-vault]
 	VX9003[vxlan9003 - proxy_ext]
@@ -95,7 +95,7 @@ class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ```mermaid
 graph LR
 VMBridge[vmbr1 - VM/Services Bridge]
-VX10110[vxlan10110 - tenant1 VM]
+VX10110[vxlan10110 - tenant1_services]
 VX9000[vxlan9000 - edgesec tenant1 services]
 VX9003[vxlan9003 - proxy_ext]
 CustVM[tenant1_customer_vm]
@@ -124,10 +124,11 @@ class VX9003,ProxyVM proxy;
 graph LR
 ExtBridge[vmbr2 - Hybrid-Leaf GW]
 VX9003[vxlan9003 - proxy_ext]
+VX10110[vxlan10110 - tenant1_services]
 VX10120[vxlan10120 - External]
 ProxyVM[Traefik Proxy VM]
-Gateway1[Primary Gateway - ISP 1]
-Gateway2[Backup Gateway - ISP 2]
+Gateway1[Primary Gateway-ISP1]
+Gateway2[Backup Gateway-ISP2]
 LegacyVLAN[Legacy VLANs]
 ExtBridge --> VX9003
 ExtBridge --> VX10120
@@ -135,7 +136,7 @@ ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
 ProxyVM --> VX9003
-ProxyVM --> ExtBridge
+ProxyVM --> VX10110
 classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
 classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
 class ExtBridge,VX10120,Gateway1,Gateway2,LegacyVLAN ext;
