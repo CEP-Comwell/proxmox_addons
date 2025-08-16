@@ -95,8 +95,8 @@ class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ```mermaid
 graph LR
 VMBridge[vmbr1 - VM Bridge]
-VX10110[vxlan10110 - Tenant VM/Service]
-VX9000[vxlan9000 - edgesec tenant services]
+VX10110[vxlan10110 - tenant1 VM]
+VX9000[vxlan9000 - edgesec tenant1 services]
 VX9003[vxlan9003 - proxy_ext]
 CustVM[tenant1_customer_vm]
 RestVM[edgesec-rest]
