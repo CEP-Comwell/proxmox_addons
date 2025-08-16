@@ -57,10 +57,12 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 
 **Reference Diagram (Mermaid):**
 ```mermaid
-graph LR
+graph TD
 
-  %% Management Zone
+  %% Management Zone (top, light blue background)
   subgraph MgmtZone[vmbr0 - Management Zone]
+    direction TB
+    style MgmtZone fill:#f0f7ff,stroke:#1976d2,stroke-width:2px
     MgmtBridge[vmbr0 - Management Bridge]
     VX10100[vxlan10100 - Management]
     VX10101[vxlan10101 - Engineering]
@@ -76,8 +78,10 @@ graph LR
     VaultVM --> VX10032
   end
 
-  %% VM/Services Zone
+  %% VM/Services Zone (middle, light yellow background)
   subgraph VMZone[vmbr1 - VM/Services Zone]
+    direction TB
+    style VMZone fill:#fffde7,stroke:#fbc02d,stroke-width:2px
     VMBridge[vmbr1 - VM Bridge]
     VX10110[vxlan10110 - Tenant VM/Service]
     VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
@@ -93,8 +97,10 @@ graph LR
     DNSVM --> VX9000
   end
 
-  %% External Zone
+  %% External Zone (bottom, light red background)
   subgraph ExtZone[vmbr2 - External Zone]
+    direction TB
+    style ExtZone fill:#fff3e0,stroke:#d84315,stroke-width:2px
     ExtBridge[vmbr2 - External Bridge]
     VX9003[vxlan9003 - Proxy Ext]
     VX10120[vxlan10120 - External]
@@ -111,6 +117,10 @@ graph LR
     ExtBridge --> LegacyVLAN
   end
 
+  %% Waterfall connections between bridge zones
+  MgmtBridge --> VMBridge
+  VMBridge --> ExtBridge
+
   %% VXLANs to fabricd (global, not in subgraph)
   Fabricd[fabricd - IS-IS Routing]
   VX10100 --> Fabricd
@@ -124,7 +134,7 @@ graph LR
   VXCEPH2 --> Fabricd
   VX10032 --> Fabricd
 
-  %% Custom bridge colors
+  %% Custom bridge colors (for nodes)
   classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
   classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
   classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
