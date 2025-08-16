@@ -130,10 +130,10 @@ class VX9003,ProxyVM proxy;
 ```
 
 </details>
-<summary><strong>Network Diagrams vmbr2 (click to expand)</strong></summary>
+<summary><strong>vmbr2 External/Hybrid-Leaf Gateway (click to expand)</strong></summary>
 <details>
 
-### vmbr2 (External/Leaf-Edge Gateway Bridge)
+### vmbr2 (External/Hybrid-Leaf Gateway Bridge)
 ```mermaid
 graph LR
 ExtBridge[vmbr2 - Hybrid-Leaf GW]
