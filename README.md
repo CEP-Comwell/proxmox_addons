@@ -96,7 +96,7 @@ class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 graph LR
 VMBridge[vmbr1 - VM Bridge]
 VX10110[vxlan10110 - Tenant VM/Service]
-VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
+VX9000[vxlan9000 - edgesec tenant services]
 VX9003[vxlan9003 - proxy_ext]
 CustVM[tenant1_customer_vm]
 RestVM[edgesec-rest]
