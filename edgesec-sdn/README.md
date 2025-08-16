@@ -1,5 +1,5 @@
 <p align="right">
-  <img src="../blob/images/multi-site-sdn-fabric.png" alt="Multi-site Proxmox SDN Architecture" width="400" />
+  <img src="../blob/images/multi-site-sdn-fabric.png" alt="Multi-site Proxmox SDN Architecture" width="600" />
 </p>
 
 # edgesec-SDN
