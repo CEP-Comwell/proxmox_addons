@@ -12,7 +12,9 @@ This repository provides advanced Ansible automation and monitoring add-ons for 
 
 A modular Ansible role and playbook collection for deploying, managing, and monitoring SDN overlays, microsegmentation, and multi-site fabric topologies in Proxmox-based HCI.
 
-**Network Diagrams:**
+
+<details>
+<summary><strong>Network Diagrams (click to expand)</strong></summary>
 
 ### edgesec-SDN: Bridges and Connected VXLANs
 ```mermaid
@@ -142,6 +144,8 @@ classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
 class ExtBridge,VX10120,Gateway1,Gateway2,LegacyVLAN ext;
 class VX9003,ProxyVM proxy;
 ```
+
+</details>
 
 
 **Features:**
