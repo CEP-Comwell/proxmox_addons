@@ -14,7 +14,7 @@ A modular Ansible role and playbook collection for deploying, managing, and moni
 
 
 <details>
-<summary><strong>Network Diagrams (click to expand)</strong></summary>
+<summary><strong>Network Diagrams edgesec-SDN: Bridges and Connected VXLANs (click to expand)</strong></summary>
 
 ### edgesec-SDN: Bridges and Connected VXLANs
 ```mermaid
@@ -74,7 +74,7 @@ class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ```
 
 </details>
-<summary><strong>Network Diagrams vmbr0 (click to expand)</strong></summary>
+<summary><strong>vmbr0 Management Bridge (click to expand)</strong></summary>
 <details>
 
 ### vmbr0 (Management Bridge)
@@ -98,7 +98,7 @@ class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ```
 
 </details>
-<summary><strong>Network Diagrams vmbr1 (click to expand)</strong></summary>
+<summary><strong>vmbr1 VM/Services Bridge (click to expand)</strong></summary>
 <details>
 
 ### vmbr1 (VM/Services Bridge)
