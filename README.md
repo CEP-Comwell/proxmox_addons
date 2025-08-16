@@ -7,7 +7,12 @@ This repository provides advanced Ansible automation and monitoring add-ons for 
 
 
 
-## Network Diagrams
+## 🛰️ [edgesec-SDN](edgesec-sdn/README.md)
+*Automated SDN fabric orchestration for Proxmox and multi-site edge environments.*
+
+A modular Ansible role and playbook collection for deploying, managing, and monitoring SDN overlays, microsegmentation, and multi-site fabric topologies in Proxmox-based HCI.
+
+**Network Diagrams:**
 
 ### edgesec-SDN: Bridges and Connected VXLANs
 ```mermaid
