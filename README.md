@@ -75,12 +75,17 @@ class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ```mermaid
 graph TD
 MgmtBridge[vmbr0 - Management Bridge]
-MgmtBridge --> VX10100[vxlan10100 - Management]
-VX10100 --> VX10101[vxlan10101 - Engineering]
-VX10101 --> VX10102[vxlan10102 - Support]
-VX10102 --> VXCEPH2[vxlan10031 - Ceph Cluster]
-VXCEPH2 --> VX10032[vxlan10032 - Core Services]
+VX10100[vxlan10100 - Management]
+VX10101[vxlan10101 - Engineering]
+VX10102[vxlan10102 - Support]
+VXCEPH2[vxlan10031 - Ceph Cluster]
+VX10032[vxlan10032 - Core Services]
 VaultVM[edgesec-vault]
+MgmtBridge --> VX10100
+MgmtBridge --> VX10101
+MgmtBridge --> VX10102
+MgmtBridge --> VXCEPH2
+MgmtBridge --> VX10032
 VaultVM --> VX10032
 ```
 
