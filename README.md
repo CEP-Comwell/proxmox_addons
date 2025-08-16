@@ -16,20 +16,37 @@ A modular Ansible role and playbook collection for deploying, managing, and moni
 
 ### edgesec-SDN: Bridges and Connected VXLANs
 ```mermaid
-graph TD
-MgmtBridge[vmbr0 - Management Bridge]
-VMBridge[vmbr1 - VM Bridge]
-ExtBridge[vmbr2 - External Bridge]
-MgmtBridge --> VX10100[vxlan10100]
-MgmtBridge --> VX10101[vxlan10101]
-MgmtBridge --> VX10102[vxlan10102]
-MgmtBridge --> VXCEPH2[vxlan10031]
-MgmtBridge --> VX10032[vxlan10032]
-VMBridge --> VX10110[vxlan10110]
-VMBridge --> VX9000[vxlan9000]
-VMBridge --> VX9006[vxlan9006]
-ExtBridge --> VX9003[vxlan9003]
-ExtBridge --> VX10120[vxlan10120]
+graph LR
+subgraph Bridges
+	MgmtBridge[vmbr0 - Management]
+	VMBridge[vmbr1 - VM/Services]
+	ExtBridge[vmbr2 - External]
+end
+subgraph VXLANs
+	VX10100[vxlan10100]
+	VX10101[vxlan10101]
+	VX10102[vxlan10102]
+	VXCEPH2[vxlan10031]
+	VX10032[vxlan10032]
+	VX10110[vxlan10110]
+	VX9000[vxlan9000]
+	VX9006[vxlan9006]
+	VX9003[vxlan9003]
+	VX10120[vxlan10120]
+	Gateway1[Primary Gateway]
+	Gateway2[Backup Gateway]
+	LegacyVLAN[Legacy VLANs]
+end
+MgmtBridge --> VX10100
+MgmtBridge --> VX10101
+MgmtBridge --> VX10102
+MgmtBridge --> VXCEPH2
+MgmtBridge --> VX10032
+VMBridge --> VX10110
+VMBridge --> VX9000
+VMBridge --> VX9006
+ExtBridge --> VX9003
+ExtBridge --> VX10120
 ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
