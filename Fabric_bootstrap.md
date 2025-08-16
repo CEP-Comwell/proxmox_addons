@@ -221,6 +221,7 @@ The SDN fabric uses three primary bridges for strict segmentation. Overlays are 
 | tenant1_support     | 10102 | vmbr0  |
 | tenant1_service     | 10110 | vmbr1  |
 | tenant1_external    | 10120 | vmbr2  |
+| tenant1_customer_vm | 10111 | vmbr1  |
 
 ### Common Service Overlays (per site)
 

@@ -96,6 +96,7 @@ class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 graph LR
 VMBridge[vmbr1 - VM Bridge]
 VX10110[vxlan10110 - Tenant VM/Service]
+CustVM[vxlan10111 - tenant1_customer_vm]
 VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
 VX9003[vxlan9003 - proxy_ext]
 RestVM[edgesec-rest]
@@ -109,6 +110,7 @@ VX9000 --> RestVM
 VX9000 --> RadiusVM
 VX9000 --> DNSVM
 ProxyVM --> VX9003
+CustVM --> VX10110
 classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
 classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
 class VMBridge,VX10110,VX9000,VX9006,RestVM,RadiusVM,DNSVM vm;
