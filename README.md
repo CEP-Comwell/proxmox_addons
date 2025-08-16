@@ -32,7 +32,7 @@ subgraph VXLANs
 	VX9000[vxlan9000 - Common service overlay]
 	VX9006[vxlan9006 - edgesec-vault]
 	VX9003[vxlan9003 - proxy_ext]
-	VX10120[vxlan10120 - tenant1_external]
+	VX10120[vxlan10120 - tenant1_ext]
 	Gateway1[Primary Gateway]
 	Gateway2[Backup Gateway]
 	LegacyVLAN[Legacy VLANs]
