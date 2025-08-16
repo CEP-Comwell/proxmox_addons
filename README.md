@@ -67,12 +67,10 @@ MgmtBridge --> VX10102
 MgmtBridge --> VXCEPH2
 MgmtBridge --> VX10032
 VaultVM[edgesec-vault]
-  classDef spacer fill:#ffffff00,stroke:#ffffff00;
 VaultVM --> VX10032
 
 %% VM/Services Zone
 VMBridge[vmbr1 - VM Bridge]
-  class Spacer1,Spacer2 spacer;
 VX10110[vxlan10110 - Tenant VM/Service]
 VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
 VX9006[vxlan9006 - edgesec-vault]
