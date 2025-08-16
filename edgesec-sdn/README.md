@@ -2,7 +2,7 @@
 
 <table>
   <tr>
-    <td align="left" valign="top" style="min-width:320px;">
+    <td align="left" valign="top" style="min-width:240px;">
       This directory contains playbooks, Docker Compose files, and documentation for the edgesec-SDN (Software Defined Networking) automation stack.
     </td>
     <td align="right" valign="top">
