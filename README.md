@@ -20,7 +20,7 @@ graph LR
 subgraph Bridges
 	MgmtBridge[vmbr0 - Management]
 	VMBridge[vmbr1 - VM/Services]
-	ExtBridge[vmbr2 - External]
+	ExtBridge[vmbr2 - Hybrid-Leaf GW]
 end
 subgraph VXLANs
 	VX10100[vxlan10100 - tenant1_management]
@@ -122,7 +122,7 @@ class VX9003,ProxyVM proxy;
 ### vmbr2 (External/Leaf-Edge Gateway Bridge)
 ```mermaid
 graph LR
-ExtBridge[vmbr2 - Hybrid-Leaf Gateway]
+ExtBridge[vmbr2 - Hybrid-Leaf GW]
 VX9003[vxlan9003 - proxy_ext]
 VX10120[vxlan10120 - External]
 ProxyVM[Traefik Proxy VM]
