@@ -4,55 +4,50 @@
 ## PROXMOX_ADDONS
 
 This repository provides advanced Ansible automation and monitoring add-ons for Proxmox-based hyper-converged infrastructure.  
-It is organized into modular subprojects, each with its own documentation and roles. 
 
-## 🧬 Integration Modules
----
+%% Management Zone (vertical chain)
+MgmtBridge[vmbr0 - Management Bridge]
+MgmtBridge --> VX10100[vxlan10100 - Management]
+VX10100 --> VX10101[vxlan10101 - Engineering]
+VX10101 --> VX10102[vxlan10102 - Support]
+VX10102 --> VXCEPH2[vxlan10031 - Ceph Cluster]
+VXCEPH2 --> VX10032[vxlan10032 - Core Services]
+VaultVM[edgesec-vault]
+VaultVM --> VX10032
 
-## 🛰️ [edgesec-TAPx](edgesec-tapx/README.md)
-*Modular traffic and probe automation for full packet visibility and DPI in Proxmox and Docker environments.*
-  
-**Overview:**
-Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traffic to a monitoring bridge for DPI, IDS, or security analysis. Supports dynamic discovery and persistent setup of tap, Docker, and VXLAN interfaces, with modular roles for each probe type.
+Spacer1[" "]:::spacer
 
-**Features:**
-- Dynamic discovery of VM, Docker, and VXLAN interfaces
-- Automated veth/bridge setup and teardown
-- Persistent traffic mirroring and probe routines for DPI/IDS
-- Automated cleanup routines for each probe role
-- Modular, extensible Ansible roles for each probe type
-</summary>
+%% VM/Services Zone (vertical chain)
+VMBridge[vmbr1 - VM Bridge]
+VMBridge --> VX10110[vxlan10110 - Tenant VM/Service]
+VX10110 --> VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
+VX9000 --> VX9006[vxlan9006 - edgesec-vault]
+RestVM[edgesec-rest]
+RadiusVM[edgesec-radius]
+DNSVM[edgesec-dns]
+RestVM --> VX9000
+RadiusVM --> VX9000
+DNSVM --> VX9000
 
-**Quick Start:**
-1. See [edgesec-tapx/README.md](edgesec-tapx/README.md) for setup instructions and usage details.
-2. Configure monitoring bridge and interfaces in `config.yml`.
-3. Run the relevant probe playbooks to enable mirroring and traffic analysis.
+Spacer2[" "]:::spacer
 
-**Configuration Options:**
-- Monitoring bridge and interface settings in `config.yml`
-- Per-host variables in `host_vars/`
+%% External Zone (vertical chain)
+ExtBridge[vmbr2 - External Bridge]
+ExtBridge --> VX9003[vxlan9003 - Proxy Ext]
+VX9003 --> VX10120[vxlan10120 - External]
+ProxyVM[Traefik Proxy VM]
+ProxyVM --> VX9003
+ProxyVM --> ExtBridge
+Gateway1[Primary Gateway - ISP 1]
+Gateway2[Backup Gateway - ISP 2]
+LegacyVLAN[Legacy VLANs]
+ExtBridge --> Gateway1
+ExtBridge --> Gateway2
+ExtBridge --> LegacyVLAN
 
-**Integration Points:**
-- Integrates with SDN Fabric for network topology
-- Supports DPI/IDS tools via mirrored traffic
-- Designed for orchestration via edgesec-REST API
-
-**References:**
-- [edgesec-tapx/README.md](edgesec-tapx/README.md)
-<!-- - [docs/integration-guide.md](docs/integration-guide.md) -->
-
-</details>
----
-
-## 🕸️ [edgesec-SDN](Fabric_bootstrap.md)
-*Comprehensive SDN fabric automation for scalable, multi-site Proxmox deployments.*
-
-**Network Architecture:**
-- The SDN fabric is built around three primary bridges:
-	- `vmbr0` (Management, left): Hosts management, engineering, and support overlays, as well as storage overlays (ceph_pub, ceph_cluster).
-	- `vmbr1` (VM/Services, center): Hosts tenant/service overlays and all core service overlays (DNS, Monitoring, Vault, REST, RADIUS).
-	- `vmbr2` (External, right): Connects to external gateways and legacy VLANs, and provides external access overlays (proxy_ext, external).
-- Overlays (VXLANs) are mapped to these bridges for isolation and segmentation, as shown in the architecture diagram below.
+%% Bridge-to-bridge connections for vertical flow using spacers
+MgmtBridge --> Spacer1 --> VMBridge
+VMBridge --> Spacer2 --> ExtBridge
 
 
 **Reference Diagram (Mermaid):**
@@ -72,10 +67,12 @@ MgmtBridge --> VX10102
 MgmtBridge --> VXCEPH2
 MgmtBridge --> VX10032
 VaultVM[edgesec-vault]
+  classDef spacer fill:#ffffff00,stroke:#ffffff00;
 VaultVM --> VX10032
 
 %% VM/Services Zone
 VMBridge[vmbr1 - VM Bridge]
+  class Spacer1,Spacer2 spacer;
 VX10110[vxlan10110 - Tenant VM/Service]
 VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
 VX9006[vxlan9006 - edgesec-vault]
