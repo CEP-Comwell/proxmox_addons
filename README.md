@@ -39,7 +39,7 @@ subgraph VXLANs
 	Gateway2[Backup Gateway]
 	LegacyVLAN[Legacy VLANs]
 end
-Fabricd{fabricd\nIS-IS Routing}
+VXLANGW{VXLAN-Gateway}
 MgmtBridge --> VX10100
 MgmtBridge --> VX10101
 MgmtBridge --> VX10102
@@ -53,16 +53,16 @@ ExtBridge --> VX10120
 ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
-VX10100 <--> Fabricd
-VX10101 <--> Fabricd
-VX10102 <--> Fabricd
-VX10110 <--> Fabricd
-VX9000 <--> Fabricd
-VX9006 <--> Fabricd
-VX9003 <--> Fabricd
-VX10120 <--> Fabricd
-VXCEPH2 <--> Fabricd
-VX10032 <--> Fabricd
+VX10100 <--> VXLANGW
+VX10101 <--> VXLANGW
+VX10102 <--> VXLANGW
+VX10110 <--> VXLANGW
+VX9000 <--> VXLANGW
+VX9006 <--> VXLANGW
+VX9003 <--> VXLANGW
+VX10120 <--> VXLANGW
+VXCEPH2 <--> VXLANGW
+VX10032 <--> VXLANGW
 
 %% Color coding
 classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
@@ -87,18 +87,18 @@ VX10102(vxlan10102 - Support)
 VXCEPH2(vxlan10031 - Ceph Cluster)
 VX10032(vxlan10032 - Core Services)
 VaultVM[edgesec-vault]
-Fabricd{fabricd\nIS-IS Routing}
+VXLANGW{VXLAN-Gateway}
 MgmtBridge --> VX10100
 MgmtBridge --> VX10101
 MgmtBridge --> VX10102
 MgmtBridge --> VXCEPH2
 MgmtBridge --> VX10032
 VaultVM --> VX10032
-VX10100 <--> Fabricd
-VX10101 <--> Fabricd
-VX10102 <--> Fabricd
-VXCEPH2 <--> Fabricd
-VX10032 <--> Fabricd
+VX10100 <--> VXLANGW
+VX10101 <--> VXLANGW
+VX10102 <--> VXLANGW
+VXCEPH2 <--> VXLANGW
+VX10032 <--> VXLANGW
 classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
 class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ```
@@ -119,7 +119,7 @@ RestVM[edgesec-rest]
 RadiusVM[edgesec-radius]
 DNSVM[edgesec-dns]
 ProxyVM[Traefik Proxy VM]
-Fabricd{fabricd\nIS-IS Routing}
+VXLANGW{VXLAN-Gateway}
 
 VMBridge --> VX10110
 VMBridge --> VX9000
@@ -129,9 +129,9 @@ VX9000 --> RestVM
 VX9000 --> RadiusVM
 VX9000 --> DNSVM
 VX9003 --> ProxyVM
-VX10110 <--> Fabricd
-VX9000 <--> Fabricd
-VX9003 <--> Fabricd
+VX10110 <--> VXLANGW
+VX9000 <--> VXLANGW
+VX9003 <--> VXLANGW
 
 classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
 classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
@@ -153,7 +153,7 @@ Gateway1[Primary Gateway-ISP1]
 Gateway2[Backup Gateway-ISP2]
 LegacyVLAN[Legacy VLANs]
 ProxyVM[Traefik Proxy VM]
-Fabricd{fabricd\nIS-IS Routing}
+VXLANGW{VXLAN-Gateway}
 
 ExtBridge --> VX9003
 ExtBridge --> VX10120
@@ -161,8 +161,8 @@ ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
 VX9003 --> ProxyVM
-VX9003 <--> Fabricd
-VX10120 <--> Fabricd
+VX9003 <--> VXLANGW
+VX10120 <--> VXLANGW
 
 classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
 classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
