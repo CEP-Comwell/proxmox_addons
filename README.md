@@ -97,7 +97,6 @@ graph LR
 VMBridge[vmbr1 - VM Bridge]
 VX10110[vxlan10110 - Tenant VM/Service]
 VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
-VX9006[vxlan9006 - edgesec-vault]
 VX9003[vxlan9003 - proxy_ext]
 RestVM[edgesec-rest]
 RadiusVM[edgesec-radius]
@@ -105,14 +104,12 @@ DNSVM[edgesec-dns]
 ProxyVM[Traefik Proxy VM]
 VMBridge --> VX10110
 VMBridge --> VX9000
-VMBridge --> VX9006
 VMBridge --> VX9003
 VX9000 --> RestVM
 VX9000 --> RadiusVM
 VX9000 --> DNSVM
 ProxyVM --> VX9003
 VX10110 -.-> VX9000
-VX9000 -.-> VX9006
 classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
 classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
 class VMBridge,VX10110,VX9000,VX9006,RestVM,RadiusVM,DNSVM vm;
