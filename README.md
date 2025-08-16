@@ -124,7 +124,7 @@ class VX9003,ProxyVM proxy;
 graph LR
 ExtBridge[vmbr2 - Hybrid-Leaf GW]
 VX9003[vxlan9003 - proxy_ext]
-VX10120[vxlan10120 - External]
+VX10120[vxlan10120 - tenant1_ext]
 Gateway1[Primary Gateway-ISP1]
 Gateway2[Backup Gateway-ISP2]
 LegacyVLAN[Legacy VLANs]
