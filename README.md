@@ -12,6 +12,7 @@ This repository provides advanced Ansible automation and monitoring add-ons for 
 
 A modular Ansible role and playbook collection for deploying, managing, and monitoring SDN overlays, microsegmentation, and multi-site fabric topologies in Proxmox-based HCI.
 
+
 <details>
 <summary><strong>Network Diagrams edgesec-SDN: Bridges and Connected VXLANs (click to expand)</strong></summary>
 
@@ -71,10 +72,10 @@ class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 class VMBridge,VX10110,VX9000,VX9006 vm;
 class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ```
-
 </details>
-<summary><strong>Management Bridge (click to expand)</strong></summary>
+
 <details>
+<summary><strong>Management Bridge (click to expand)</strong></summary>
 
 ### vmbr0 (Management Bridge)
 ```mermaid
@@ -95,10 +96,10 @@ VaultVM --> VX10032
 classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
 class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ```
-
 </details>
-<summary><strong>VM/Services Bridge (click to expand)</strong></summary>
+
 <details>
+<summary><strong>VM/Services Bridge (click to expand)</strong></summary>
 
 ### vmbr1 (VM/Services Bridge)
 ```mermaid
@@ -127,10 +128,10 @@ classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
 class VMBridge,VX10110,VX9000,CustVM,RestVM,RadiusVM,DNSVM vm;
 class VX9003,ProxyVM proxy;
 ```
-
 </details>
-<summary><strong>External/Hybrid-Leaf Gateway (click to expand)</strong></summary>
+
 <details>
+<summary><strong>External/Hybrid-Leaf Gateway (click to expand)</strong></summary>
 
 ### vmbr2 (External/Hybrid-Leaf Gateway Bridge)
 ```mermaid
@@ -155,7 +156,6 @@ classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
 class ExtBridge,VX10120,Gateway1,Gateway2,LegacyVLAN ext;
 class VX9003,ProxyVM proxy;
 ```
-
 </details>
 
 **Features:**
