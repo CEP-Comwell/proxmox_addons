@@ -20,9 +20,9 @@ A modular Ansible role and playbook collection for deploying, managing, and moni
 ```mermaid
 graph LR
 subgraph Bridges
-	MgmtBridge[vmbr0 - Management]
-	VMBridge[vmbr1 - VM/Services]
-	ExtBridge[vmbr2 - Hybrid-Leaf GW]
+	MgmtBridge[[vmbr0 - Management]]
+	VMBridge[[vmbr1 - VM/Services]]
+	ExtBridge[[vmbr2 - Hybrid-Leaf GW]]
 end
 subgraph VXLANs
 	VX10100(vxlan10100 - tenant1_management)
@@ -80,7 +80,7 @@ class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ### vmbr0 (Management Bridge)
 ```mermaid
 graph TD
-MgmtBridge[vmbr0 - Management Bridge]
+MgmtBridge[[vmbr0 - Management Bridge]]
 VX10100(vxlan10100 - Management)
 VX10101(vxlan10101 - Engineering)
 VX10102(vxlan10102 - Support)
@@ -105,7 +105,7 @@ class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
 ### vmbr1 (VM/Services Bridge)
 ```mermaid
 graph LR
-VMBridge[vmbr1 - VM/Services Bridge]
+VMBridge[[vmbr1 - VM/Services Bridge]]
 VX10110(vxlan10110 - tenant1_services)
 VX9000(vxlan9000 - edgesec tenant1 services)
 VX9003(vxlan9003 - proxy_ext)
@@ -138,7 +138,7 @@ class VX9003,ProxyVM proxy;
 ### vmbr2 (External/Hybrid-Leaf Gateway Bridge)
 ```mermaid
 graph LR
-ExtBridge[vmbr2 - Hybrid-Leaf GW]
+ExtBridge[[vmbr2 - Hybrid-Leaf GW]]
 VX9003(vxlan9003 - proxy_ext)
 VX10120(vxlan10120 - tenant1_ext)
 Gateway1[Primary Gateway-ISP1]
