@@ -128,8 +128,9 @@ class VMBridge,VX10110,VX9000,CustVM,RestVM,RadiusVM,DNSVM vm;
 class VX9003,ProxyVM proxy;
 ```
 
-</details>
-<summary><strong>vmbr2 External/Hybrid-Leaf Gateway (click to expand)</strong></summary> <details>
+   </details>
+   <summary><strong>vmbr2 External/Hybrid-Leaf Gateway (click to expand)</strong></summary>
+   <details>
 
 ### vmbr2 (External/Hybrid-Leaf Gateway Bridge)
 ```mermaid
