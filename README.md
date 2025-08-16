@@ -59,10 +59,12 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 ```mermaid
 graph LR
 
-  %% Bridges (ordered left to right)
-  MgmtBridge[vmbr0 - Management Bridge]
-  VMBridge[vmbr1 - VM Bridge]
-  ExtBridge[vmbr2 - External Bridge]
+  %% Proxmox Node grouping
+  subgraph ProxmoxNode[Proxmox Node]
+    MgmtBridge[vmbr0 - Management Bridge]
+    VMBridge[vmbr1 - VM Bridge]
+    ExtBridge[vmbr2 - External Bridge]
+  end
 
   %% Services
   VaultVM[edgesec-vault]
@@ -99,7 +101,6 @@ graph LR
   DNSVM --> VX9000
   ProxyVM --> VX9003
   ProxyVM --> ExtBridge
-  %% Core Services VXLAN (new)
   MgmtBridge --> VX10032
 
   %% VM Bridge overlays (tenant/service and core services)
