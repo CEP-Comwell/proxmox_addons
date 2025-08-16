@@ -59,7 +59,7 @@ Automates probing and mirroring of VM, Docker, VXLAN, and HCI agent network traf
 ```mermaid
 graph TD
 
-  %% Management Zone (top, light blue background)
+  %% Management Zone (top left, light blue background)
   subgraph MgmtZone[vmbr0 - Management Zone]
     direction TB
     style MgmtZone fill:#f0f7ff,stroke:#1976d2,stroke-width:2px
@@ -78,48 +78,50 @@ graph TD
     VaultVM --> VX10032
   end
 
-  %% VM/Services Zone (middle, light yellow background)
-  subgraph VMZone[vmbr1 - VM/Services Zone]
+  %% VM/Services Zone (middle, indented, light yellow background)
+  subgraph VMZone[  vmbr1 - VM/Services Zone]
     direction TB
     style VMZone fill:#fffde7,stroke:#fbc02d,stroke-width:2px
-    VMBridge[vmbr1 - VM Bridge]
-    VX10110[vxlan10110 - Tenant VM/Service]
-    VX9000[vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
-    VX9006[vxlan9006 - edgesec-vault]
+    VMBridge[  vmbr1 - VM Bridge]
+    VX10110[  vxlan10110 - Tenant VM/Service]
+    VX9000[  vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius]
+    VX9006[  vxlan9006 - edgesec-vault]
     VMBridge --> VX10110
     VMBridge --> VX9000
     VMBridge --> VX9006
-    RestVM[edgesec-rest]
-    RadiusVM[edgesec-radius]
-    DNSVM[edgesec-dns]
+    RestVM[  edgesec-rest]
+    RadiusVM[  edgesec-radius]
+    DNSVM[  edgesec-dns]
     RestVM --> VX9000
     RadiusVM --> VX9000
     DNSVM --> VX9000
   end
 
-  %% External Zone (bottom, light red background)
-  subgraph ExtZone[vmbr2 - External Zone]
+  %% External Zone (bottom, more indented, light red background)
+  subgraph ExtZone[    vmbr2 - External Zone]
     direction TB
     style ExtZone fill:#fff3e0,stroke:#d84315,stroke-width:2px
-    ExtBridge[vmbr2 - External Bridge]
-    VX9003[vxlan9003 - Proxy Ext]
-    VX10120[vxlan10120 - External]
+    ExtBridge[    vmbr2 - External Bridge]
+    VX9003[    vxlan9003 - Proxy Ext]
+    VX10120[    vxlan10120 - External]
     ExtBridge --> VX9003
     ExtBridge --> VX10120
-    ProxyVM[Traefik Proxy VM]
+    ProxyVM[    Traefik Proxy VM]
     ProxyVM --> VX9003
     ProxyVM --> ExtBridge
-    Gateway1[Primary Gateway - ISP 1]
-    Gateway2[Backup Gateway - ISP 2]
-    LegacyVLAN[Legacy VLANs]
+    Gateway1[    Primary Gateway - ISP 1]
+    Gateway2[    Backup Gateway - ISP 2]
+    LegacyVLAN[    Legacy VLANs]
     ExtBridge --> Gateway1
     ExtBridge --> Gateway2
     ExtBridge --> LegacyVLAN
   end
 
-  %% Waterfall connections between bridge zones
-  MgmtBridge --> VMBridge
-  VMBridge --> ExtBridge
+  %% Waterfall connections between bridge zones (with invisible nodes for indentation)
+  MgmtBridge -.-> VMZoneStart(( ))
+  VMZoneStart -.-> VMBridge
+  VMBridge -.-> ExtZoneStart(( ))
+  ExtZoneStart -.-> ExtBridge
 
   %% VXLANs to fabricd (global, not in subgraph)
   Fabricd[fabricd - IS-IS Routing]
