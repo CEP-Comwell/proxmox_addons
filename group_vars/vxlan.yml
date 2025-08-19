@@ -6,7 +6,7 @@
 # When this file is updated, please back up the previous version.
 
 bridges:
-  - name: vmbr0
+  - name: vmbr99
     description: Management Bridge
     vxlan_overlays:
       - name: vxlan10100
@@ -35,7 +35,7 @@ bridges:
         vni: 9000
         description: DNS/Monitoring/edgesec-rest/edgesec-radius
 
-  - name: vmbr0
+  - name: vmbr99
     description: Management Bridge
     vxlan_overlays:
       - name: vxlan10100
