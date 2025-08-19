@@ -20,7 +20,7 @@ A modular Ansible role and playbook collection for deploying, managing, and moni
 ```mermaid
 graph LR
 subgraph Bridges
-	MgmtBridge[[vmbr0 - Management]]
+		MgmtBridge[[vmbr99 - Management]]
 	VMBridge[[vmbr1 - VM/Services]]
 	ExtBridge[[vmbr2 - Hybrid-Leaf GW]]
 end
@@ -77,10 +77,10 @@ class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 <details>
 <summary><strong>Management Bridge (click to expand)</strong></summary>
 
-### vmbr0 (Management Bridge)
+### vmbr99 (Management Bridge)
 ```mermaid
 graph TD
-MgmtBridge[[vmbr0 - Management Bridge]]
+MgmtBridge[[vmbr99 - Management Bridge]]
 VX10100(vxlan10100 - Management)
 VX10101(vxlan10101 - Engineering)
 VX10102(vxlan10102 - Support)
