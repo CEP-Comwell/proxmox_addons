@@ -6,4 +6,5 @@
 		- underlay
 		- vxlan
 		- frr
+		- nftables
 		# Add other local roles as needed (ipam, vm_nic, etc.)

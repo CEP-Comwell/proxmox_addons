@@ -1,52 +1,62 @@
+# Default bridge_ports mapping (can be overridden in host_vars)
+bridges:
+  - name: vmbr0
+    bridge_ports: ens1f0
+  - name: vmbr1
+    bridge_ports: ens1f1
+  - name: vmbr2
+    bridge_ports: eno2
 # Global variables for all roles and hosts
 
 # Underlay physical interface (used for routed underlay)
 underlay_phys_iface: eno1
 
 # VLAN and bridge configuration
-vlans:
-  - id: 10
-    bridge: vmbr10
-    address: 172.16.10.1/24
-    gateway: 172.16.10.254
-    description: Legacy VLAN 10 (internal servers)
-  - id: 20
-    bridge: vmbr20
-    address: 172.16.20.1/24
-    gateway: 172.16.20.254
-    description: Legacy VLAN 20 (proxy network)
-  - id: 30
-    bridge: vmbr30
-    address: 172.16.30.10/24
-    gateway: 172.16.30.254
-    description: Management VLAN
+#vlans:
+#  - id: 10
+#    bridge: vmbr10
+#    address: 172.16.10.1/24
+#    gateway: 172.16.10.254
+#    description: Legacy VLAN 10 (internal servers)
+#  - id: 20
+#    bridge: vmbr20
+#    address: 172.16.20.1/24
+#    gateway: 172.16.20.254
+#    description: Legacy VLAN 20 (proxy network)
+#  - id: 30
+#    bridge: vmbr30
+#    address: 172.16.30.10/24
+#    gateway: 172.16.30.254
+#    description: Management VLAN
 
-# Overlay (VXLAN) network configuration
-vxlan_overlays:
-  - name: internal
-    vni: 10010
-    bridge: vmbrinternal
-    cidr: 10.10.10.0/24
-    gateway: 10.10.10.1
-    description: VXLAN 10010 (internal overlay)
-  - name: proxy
-    vni: 10020
-    bridge: vmbrproxy
-    cidr: 10.10.20.0/24
-    gateway: 10.10.20.1
-    description: VXLAN 10020 (proxy overlay)
-  - name: ceph_pub
-    vni: 10030
-    bridge: vmbrceph_pub
-    cidr: 10.10.30.0/24
-    gateway: 10.10.30.1
-    description: VXLAN 10030 (Ceph public or ZFS)
-  - name: ceph_cluster
-    vni: 10031
-    bridge: vmbrceph_cluster
-    cidr: 10.10.31.0/24
-    gateway: 10.10.31.1
-    description: VXLAN 10031 (Ceph cluster or ZFS)
+# VXLAN/Bridge overlays are now defined in group_vars/vxlan.yml for clarity and maintainability.
+# Please update that file for all overlay/bridge changes.
+# Old vxlan_overlays section is commented out below for reference.
+#vxlan_overlays:
+#  - name: internal
+#    vni: 10010
+#    bridge: vmbrinternal
+#    cidr: 10.10.10.0/24
+#    gateway: 10.10.10.1
+#    description: VXLAN 10010 (internal overlay)
+#  - name: proxy
+#    vni: 10020
+#    bridge: vmbrproxy
+#    cidr: 10.10.20.0/24
+#    gateway: 10.10.20.1
+#    description: VXLAN 10020 (proxy overlay)
+#  - name: ceph_pub
+#    vni: 10030
+#    bridge: vmbrceph_pub
+#    cidr: 10.10.30.0/24
+#    gateway: 10.10.30.1
+#    description: VXLAN 10030 (Ceph public or ZFS)
+#  - name: ceph_cluster
+#    vni: 10031
+#    bridge: vmbrceph_cluster
+#    cidr: 10.10.31.0/24
+#    gateway: 10.10.31.1
+#    description: VXLAN 10031 (Ceph cluster or ZFS)
 
 # BGP configuration
 bgp_neighbors:

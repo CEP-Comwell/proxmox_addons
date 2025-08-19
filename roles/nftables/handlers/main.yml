@@ -1,0 +1,5 @@
+# handlers/main.yml for nftables role
+- name: Reload nftables
+  ansible.builtin.service:
+    name: nftables
+    state: reloaded

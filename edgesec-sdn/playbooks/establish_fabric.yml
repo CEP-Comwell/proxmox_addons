@@ -3,11 +3,12 @@
 # Description: Sets up overlay networks, BGP, VXLAN, etc. across nodes
 # Usage: ansible-playbook -i ../../inventory establish_fabric.yml
 
+
 - name: Establish SDN fabric
-  hosts: all
-  become: true
-  gather_facts: false
-  tasks:
-    - name: Establish fabric
-      import_role:
-        name: establish_fabric
+  hosts: proxmox
+  become: yes
+  gather_facts: yes
+  roles:
+    - role: vxlan
+    - role: bgp
+    - role: nftables

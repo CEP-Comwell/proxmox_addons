@@ -1,44 +1,50 @@
 
-# TODO: Integrate with edgesec-REST API for VXLAN provisioning
-# TODO: Integrate with Netbox for VXLAN segment registration
-# TODO: Integrate with Datto RMM for VXLAN device onboarding
-# roles/vxlan/tasks/main.yml
+# This task file creates bridges and VXLAN overlays on all nodes using the Proxmox API.
+# Requires variables from group_vars/vxlan.yml and group_vars/proxmox_vault.yml
+#
+# NOTE: In production, use Ansible Vault or HashiCorp Vault for secrets.
+#
+# If the Proxmox API is insufficient for any feature, add a comment and use CLI/Ansible as a fallback.
 
-- name: Create Linux bridges for overlays
-  community.general.nmcli:
-    conn_name: "{{ item.bridge }}"
+- name: Create bridges via Proxmox API
+  community.general.proxmox_network:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password }}"
+    validate_certs: "{{ proxmox_api_validate_certs | default(false) }}"
+    node: "{{ inventory_hostname }}"
+    name: "{{ item.name }}"
     type: bridge
     state: present
-  loop: "{{ overlays }}"
-  tags:
-    - vxlan
-    - verify_vxlan
+  loop: "{{ bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
 
-- name: Create VXLAN devices
-  ansible.builtin.command: >
-    ip link add vxlan{{ item.vni }}
-    type vxlan id {{ item.vni }}
-    dev {{ underlay_iface }}
-    dstport 4789
-  args:
-    creates: "/sys/class/net/vxlan{{ item.vni }}"
-  loop: "{{ overlays }}"
-  tags:
-    - vxlan
-    - verify_vxlan
+- name: Create VXLAN overlays via Proxmox API
+  community.general.proxmox_network:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password }}"
+    validate_certs: "{{ proxmox_api_validate_certs | default(false) }}"
+    node: "{{ inventory_hostname }}"
+    name: "{{ vxlan.name }}"
+    type: vxlan
+    bridge: "{{ bridge.name }}"
+    tag: "{{ vxlan.vni }}"
+    state: present
+  loop: "{{ bridges }}"
+  loop_control:
+    loop_var: bridge
+  vars:
+    vxlan_list: "{{ bridge.vxlan_overlays | default([]) }}"
+  with_items: "{{ vxlan_list }}"
+  loop_control:
+    loop_var: vxlan
+    label: "{{ vxlan.name }} on {{ bridge.name }}"
 
-- name: Attach VXLANs to their bridges
-  ansible.builtin.command: >
-    ip link set vxlan{{ item.vni }} master {{ item.bridge }}
-  loop: "{{ overlays }}"
-  tags:
-    - vxlan
-    - verify_vxlan
-
-- name: Bring up VXLAN interfaces
-  ansible.builtin.command: >
-    ip link set vxlan{{ item.vni }} up
-  loop: "{{ overlays }}"
-  tags:
-    - vxlan
-    - verify_vxlan
+# If the Proxmox API does not support a required feature, add a CLI/Ansible fallback here with a comment.
+# Example:
+# - name: Workaround for unsupported feature
+#   ansible.builtin.command: ...
+#   when: api_feature_missing
+#   # Proxmox API does not support <feature>; using CLI/Ansible as a workaround.

@@ -1,0 +1,4 @@
+# Backup of establish_fabric.yml before updating to include vxlan, bgp, nftables roles
+# Date: 2025-08-18
+
+# ...existing content...

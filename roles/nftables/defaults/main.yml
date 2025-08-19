@@ -1,0 +1,7 @@
+# Default variables for nftables role
+# You can expand this for per-zone/group rules later
+nftables_default_policy: "drop"
+nftables_allow_icmp: true
+nftables_allow_management_to_all: true
+# Placeholder for future dynamic rules
+nftables_explicit_rules: []

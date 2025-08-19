@@ -1,0 +1,12 @@
+# bgpd.conf.j2 - FRR BGP config template for EVPN
+# This is a placeholder for future dynamic config
+router bgp {{ bgp_asn }}
+  bgp router-id {{ ansible_host }}
+{% for neighbor in bgp_neighbors %}
+  neighbor {{ neighbor.neighbor }} remote-as {{ neighbor.remote_as }}
+{% endfor %}
+{% if bgp_evpn_enabled | default(true) %}
+  address-family l2vpn evpn
+    neighbor {{ neighbor.neighbor }} activate
+  exit-address-family
+{% endif %}

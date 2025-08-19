@@ -3,11 +3,11 @@
 # Description: Verifies connectivity to remote nodes after provisioning
 # Usage: ansible-playbook -i ../../inventory preflight_connectivity.yml
 
+
 - name: Preflight connectivity check
-  hosts: all
-  become: false
-  gather_facts: false
-  tasks:
-    - name: Run preflight connectivity checks
-      import_role:
-        name: preflight
+  hosts: proxmox
+  become: yes
+  gather_facts: yes
+  roles:
+    - role: preflight
+    - role: nftables

@@ -1,0 +1,30 @@
+# tasks/main.yml for nftables role
+# Applies default deny policy, allows ICMP, and management-to-all by default
+# Placeholders for future dynamic rules
+
+- name: Ensure nftables is installed
+  ansible.builtin.package:
+    name: nftables
+    state: present
+
+- name: Enable IPv4 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    reload: yes
+
+- name: Deploy nftables rules from template
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload nftables
+
+- name: Ensure nftables service is enabled and started
+  ansible.builtin.service:
+    name: nftables
+    enabled: yes
+    state: started

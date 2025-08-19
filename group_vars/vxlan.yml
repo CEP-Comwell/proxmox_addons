@@ -1,0 +1,68 @@
+# This file defines all bridges and VXLAN overlays for the Edgesec SDN fabric.
+# It is intended to be included from group_vars/all.yml or directly in playbooks/roles.
+#
+# NOTE: All nodes will have identical bridge and VXLAN assignments.
+#
+# When this file is updated, please back up the previous version.
+
+bridges:
+  - name: vmbr0
+    description: Management Bridge
+    vxlan_overlays:
+      - name: vxlan10100
+        vni: 10100
+        description: Management
+      - name: vxlan10101
+        vni: 10101
+        description: Engineering
+      - name: vxlan10102
+        vni: 10102
+        description: Support
+      - name: vxlan10032
+        vni: 10032
+        description: Core Services
+      - name: vxlan10031
+        vni: 10031
+        description: Ceph Cluster
+
+  - name: vmbr1
+    description: VM/Service Bridge
+    vxlan_overlays:
+      - name: vxlan10110
+        vni: 10110
+        description: Tenant VM/Service
+      - name: vxlan9000
+        vni: 9000
+        description: DNS/Monitoring/edgesec-rest/edgesec-radius
+
+  - name: vmbr0
+    description: Management Bridge
+    vxlan_overlays:
+      - name: vxlan10100
+        vni: 10100
+        description: Management
+      - name: vxlan10101
+        vni: 10101
+        description: Engineering
+      - name: vxlan10102
+        vni: 10102
+        description: Support
+      - name: vxlan10032
+        vni: 10032
+        description: Core Services
+      - name: vxlan10031
+        vni: 10031
+        description: Ceph Cluster
+      - name: vxlan9006
+        vni: 9006
+        description: edgesec-vault
+
+  - name: vmbr2
+    description: External Bridge
+    vxlan_overlays:
+      - name: vxlan9003
+        vni: 9003
+        description: Proxy Ext
+      - name: vxlan10120
+        vni: 10120
+        description: External

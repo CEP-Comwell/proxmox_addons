@@ -1,0 +1,64 @@
+# /etc/nftables.conf.j2 - nftables rules template
+# Default: deny all, allow ICMP, allow management-to-all
+# Expand with explicit rules as needed
+
+flush ruleset
+
+table inet filter {
+  chain input {
+    type filter hook input priority 0;
+    policy {{ nftables_default_policy }};
+    {% if nftables_allow_icmp %}
+    ip protocol icmp accept
+    ip6 nexthdr icmpv6 accept
+    {% endif %}
+    # Allow loopback
+    iif lo accept
+    # Allow established/related
+    ct state established,related accept
+  # Always allow SSH, HTTP(S), and Proxmox API on management bridge (vmbr0) and management VXLANs
+  # Adjust interface names as needed for your environment
+  iifname "vmbr0" tcp dport 22 accept   # SSH
+  iifname "vmbr0" tcp dport 8006 accept # Proxmox Web UI/API
+  iifname "vmbr0" tcp dport 80 accept   # HTTP (if needed)
+  iifname "vmbr0" tcp dport 443 accept  # HTTPS (if needed)
+  # Optionally allow from management VXLANs as well
+  iifname "vxlan10100" tcp dport 22 accept
+  iifname "vxlan10100" tcp dport 8006 accept
+  iifname "vxlan10100" tcp dport 80 accept
+  iifname "vxlan10100" tcp dport 443 accept
+  iifname "vxlan10101" tcp dport 22 accept
+  iifname "vxlan10101" tcp dport 8006 accept
+  iifname "vxlan10101" tcp dport 80 accept
+  iifname "vxlan10101" tcp dport 443 accept
+  iifname "vxlan10102" tcp dport 22 accept
+  iifname "vxlan10102" tcp dport 8006 accept
+  iifname "vxlan10102" tcp dport 80 accept
+  iifname "vxlan10102" tcp dport 443 accept
+  }
+
+  chain forward {
+    type filter hook forward priority 0;
+    policy {{ nftables_default_policy }};
+    {% if nftables_allow_icmp %}
+    ip protocol icmp accept
+    ip6 nexthdr icmpv6 accept
+    {% endif %}
+    # Allow established/related
+    ct state established,related accept
+    # Management-to-all (expand as needed)
+    {% if nftables_allow_management_to_all %}
+    # Example: allow management subnet to all
+    # ip saddr 10.0.0.0/24 accept
+    {% endif %}
+    # Placeholder for explicit allow rules
+    {% for rule in nftables_explicit_rules %}
+    {{ rule }}
+    {% endfor %}
+  }
+
+  chain output {
+    type filter hook output priority 0;
+    policy accept;
+  }
+}

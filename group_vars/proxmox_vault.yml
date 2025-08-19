@@ -1,0 +1,8 @@
+# Proxmox API credentials (example only, do not use real secrets here)
+# In production, encrypt this file with Ansible Vault or migrate to HashiCorp Vault OSS
+proxmox_api_host: "proxmox.example.com"
+proxmox_api_user: "root@pam"
+proxmox_api_password: "changeme"
+proxmox_api_token_id: "ansible@pve!apitoken"
+proxmox_api_token_secret: "yourapitokensecret"
+proxmox_api_validate_certs: false
