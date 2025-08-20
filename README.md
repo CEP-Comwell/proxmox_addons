@@ -290,6 +290,28 @@ This module provides a universal Ansible role for deploying any Dockerized appli
 - Portainer for container management
 
 ---
+
+## 🕵️ [edgesec-TAPx](edgesec-tapx/README.md)
+*Modular traffic and probe automation for full packet visibility and DPI in Proxmox and Docker environments.*
+
+This subproject provides modular Ansible automation for probing and mirroring VM, Docker, VXLAN, and HCI agent network traffic to a monitoring bridge (such as `brdpi`) on Proxmox hosts. It enables deep packet inspection (DPI), intrusion detection (IDS), and advanced traffic analytics for both virtual machines and containers.
+
+**Features:**
+- Modular Ansible roles for VM, Docker, VXLAN, and HCI agent traffic probing
+- Automated mirroring to a dedicated monitoring bridge (`brdpi`)
+- Dynamic discovery of tap, bridge, and VXLAN interfaces
+- Persistent bridge/veth setup and automated cleanup
+- Extensible for new probe types and monitoring targets
+
+**Quick Start:**
+1. Configure your inventory and `config.yml` with the appropriate hosts and variables.
+2. Run the relevant probe playbook (e.g., `playbooks/probe-vm-net.yml`).
+3. Use cleanup playbooks to remove mirroring rules when needed.
+
+See [edgesec-tapx/README.md](edgesec-tapx/README.md) for full details and usage.
+
+---
+
 ## 🧩 [edgesec-REST](edgesec-rest/README.md)
 *Fastify v5 + TypeScript API hub for edge security automation and orchestration.*
 
