@@ -75,6 +75,40 @@ class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 </details>
 
 <details>
+<summary><strong>Single Node Hybrid Spine-Leaf (click to expand)</strong></summary>
+
+### edgesec-SDN: Single Node Hybrid Spine-Leaf
+```mermaid
+graph LR
+	subgraph ProxmoxNode["Any Proxmox SDN Node"]
+		vmbr1["vmbr1 – Tenant Leaf (VXLAN)"]
+		vmbr2["vmbr2 – Border/Gateway Leaf"]
+		vmbr99["vmbr99 – Ops/Support Leaf"]
+
+		vmbr99 --- vmbr1
+		vmbr99 --- vmbr2
+		vmbr1 --- vmbr2
+	end
+
+	ISP1[(ISP1)]
+	ISP2[(ISP2)]
+	FRR[(FRR fabricd – Spine Role)]
+	LegacyVLAN[(Legacy VLAN Switch / Fabric)]
+
+	ISP1 --- vmbr2
+	ISP2 --- vmbr2
+
+	%% VXLAN ↔ VLAN Gateway now off vmbr2
+	vmbr2 --- VXGW["VXLAN-to-VLAN Gateway"]
+	VXGW --- LegacyVLAN
+
+	FRR --- vmbr1
+	FRR --- vmbr2
+	FRR --- vmbr99
+```
+</details>
+
+<details>
 <summary><strong>Management Bridge (click to expand)</strong></summary>
 
 ### vmbr99 (Management Bridge)
