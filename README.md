@@ -201,7 +201,7 @@ class VX9003,ProxyVM proxy;
 
 ---
 
-## 🆔 [edgesec-RADIUS](edgesec-radius/README.md)
+## 🛜 [edgesec-RADIUS](edgesec-radius/README.md)
 *Multi-tenant, certificate-based authentication and device onboarding.*
 
 **Overview:**
@@ -291,7 +291,7 @@ This module provides a universal Ansible role for deploying any Dockerized appli
 
 ---
 
-## 🕵️ [edgesec-TAPx](edgesec-tapx/README.md)
+## 🧬 [edgesec-TAPx](edgesec-tapx/README.md)
 *Modular traffic and probe automation for full packet visibility and DPI in Proxmox and Docker environments.*
 
 This subproject provides modular Ansible automation for probing and mirroring VM, Docker, VXLAN, and HCI agent network traffic to a monitoring bridge (such as `brdpi`) on Proxmox hosts. It enables deep packet inspection (DPI), intrusion detection (IDS), and advanced traffic analytics for both virtual machines and containers.
