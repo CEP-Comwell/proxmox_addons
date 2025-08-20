@@ -313,7 +313,7 @@ See [edgesec-tapx/README.md](edgesec-tapx/README.md) for full details and usage.
 ---
 
 ## � [edgesec-REST](edgesec-rest/README.md)
-*Fastify v5 + TypeScript API hub for edge security automation and orchestration.*
+## 🕸️ [edgesec-REST](edgesec-rest/README.md)
 
 A Fastify v5 + TypeScript API hub for edge security automation and orchestration.  
 Key integrations:
