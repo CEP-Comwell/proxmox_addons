@@ -32,9 +32,11 @@ Place SDN-related Docker Compose files in the `docker/` subdirectory. Each file 
 See the main repo README and `Fabric_bootstrap.md` for more details.
 
 
+
 ## Security Model
 
-### Defense-in-Depth Security Model
+<details>
+<summary><strong>Defense-in-Depth Security Model (click to expand)</strong></summary>
 
 ```mermaid
 flowchart TD
@@ -79,6 +81,8 @@ flowchart TD
   click E "Roles: TenantID, Tenant‑Role1/2, Support, Mgmt, Eng" _blank
   click F "Roles: Engineering (write/manage), Mgmt (read)" _blank
 ```
+
+</details>
 
 ## Future Integration:
 
