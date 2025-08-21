@@ -137,7 +137,6 @@ flowchart LR
 
 </details>
 
-[6:33 p.m.] Christopher Peterson
 | **Zone / Layer**                               | **Engineering**   | **Management**   | **Support**   | **Tenants / Guests** |
 |-----------------------------------------------|-------------------|------------------|---------------|----------------------|
 | Outer Perimeter (Physical)                    | ✅ Full           | ❌               | ❌            | ❌                   |
