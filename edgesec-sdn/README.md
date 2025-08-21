@@ -82,7 +82,73 @@ flowchart TD
   click F "Roles: Engineering (write/manage), Mgmt (read)" _blank
 ```
 
+
 </details>
+
+<details>
+<summary><strong>RBAC-to-DiD Mapping (click to expand)</strong></summary>
+
+```mermaid
+flowchart LR
+  %% Swimlanes for roles
+  subgraph ENG[Engineering]
+    E1[Physical Site Access]:::outer
+    E2[Facility Core]:::facility
+    E3[Air-Gap Control]:::isolation
+    E4[ENROLL VLAN Admin]:::enroll
+    E5[LAN VLAN Ops]:::lan
+    E6[Logical API Mgmt]:::logical
+    E7[Core Data Write]:::core
+  end
+ 
+  subgraph MGT[Management]
+    M1[Supervised Facility Entry]:::facility
+    M2[Air-Gap Oversight]:::isolation
+    M3[Logical API Read]:::logical
+    M4[Core Data Read]:::core
+  end
+ 
+  subgraph SUP[Support]
+    S1[ENROLL VLAN Support]:::enroll
+    S2[Logical API Support Access]:::logical
+  end
+ 
+  subgraph TEN[Tenants / Guests]
+    T1[Guest VLAN Access]:::guest
+    T2[Logical Tenant API]:::logical
+  end
+ 
+  %% Flows within roles
+  E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7
+  M1 --> M2 --> M3 --> M4
+  S1 --> S2
+  T1 --> T2
+ 
+  %% Zone color definitions
+  classDef outer fill:#d9e6f2,stroke:#1b4d89,stroke-width:2px;
+  classDef facility fill:#b7d7a8,stroke:#38761d,stroke-width:2px;
+  classDef isolation fill:#ffe599,stroke:#b45f06,stroke-width:2px;
+  classDef enroll fill:#f9cb9c,stroke:#783f04,stroke-width:2px;
+  classDef guest fill:#f4cccc,stroke:#990000,stroke-width:2px;
+  classDef lan fill:#cfe2f3,stroke:#134f5c,stroke-width:2px;
+  classDef logical fill:#d5a6bd,stroke:#741b47,stroke-width:2px;
+  classDef core fill:#b4a7d6,stroke:#351c75,stroke-width:2px;
+```
+
+</details>
+
+[6:33 p.m.] Christopher Peterson
+| **Zone / Layer**                               | **Engineering**   | **Management**   | **Support**   | **Tenants / Guests** |
+|-----------------------------------------------|-------------------|------------------|---------------|----------------------|
+| Outer Perimeter (Physical)                    | ✅ Full           | ❌               | ❌            | ❌                   |
+| Facility Core (Server/AI Room)                | ✅ Full           | ✅ Supervised    | ❌            | ❌                   |
+| Network Isolation (Air‑Gap)                   | ✅ Admin          | ✅ Oversight     | ❌            | ❌                   |
+| ENROLL VLAN (Quarantine)                      | ✅ Admin          | ❌               | ✅ Support    | ❌                   |
+| GUEST VLAN (Internet‑Only)                    | ❌                | ❌               | ❌            | ✅                   |
+| LAN VLAN (Trusted Ops)                        | ✅ Ops            | ❌               | ❌            | ❌                   |
+| Logical Access Zone (RBAC APIs)               | ✅ Admin/Mgmt     | ✅ Read          | ✅ Support    | ✅ Tenant API        |
+| Data Sensitivity Core (Weights/Data)          | ✅ Write/Manage   | ✅ Read          | ❌            | ❌                   |
+ 
 
 ## Future Integration:
 
