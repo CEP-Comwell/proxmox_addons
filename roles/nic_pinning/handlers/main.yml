@@ -1,0 +1,12 @@
+# handlers/main.yml for nic_pinning role
+# These handlers are triggered only if notified by a changed task in tasks/main.yml
+
+- name: update initramfs
+  shell: update-initramfs -u -k all
+  become: true
+  ignore_errors: true
+
+- name: restart networking
+  shell: systemctl restart networking
+  become: true
+  ignore_errors: true

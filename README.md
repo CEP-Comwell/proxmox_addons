@@ -436,4 +436,10 @@ proxmox_addons/
 
 MIT © CEP-Comwell
 
+---
+
+## 📚 Contributing Guide
+
+For best practices, coding standards, and prompt scaffolding for LLM chat assistants, please refer to the [Contributing Guide](docs/contributing.md).
+
 

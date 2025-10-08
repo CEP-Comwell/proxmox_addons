@@ -1,5 +1,19 @@
 # Contributing Guide
 
+## General Recommendations
+- Follow Ansible best practices for role and playbook structure:
+  - Place tasks in `tasks/main.yml` and handlers in `handlers/main.yml` within each role.
+  - Do not include handlers directly in task files; use `notify` to trigger handlers.
+  - Use `roles:` in playbooks to import roles, ensuring modularity and reusability.
+  - Reference roles by name only; Ansible will locate them via `ansible.cfg`.
+  - Use `loop_control` for loop indices and avoid deprecated or invalid YAML constructs.
+  - Ensure all YAML files are properly indented and formatted to avoid syntax errors.
+  - Place templates in the `templates/` directory and use the `template` module for rendering.
+  - Store shared variables in `defaults/main.yml` or `vars/main.yml` for each role.
+  - Use `group_vars/` and `host_vars/` for inventory-wide variables.
+  - Always test changes with `ansible-playbook --syntax-check` before submitting.
+- For Docker Compose and other automation, follow the same modular directory structure and naming conventions.
+
 ## Commit Standards
 - Use [Conventional Commits](https://www.conventionalcommits.org/) for all commits.
 - Run linting and tests before submitting a PR.
@@ -16,7 +30,6 @@
 - Never commit real secrets. Use `.env.example` for templates.
 
 ---
-
 
 For more, see `/docs/onboarding.md` and `/docs/security-best-practices.md`.
 

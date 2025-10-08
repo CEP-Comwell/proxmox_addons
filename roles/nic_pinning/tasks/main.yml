@@ -1,0 +1,114 @@
+# Gather all physical network interfaces except common virtual and bridge types
+- name: Get list of physical interfaces
+  shell: |
+    ls -1 /sys/class/net | grep -vE '^(lo|vmbr|tap|fw|bonding_masters|veth|br|docker|virbr|wg|tun|bond|bridge)'
+  register: interfaces_raw
+  changed_when: false
+
+# Store interface list for later use
+- name: Set interface list
+  set_fact:
+    interfaces: "{{ interfaces_raw.stdout_lines }}"
+
+# Get supported link modes for each interface (used for naming logic)
+- name: Gather Supported link modes for each interface
+  shell: |
+    ethtool "{{ item }}" | grep 'Supported link modes:' || echo "Supported link modes: Not reported"
+  loop: "{{ interfaces }}"
+  register: link_modes
+  changed_when: false
+
+# Initialize lists for 10G and standard Ethernet interfaces
+- name: Initialize xg_ifaces and eth_ifaces
+  set_fact:
+    xg_ifaces: []
+    eth_ifaces: []
+
+# Classify interfaces into 10G (xg_ifaces) and standard Ethernet (eth_ifaces)
+- name: Classify interfaces by type
+  set_fact:
+    xg_ifaces: "{{ xg_ifaces + [item.0] if ('10000baseT' in item.1 and item.0.startswith('ens')) else xg_ifaces }}"
+    eth_ifaces: "{{ eth_ifaces + [item.0] if item.0.startswith('eno') else eth_ifaces }}"
+  loop: "{{ interfaces | zip(link_modes.results | map(attribute='stdout') | list) | list }}"
+
+# Initialize counters and mapping for custom NIC names
+- name: Initialize NIC name counters
+  set_fact:
+    xg_count: 1
+    eth_count: 1
+    nic_names: {}
+
+# Assign custom names to each NIC based on type and order (xgN, ethN, nicN)
+- name: Assign custom NIC names
+  set_fact:
+    nic_names: >-
+      {{
+        nic_names | combine({
+          item.0: (
+            'xg' ~ xg_count if ('10000baseT' in item.1 and item.0.startswith('ens')) else
+            'eth' ~ eth_count if item.0.startswith('eno') else
+            'nic' ~ item.2
+          )
+        })
+      }}
+    xg_count: "{{ (xg_count | int) + 1 if ('10000baseT' in item.1 and item.0.startswith('ens')) else (xg_count | int) }}"
+    eth_count: "{{ (eth_count | int) + 1 if item.0.startswith('eno') else (eth_count | int) }}"
+  loop: "{{ interfaces | zip(link_modes.results | map(attribute='stdout') | list) | zip(range(1, interfaces | length + 1)) | map('flatten') | list }}"
+
+# Remove all .link files to ensure a clean state before pinning
+- name: Remove all .link files for each NIC (glob, all locations)
+  shell: |
+    rm -f /usr/local/lib/systemd/network/*.link /etc/systemd/network/*.link /etc/network/*.link
+  ignore_errors: true
+
+# Remove any stale /etc/network/interfaces.new before pinning
+- name: Remove /etc/network/interfaces.new before pinning
+  file:
+    path: /etc/network/interfaces.new
+    state: absent
+  ignore_errors: true
+
+# Generate .link files using pve-network-interface-pinning for each NIC
+- name: Generate .link files using pve-network-interface-pinning with custom names
+  command: >
+    pve-network-interface-pinning generate --interface {{ item }} --target-name {{ nic_names[item] }}
+  loop: "{{ interfaces }}"
+
+# Gather MAC address for each interface for systemd .link file creation
+- name: Gather MAC address for each interface
+  shell: cat /sys/class/net/{{ item }}/address
+  loop: "{{ interfaces }}"
+  register: mac_info
+  changed_when: false
+
+# Create systemd .link files for each NIC, matching by MAC and Type=ether, assigning custom name
+# Notifies handlers to update initramfs and restart networking if changed
+- name: Generate .link files for each NIC (MAC and Type=ether)
+  copy:
+    dest: "/etc/systemd/network/10-{{ nic_names[item] }}.link"
+    content: |
+      [Match]
+      MACAddress={{ mac_info.results[idx].stdout }}
+      Type=ether
+      [Link]
+      Name={{ nic_names[item] }}
+  loop: "{{ interfaces }}"
+  loop_control:
+    index_var: idx
+  become: true
+  notify:
+    - update initramfs
+    - restart networking
+
+# If a new interfaces file was generated, move it into place
+# Notifies handler to restart networking if changed
+- name: Update /etc/network/interfaces from .new if present
+  shell: |
+    if [ -f /etc/network/interfaces.new ]; then
+      mv /etc/network/interfaces.new /etc/network/interfaces
+    fi
+  args:
+    executable: /bin/bash
+  become: true
+  notify:
+    - restart networking
