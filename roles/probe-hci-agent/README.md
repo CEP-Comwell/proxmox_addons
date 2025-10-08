@@ -60,3 +60,9 @@ This role is part of a modular active response framework that allows centralized
         tap_interface: veth-tap0
         capture_enabled: true
         response_mode: mirror
+```
+
+---
+
+## Contributing
+See the [root contributing guide](../../docs/contributing.md) for standards and prompt scaffolding.

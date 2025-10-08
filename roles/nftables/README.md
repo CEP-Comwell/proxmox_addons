@@ -15,5 +15,7 @@ List any variables and defaults here.
     - nftables
 ```
 
+---
+
 ## Contributing
 See the [root contributing guide](../../docs/contributing.md) for standards and prompt scaffolding.

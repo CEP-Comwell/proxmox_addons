@@ -47,3 +47,10 @@ This role is part of a modular active response toolkit that zooms into VM and co
         vxlan_interface: vxlan0
         tap_interface: veth-tap0
         capture_path: /var/log/vxlan_probe.pcap
+```
+
+---
+
+## Contributing
+
+See the [root contributing guide](../../docs/contributing.md) for standards and prompt scaffolding.

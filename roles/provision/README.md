@@ -17,3 +17,5 @@ List any variables and defaults here.
 
 ## Contributing
 See the [root contributing guide](../../docs/contributing.md) for standards and prompt scaffolding.
+
+---

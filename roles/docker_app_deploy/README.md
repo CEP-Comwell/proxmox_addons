@@ -84,4 +84,9 @@ roles/
 - Traefik labels are injected by default for reverse proxying.
 
 ---
+
+## Contributing
+See the [root contributing guide](../../docs/contributing.md) for standards and prompt scaffolding.
+
+---
 For advanced Compose features (multiple services, networks, etc.), extend the role and template as needed.
