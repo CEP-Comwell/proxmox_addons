@@ -382,48 +382,104 @@ npm start          # run compiled build
 
   ```text
 proxmox_addons/
-├── config.yml                # Central configuration for all playbooks and roles
-├── inventory                 # Ansible inventory for your environment
-├── group_vars/               # Group variables for Ansible
-├── host_vars/                # Host-specific variables for Ansible
-├── roles/                    # Shared and project-specific Ansible roles
-│
-├── edgesec-tapx/             # Modular traffic/probe automation (VM, Docker, VXLAN, HCI agent)
-│   ├── playbooks/
-│   ├── roles/
+├── cleanup_network.yml
+├── config.yml
+├── Fabric_bootstrap.md
+├── inventory
+├── inventory.bak
+├── inventory.yml
+├── jest.config.js
+├── LICENSE
+├── molecule_tags.conf
+├── package.json
+├── proxmox_addons_directory_structure.txt
+├── README.md
+├── source_env.sh
+├── tsconfig.json
+├── _archive/
+│   ├── cert_auth.md
+│   ├── directory_layout.md
+│   ├── Fabric_bootstrap.md.bak
+│   └── traffic_mirror.md
+├── blob/
+│   ├── images/
+│   │   ├── cloud_radius.png
+│   │   ├── edgesec-node1.png
+│   │   └── edgesec.png
+│   └── mmd/
+├── docs/
+│   ├── architecture.md
+│   ├── contributing.md
+│   ├── integration-guide.md
+│   ├── README-template.md
 │   └── README.md
-│
-├── edgesec-sdn/              # SDN fabric automation (multi-site, overlays, microsegmentation)
-│   ├── playbooks/
-│   ├── roles/
+├── edgesec-deploy/
+│   ├── edgesec-deploy-docker.yml
 │   └── README.md
-│
-├── edgesec-radius/           # Multi-tenant RADIUS authentication and device onboarding
-│   ├── playbooks/
-│   ├── roles/
+├── edgesec-radius/
 │   └── README.md
-│
-├── edgesec-vault/            # HashiCorp Vault deployment for secrets management
+├── edgesec-rest/
 │   ├── docker-compose.yml
-│   └── README.md
-│
-├── edgesec-rest/             # Core integration hub (Fastify v5 + TypeScript API)
-│   ├── src/
-│   │   ├── server.ts
-│   │   ├── plugins/
-│   │   ├── routes/
-│   │   ├── schemas/
-│   │   ├── lib/
-│   │   └── tests/
-│   ├── package.json
-│   ├── tsconfig.json
 │   ├── Dockerfile
+│   ├── package.json
+│   ├── README.md
+│   └── src/
+├── edgesec-sdn/
+│   ├── README.md
+│   ├── docker/
+│   └── playbooks/
+├── edgesec-tapx/
+│   ├── README.md
+│   └── playbooks/
+├── edgesec-vault/
 │   ├── docker-compose.yml
 │   └── README.md
-│
-├── Fabric_bootstrap.md       # SDN fabric documentation
-├── ...other docs...
-└── README.md                 # Main project overview (this file)
+├── files/
+│   └── edgesec.conf
+├── group_vars/
+│   ├── all.yml
+│   └── network_map.yml
+├── host_vars/
+│   ├── pve-node1.yml
+│   ├── pve-node2.yml
+│   └── pve-node3.yml
+├── import/
+│   ├── configure_IPAM_in_Proxmox.md
+│   └── pdf_to_md.py
+├── lib/
+│   └── src/
+├── roles/
+│   ├── bgp/
+│   ├── ceph_network/
+│   ├── docker_app_deploy/
+│   ├── docker_traffic_mirror/
+│   ├── dpi_monitor_setup/
+│   ├── establish_fabric/
+│   ├── ipam/
+│   ├── nat/
+│   ├── nftables/
+│   ├── nic_pinning/
+│   ├── preflight/
+│   ├── probe-docker-overlay/
+│   ├── probe-hci-agent/
+│   ├── probe-vm-net/
+│   ├── probe-vxlan-node/
+│   ├── provision/
+│   ├── proxy/
+│   ├── underlay/
+│   ├── vm_nic/
+│   ├── vm_traffic_mirror/
+│   └── vxlan/
+├── src/
+│   ├── config.ts
+│   └── application/
+├── tasks/
+│   ├── docker-network-discover.yml
+│   └── tap-discover.yml
+├── tests/
+│   └── modules/
+└── tools/
+		└── docx_to_md.py
 ```
   </details>
 
@@ -441,5 +497,38 @@ MIT © CEP-Comwell
 ## 📚 Contributing Guide
 
 For best practices, coding standards, and prompt scaffolding for LLM chat assistants, please refer to the [Contributing Guide](docs/contributing.md).
+
+Quick helper scripts
+--------------------
+This repository provides small helper scripts to make role-level contribution checks easy to run locally. They are intended to be the first checks you (or an automated assistant) run before opening a PR.
+
+1) Install development tools (one-time):
+
+```bash
+pip install -r requirements-dev.txt
+# or: pip install yamllint ansible-lint ansible
+```
+
+2) Validate role README pointers (required):
+
+```bash
+python3 scripts/validate_role_readmes.py
+```
+
+This ensures every `roles/*/README.md` contains a pointer to the canonical role README template (`docs/role_readme_template.md`). Automated assistants and maintainers should run this before touching roles.
+
+3) Run role checks (yaml lint + ansible-lint + optional syntax-check):
+
+```bash
+# from repo root
+# run yamllint + ansible-lint for a role
+bash scripts/run_role_checks.sh <role-name> [optional-playbook-path]
+```
+
+Notes:
+- `scripts/run_role_checks.sh` creates a temporary `.yamllint` config and will report yaml formatting errors (2-space indentation, no tabs) and other issues.
+- The script is runnable via `bash ...` (or make it executable with `chmod +x`).
+- See `docs/role_readme_template.md` and `docs/contributing.md` for the canonical checklist and rules.
+
 
 

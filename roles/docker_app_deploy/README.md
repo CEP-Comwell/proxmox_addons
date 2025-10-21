@@ -88,5 +88,7 @@ roles/
 ## Contributing
 See the [root contributing guide](../../docs/contributing.md) for standards and prompt scaffolding.
 
+For a canonical role README checklist/template, see `../../docs/role_readme_template.md`.
+
 ---
 For advanced Compose features (multiple services, networks, etc.), extend the role and template as needed.

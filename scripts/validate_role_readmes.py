@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""LLM and Automated Assistant Instructions
+
+Purpose
+-------
+This file is the canonical, machine-readable instruction for automated code
+assistants (LLMs, bots) and humans working on this repository. Before making
+edits, an assistant should read this file and `docs/contributing.md`.
+
+Required checks (what the assistant must do before changing repo files)
+- Read `docs/contributing.md` and `docs/role_readme_template.md` in full.
+- Verify that the role you plan to modify has a one-line pointer to the role
+    template in `roles/<role>/README.md` (the pointer should reference
+    `docs/role_readme_template.md`).
+- Run `scripts/validate_role_readmes.py` to confirm all role READMEs include
+    the pointer.
+- Run YAML and Ansible checks where appropriate (examples below).
+
+Commands the assistant or contributor should run locally (from repo root)
+```
+python3 scripts/validate_role_readmes.py
+yamllint -d "extends: default, rules: {line-length: {max: 160}, indentation: {spaces: 2}}" roles/<role>/tasks/*.yml
+ansible-lint roles/<role>
+ansible-playbook -i inventory path/to/playbook.yml --syntax-check
+```
+
+Behavioral notes for automated assistants
+- Do not assume role README pointers exist. Validate and, if missing, either
+    add the one-line pointer (create a commit) or prompt the human maintainer.
+- Do not modify `docs/contributing.md` or `docs/role_readme_template.md` without
+    explicit human review.
+- Prefer using Ansible modules instead of raw shell commands where possible;
+    shell tasks can complicate syntax-checks.
+
+If you are an automated tool (CI, bot, or LLM integration), this repository
+expects you to run `scripts/validate_role_readmes.py` and fail fast if the
+pointer is missing. This makes the pointer a dependable signal for both humans
+and assistants.
+
+Location: `.assistant_instructions.md` (repo root)
+"""
+import os
+import sys
+
+root = os.path.dirname(os.path.dirname(__file__))
+roles_dir = os.path.join(root, 'roles')
+missing = []
+
+for name in sorted(os.listdir(roles_dir)):
+    path = os.path.join(roles_dir, name, 'README.md')
+    if not os.path.exists(path):
+        continue
+    with open(path, 'r', encoding='utf-8') as f:
+        data = f.read()
+    if 'docs/role_readme_template.md' not in data:
+        missing.append(path)
+
+if missing:
+    print('The following role README files are missing the pointer to docs/role_readme_template.md:')
+    for p in missing:
+        print(' -', p)
+    sys.exit(2)
+
+print('All role READMEs include the pointer to docs/role_readme_template.md')
+sys.exit(0)

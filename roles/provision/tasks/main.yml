@@ -1,10 +1,125 @@
 ---
-# Main tasks for provision role
-# TODO: Add tasks to configure Proxmox node (networks, bridges, base services)
-# Example:
-# - name: Ensure base bridge exists
-#   community.general.nmcli:
-#     conn_name: vmbr0
-#     type: bridge
-#     state: present
-#   tags: [provision, verify_provision]
+---
+# Provision role - create three bridges and distribute physical NICs across them
+# Behavior / contract:
+# - discovers physical NICs on the host (excludes common virtual interfaces)
+# - creates three bridges (mgmt/vm/ext) using variables if provided or defaults
+# - distributes discovered NICs across the three bridges in round-robin order
+# - idempotent: will not re-create bridges if present, will reassign NICs if needed
+
+---
+# Provision role - create three bridges and distribute physical NICs across them
+# Behavior / contract:
+# - discovers physical NICs on the host (excludes common virtual interfaces)
+# - creates three bridges (mgmt/vm/ext) using variables if provided or defaults
+# - distributes discovered NICs across the three bridges in round-robin order
+# - idempotent: will not re-create bridges if present, will reassign NICs if needed
+
+- name: Gather physical network interfaces
+  shell: |
+    ls -1 /sys/class/net | grep -vE '^(lo|vmbr|tap|fw|bonding_masters|veth|br|docker|virbr|wg|tun|bond|bridge)'
+  register: interfaces_raw
+  changed_when: false
+  tags: [provision]
+
+- name: Set list of physical interfaces
+  set_fact:
+    interfaces: "{{ interfaces_raw.stdout_lines | default([]) }}"
+  tags: [provision]
+
+- name: Set target bridge names (can be overridden by role/play vars)
+  set_fact:
+    bridges:
+      - "{{ mgmt_bridge | default('vmbr99') }}"
+      - "{{ vm_bridge | default('vmbr1') }}"
+      - "{{ ext_bridge | default('vmbr2') }}"
+  tags: [provision]
+
+- name: Show discovered interfaces and bridges
+  debug:
+    msg: "Found interfaces={{ interfaces }} -> will distribute to bridges={{ bridges }}"
+  tags: [provision]
+
+- name: Fail if no physical interfaces found (nothing to assign)
+  fail:
+    msg: "No physical network interfaces found to provision."
+  when: interfaces | length == 0
+  tags: [provision]
+
+- name: Ensure each bridge exists (create if missing)
+  become: true
+  shell: |
+    if ! ip link show {{ item }} >/dev/null 2>&1; then
+      ip link add name {{ item }} type bridge
+    fi
+  loop: "{{ bridges }}"
+  loop_control:
+    label: "{{ item }}"
+  tags: [provision]
+
+- name: Initialize bridge assignment map
+  set_fact:
+    bridge_assignments: {}
+  tags: [provision]
+
+- name: Distribute interfaces across bridges (round-robin)
+  set_fact:
+    bridge_assignments: >-
+      {{
+        bridge_assignments | combine({ (bridges[(index % (bridges|length))]) : (bridge_assignments.get(bridges[(index % (bridges|length))], []) + [item]) })
+      }}
+  loop: "{{ interfaces }}"
+  loop_control:
+    index_var: index
+  tags: [provision]
+
+- name: Debug bridge assignments
+  debug:
+    var: bridge_assignments
+  tags: [provision]
+
+- name: Attach each interface to its bridge
+  become: true
+  vars:
+    iface: "{{ item.1 }}"
+    bridge: "{{ item.0 }}"
+  loop: "{{ bridge_assignments | dict2items | subelements('value') }}"
+  loop_control:
+    label: "{{ bridge }}:{{ iface }}"
+  block:
+    - name: Get current master of {{ iface }} (if any)
+      shell: "readlink -f /sys/class/net/{{ iface }}/master 2>/dev/null || true"
+      register: current_master
+      changed_when: false
+
+    - name: Detach {{ iface }} from current master if different
+      become: true
+      shell: |
+        if [ -n "{{ current_master.stdout }}" ] && [ "$(basename {{ current_master.stdout }})" != "{{ bridge }}" ]; then
+          ip link set dev {{ iface }} nomaster
+        fi
+      when: current_master.stdout != '' and (current_master.stdout is defined)
+
+    - name: Set {{ iface }} master to {{ bridge }}
+      become: true
+      shell: |
+        # ensure interface is down before enslaving
+        ip link set dev {{ iface }} down || true
+        ip link set dev {{ iface }} master {{ bridge }}
+        ip link set dev {{ bridge }} up
+        ip link set dev {{ iface }} up
+      args:
+        warn: false
+
+  tags: [provision]
+
+- name: Summary - show final state for bridges
+  shell: ip -br link show type bridge || true
+  register: bridges_state
+  changed_when: false
+  tags: [provision]
+
+- name: Show bridges state
+  debug:
+    var: bridges_state.stdout_lines
+  tags: [provision]
