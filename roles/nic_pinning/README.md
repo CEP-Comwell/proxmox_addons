@@ -78,3 +78,28 @@ Troubleshooting
 Contributing
 
 See the [root contributing guide](../../docs/contributing.md) and `docs/role_readme_template.md` for role README conventions and checklist.
+
+## Optional: export mappings to NetBox
+
+If you manage your inventory and interfaces in NetBox, it's useful to store the generated mapping (normalized name → kernel name → MAC) against the corresponding Proxmox device. Below is a suggested workflow and a small template is included in this role to generate a NetBox-friendly export.
+
+Suggested workflow
+
+1. After running `nic_pinning`, fetch the mapping file (the wrapper writes `./fetched_templates/<host>.yml`) or render the template using Ansible facts.
+2. Use the included template `roles/nic_pinning/templates/netbox_export.j2` to render a JSON/YAML payload containing:
+   - device name (inventory hostname)
+   - interfaces: list of { name, kernel_name, mac, normalized_name }
+3. Upload the payload to NetBox via its API (pynetbox or curl). Example curl snippet:
+
+```bash
+curl -X POST "https://<netbox>/api/dcim/interfaces/" \
+  -H "Authorization: Token <NETBOX_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '@./fetched_templates/<host>-netbox.json'
+```
+
+Note: you may prefer to use pynetbox to create Interface objects and attach custom fields for the normalized name.
+
+Template
+
+The role includes `roles/nic_pinning/templates/netbox_export.j2` which renders a JSON structure suitable for NetBox import or a small Python/pynetbox script to consume. Customize fields to match your NetBox schema (custom fields, device roles, etc.).
