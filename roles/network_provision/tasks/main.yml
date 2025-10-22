@@ -1,0 +1,11 @@
+---
+# NEW: Streamlined network_provision role - replaces nic_pinning + provision roles
+# Fixed bridge assignments for hybrid spine-leaf architecture:
+# - vmbr99: Management (10Gb interfaces)
+# - vmbr1: VM/Services (first 2 1Gb interfaces)
+# - vmbr2: External (remaining 1Gb interfaces)
+
+- import_tasks: discovery.yml
+- import_tasks: naming.yml
+- import_tasks: pinning.yml
+- import_tasks: bridging.yml

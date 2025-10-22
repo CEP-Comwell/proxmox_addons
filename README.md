@@ -457,14 +457,13 @@ proxmox_addons/
 │   ├── establish_fabric/
 │   ├── ipam/
 │   ├── nat/
+│   ├── network_provision/
 │   ├── nftables/
-│   ├── nic_pinning/
 │   ├── preflight/
 │   ├── probe-docker-overlay/
 │   ├── probe-hci-agent/
 │   ├── probe-vm-net/
 │   ├── probe-vxlan-node/
-│   ├── provision/
 │   ├── proxy/
 │   ├── underlay/
 │   ├── vm_nic/

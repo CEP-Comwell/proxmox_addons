@@ -142,4 +142,27 @@ This repository uses a modular structure for automation projects. Please follow 
 
 	For a canonical role README template and checklist, see `docs/role_readme_template.md`.
 
+	## Guidance for LLMs and automated code assistants
+
+	We encourage using automated tools (including LLM-based code assistants) to speed development, but to keep the repository stable please ensure the following when an LLM or automated editor makes changes:
+
+	- Small, focused changes: prefer narrow PRs that change one role or one small area rather than sweeping edits across many files.
+	- Run local checks after any generated change:
+		- `yamllint` for YAML formatting
+		- `ansible-lint` for role/playbook best-practices
+		- `ansible-playbook --syntax-check` for any playbooks that include edited roles
+	- Do not insert Markdown code fences (```yaml```) inside YAML files. Tasks files must be pure YAML.
+	- Avoid duplicate YAML document separators (`---`) inside role task files; if multiple documents are required, split into separate files.
+	- Add an explanatory commit message and PR description summarizing what the assistant changed and why (include the exact files edited).
+	- Where possible include or update small verification steps (syntax checks or a tiny run in `--check` mode) as part of the PR so reviewers can quickly validate correctness.
+	- Preserve repository conventions (2-space YAML indentation, role layout, `defaults/main.yml` for defaults).
+
+	If an automated change introduces a parsing error, the remediation checklist is:
+
+	1. Run `ansible-playbook --syntax-check` targeting the playbook that failed to identify the problematic file and line.
+	2. Inspect the flagged file(s) for stray Markdown fences, duplicate `---` markers, or duplicated blocks.
+	3. Re-run `yamllint` and `ansible-lint` locally, fix issues, and re-run the syntax check.
+
+	Including this guidance in PRs created by assistants makes reviews faster and reduces back-and-forth.
+
 	````

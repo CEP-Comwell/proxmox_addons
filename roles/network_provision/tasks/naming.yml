@@ -1,0 +1,55 @@
+---
+# NEW: Normalized naming assignment - consolidated from both old roles
+# Initialize counters and lists for naming
+- name: Initialize NIC name counters and lists
+  set_fact:
+    xg_count: 1
+    eth_count: 1
+    other_count: 1
+    nic_names: {}
+    xg_ifaces: []
+    eth_ifaces: []
+
+# Determine list of 10Gb-capable interfaces (ethtool shows 10000)
+- name: Determine list of 10Gb-capable interfaces (ethtool shows 10000)
+  set_fact:
+    ten_g_ifaces: "{{ link_modes_map | dict2items | selectattr('value','search','10000') | map(attribute='key') | list }}"
+
+# If protected management interface is 10Gb, reserve xg1 for it
+- name: If protected management interface is 10Gb, reserve xg1 for it
+  set_fact:
+    nic_names: "{{ nic_names | combine({ protected_mgmt_iface: 'xg1' }) }}"
+    xg_count: 2
+  when: protected_mgmt_iface is defined and protected_mgmt_iface != '' and protected_mgmt_iface in ten_g_ifaces
+
+# Assign xg names to up to two 10Gb interfaces (preserve interface order)
+- name: Assign xg names to up to two 10Gb interfaces (preserve interface order)
+  set_fact:
+    nic_names: "{{ nic_names | combine({ item: 'xg' ~ (xg_count | int) }) }}"
+    xg_count: "{{ (xg_count | int) + 1 }}"
+  loop: "{{ interfaces }}"
+  when: item in ten_g_ifaces and (xg_count | int) <= 2
+
+# Assign eth names to up to four remaining interfaces (preserve interface order)
+- name: Assign eth names to up to four remaining interfaces (preserve interface order)
+  set_fact:
+    nic_names: "{{ nic_names | combine({ item: 'eth' ~ (eth_count | int) }) }}"
+    eth_count: "{{ (eth_count | int) + 1 }}"
+  loop: "{{ interfaces }}"
+  when: item not in nic_names and (eth_count | int) <= 4
+
+# Assign nicN names to any remaining interfaces
+- name: Assign nicN names to any remaining interfaces
+  set_fact:
+    nic_names: "{{ nic_names | combine({ item: 'nic' ~ (other_count | int) }) }}"
+    other_count: "{{ (other_count | int) + 1 }}"
+  loop: "{{ interfaces }}"
+  when: item not in nic_names
+
+# Build lists of normalized names by type
+- name: Build lists of normalized names by type
+  set_fact:
+    xg_norm: "{{ nic_names | dict2items | selectattr('value','match','^xg') | map(attribute='value') | list }}"
+    eth_norm: "{{ nic_names | dict2items | selectattr('value','match','^eth') | map(attribute='value') | list }}"
+    other_norm: "{{ nic_names | dict2items | rejectattr('value','match','^(xg|eth)') | map(attribute='value') | list }}"
+  when: nic_names is defined

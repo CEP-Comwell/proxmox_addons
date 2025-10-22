@@ -1,0 +1,23 @@
+---
+# Generate .link files using pve-network-interface-pinning with custom names
+- name: Generate .link files using pve-network-interface-pinning with custom names
+  command: >
+    pve-network-interface-pinning generate --interface {{ item }} --target-name {{ nic_names[item] }}
+  loop: "{{ interfaces }}"
+  register: pin_gen_results
+  failed_when: false
+  changed_when: false  # Don't mark as changed since we're handling existing pins
+
+- name: Collect pinning failures
+  set_fact:
+    pinning_failures: >-
+      {{ pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([]) }}
+  when: pin_gen_results is defined
+
+- name: Warn about pinning failures (existing pins are OK)
+  debug:
+    msg: |
+      pve-network-interface-pinning reported failures for interfaces: {{ pinning_failures }}.
+      This is likely due to existing pins - the playbook will continue.
+      Check stderr for details in the earlier task output.
+  when: pinning_failures is defined and pinning_failures | length > 0

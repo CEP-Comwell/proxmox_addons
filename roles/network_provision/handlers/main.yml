@@ -1,6 +1,4 @@
-# handlers/main.yml for nic_pinning role
-# These handlers are triggered only if notified by a changed task in tasks/main.yml
-
+# NEW: Handlers for network_provision role - consolidated from nic_pinning
 - name: update initramfs
   shell: update-initramfs -u -k all
   become: true

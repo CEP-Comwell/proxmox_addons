@@ -1,0 +1,96 @@
+---
+# NEW: Bridge creation and persistence - simplified for fixed architecture
+# Fixed bridge assignments for hybrid spine-leaf architecture:
+# - vmbr99: Management Bridge (all 10Gb interfaces)
+# - vmbr1: VM Bridge (first 2 1Gb interfaces)
+# - vmbr2: External Bridge (remaining 1Gb interfaces)
+
+# Build fixed bridge assignments based on normalized interface names
+- name: Build fixed bridge assignments for spine-leaf architecture
+  set_fact:
+    bridge_assignments:
+      vmbr99: "{{ xg_norm }}"        # All 10Gb interfaces to management bridge
+      vmbr1: "{{ eth_norm[0:2] }}"   # First 2 1Gb interfaces to VM bridge
+      vmbr2: "{{ eth_norm[2:] }}"    # Remaining 1Gb interfaces to external bridge
+
+# Build apply_bridge_assignments (convert normalized names to actual interface names)
+- name: Build apply_bridge_assignments (convert normalized names to actual interface names)
+  set_fact:
+    apply_bridge_assignments: >-
+      {{ apply_bridge_assignments | default({}) | combine({item.key: (nic_names | dict2items |
+      selectattr('value', 'in', item.value) | map(attribute='key') |
+      reject('equalto', protected_mgmt_iface) | list)}) }}
+  loop: "{{ bridge_assignments | dict2items }}"
+  when: item.key != 'vmbr0'
+
+# Debug apply_bridge_assignments mapping
+- name: Debug apply_bridge_assignments mapping
+  debug:
+    var: apply_bridge_assignments
+
+# Pause for confirmation before applying assignments (if requested)
+- name: Pause for confirmation before applying assignments
+  pause:
+    prompt: "Proceed to apply bridge assignments? (press Enter to continue or CTRL-C to abort)"
+  when: provision_confirm_before_apply | default(false) and not (provision_generate_only | default(false))
+
+# Ensure each bridge exists (create if missing)
+- name: Ensure each bridge exists (create if missing)
+  become: true
+  shell: |
+    if ! ip link show {{ item }} >/dev/null 2>&1; then
+      ip link add name {{ item }} type bridge
+    fi
+  loop: "{{ apply_bridge_assignments | default(bridge_assignments) | list }}"
+  loop_control:
+    label: "{{ item }}"
+  when: not (provision_generate_only | default(false))
+
+# Attach each interface to its bridge
+- name: Attach each interface to its bridge
+  become: true
+  when: not (provision_generate_only | default(false))
+  loop: "{{ (apply_bridge_assignments | default(bridge_assignments)) | dict2items | subelements('value') }}"
+  loop_control:
+    label: "{{ item.0.key }}:{{ item.1 }}"
+  vars:
+    bridge: "{{ item.0.key }}"
+    iface: "{{ item.1 }}"
+  shell: |
+    current_master="$(readlink -f /sys/class/net/{{ iface }}/master 2>/dev/null || true)"
+    if [ -n "$current_master" ] && [ "$(basename "$current_master")" != "{{ bridge }}" ]; then
+      ip link set dev {{ iface }} nomaster || true
+    fi
+    # ensure interface is down before enslaving
+    ip link set dev {{ iface }} down || true
+    ip link set dev {{ iface }} master {{ bridge }} || true
+    ip link set dev {{ bridge }} up || true
+    ip link set dev {{ iface }} up || true
+
+# Persist bridge configuration to /etc/network/interfaces
+- name: Persist bridge configuration to /etc/network/interfaces
+  become: true
+  when: not (provision_generate_only | default(false))
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} ANSIBLE MANAGED BRIDGES - DO NOT EDIT MANUALLY"
+    block: |
+      {% for bridge_name, interfaces in (apply_bridge_assignments | default(bridge_assignments)).items() %}
+      {% if bridge_name != 'vmbr0' %}
+      auto {{ bridge_name }}
+      iface {{ bridge_name }} inet manual
+              bridge-ports {{ interfaces | join(' ') }}
+              bridge-stp off
+              bridge-fd 0
+      {% endif %}
+      {% endfor %}
+
+# Summary - show final state for bridges
+- name: Summary - show final state for bridges
+  shell: ip -br link show type bridge || true
+  register: bridges_state
+  changed_when: false
+
+- name: Show bridges state
+  debug:
+    var: bridges_state.stdout_lines

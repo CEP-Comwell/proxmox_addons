@@ -1,0 +1,78 @@
+---
+# NEW: Interface discovery - consolidated from both old roles
+# Gather all physical network interfaces except common virtual and bridge types
+- name: Get list of physical interfaces
+  shell: |
+    ls -1 /sys/class/net | grep -vE '^(lo|vmbr|tap|fw|bonding_masters|veth|br|docker|virbr|wg|tun|bond|bridge)'
+  register: interfaces_raw
+  changed_when: false
+
+# Store interface list for later use
+- name: Set interface list
+  set_fact:
+    interfaces: "{{ interfaces_raw.stdout_lines }}"
+
+- name: Preserve full interface list for discovery steps
+  set_fact:
+    all_interfaces: "{{ interfaces_raw.stdout_lines }}"
+
+# Detect interface currently enslaved to vmbr0 (protect Proxmox management NIC)
+- name: Detect interface currently enslaved to vmbr0 (protect Proxmox management NIC)
+  shell: |
+    for f in /sys/class/net/*; do
+      if [ -e "$f/master" ]; then
+        master=$(readlink -f "$f/master" 2>/dev/null || true)
+        if [ "$(basename "$master")" = "vmbr0" ]; then
+          basename "$f"
+          exit 0
+        fi
+      fi
+    done
+  register: protected_mgmt_iface_raw
+  changed_when: false
+
+- name: Set protected management interface fact
+  set_fact:
+    protected_mgmt_iface: "{{ protected_mgmt_iface_raw.stdout | default('') }}"
+
+# Additional detection: if vmbr0 exists, match its MAC to find the physical interface
+- name: Detect management interface by vmbr0 MAC if present
+  shell: |
+    if [ -e /sys/class/net/vmbr0/address ]; then
+      vmbr_mac=$(cat /sys/class/net/vmbr0/address)
+      for i in /sys/class/net/*; do
+        if [ -e "$i/address" ]; then
+          mac=$(cat "$i/address")
+          if [ "$mac" = "$vmbr_mac" ]; then
+            basename "$i"
+            exit 0
+          fi
+        fi
+      done
+    fi
+  register: detected_mgmt_by_mac
+  changed_when: false
+  failed_when: false
+
+- name: Set protected_mgmt_iface from vmbr0 MAC detection when found
+  set_fact:
+    protected_mgmt_iface: "{{ detected_mgmt_by_mac.stdout }}"
+  when: detected_mgmt_by_mac is defined and detected_mgmt_by_mac.stdout != ''
+
+- name: Remove protected management interface from interfaces list
+  set_fact:
+    interfaces: "{{ interfaces | difference([protected_mgmt_iface]) }}"
+  when: protected_mgmt_iface is defined and protected_mgmt_iface != ''
+
+# Get supported link modes for each interface (used for naming logic)
+- name: Gather Supported link modes for each interface
+  shell: |
+    ethtool "{{ item }}" | grep 'Supported link modes:' || echo "Supported link modes: Not reported"
+  loop: "{{ all_interfaces }}"
+  register: link_modes
+  changed_when: false
+
+# Build a map interface -> ethtool output for robust lookup
+- name: Build link_modes_map (interface -> ethtool stdout)
+  set_fact:
+    link_modes_map: "{{ dict( all_interfaces | zip(link_modes.results | map(attribute='stdout') | list) ) }}"

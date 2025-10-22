@@ -53,7 +53,7 @@ Runs:
   - optional: ansible-playbook -i inventory <playbook-path> --syntax-check
 
 Examples:
-  $(basename "$0") nic_pinning
+  $(basename "$0") network_provision
   $(basename "$0") vxlan playbooks/deploy_vxlan.yml
 EOF
   exit 2
