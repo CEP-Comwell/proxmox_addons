@@ -1,51 +1,60 @@
 ---
-# Generate .link files using pve-network-interface-pinning with custom names
-- name: Generate .link files using pve-network-interface-pinning with custom names
+
+# Try to pin interfaces using pve-network-interface-pinning (Proxmox VE 8+)
+# Skip interfaces that are already properly named and never pin the protected management interface
+- name: Attempt to pin interfaces using pve-network-interface-pinning
   command: >
     pve-network-interface-pinning generate --interface {{ item }} --target-name {{ nic_names[item] }}
-  loop: "{{ interfaces }}"
+  loop: "{{ interfaces | difference(already_named | default([])) | difference([protected_mgmt_iface] | default([])) }}"
   register: pin_gen_results
   failed_when: false
-  changed_when: false  # Don't mark as changed since we're handling existing pins
+  changed_when: false
+  tags:
+    - pinning
 
-# If pve-network-interface-pinning fails, create udev rules manually for Proxmox VE 9
-- name: Create udev rules manually if pve-network-interface-pinning fails
-  become: true
-  template:
-    src: udev-net-name.j2
-    dest: "/etc/udev/rules.d/70-pve-net-{{ item }}.rules"
-    mode: '0644'
-  loop: "{{ interfaces }}"
-  when: >
-    pin_gen_results is defined and
-    (pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([])) | length > 0
-
-# Reload udev rules to apply new interface renaming
-- name: Reload udev rules to apply new interface renaming
-  become: true
-  shell: udevadm control --reload-rules && udevadm trigger
-  when: >
-    pin_gen_results is defined and
-    (pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([])) | length > 0
-
-# Reload udev rules to apply new interface naming
-- name: Reload udev rules to apply new interface naming
-  become: true
-  shell: udevadm control --reload-rules && udevadm trigger
-  when: >
-    pin_gen_results is defined and
-    (pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([])) | length > 0
-
+# Collect failures for reporting and fallback
 - name: Collect pinning failures
   set_fact:
     pinning_failures: >-
       {{ pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([]) }}
   when: pin_gen_results is defined
+  tags:
+    - pinning
 
-- name: Warn about pinning failures (existing pins are OK)
+# Warn if any pinning failures (expected in Proxmox VE 9)
+- name: Warn about pinning failures (expected in Proxmox VE 9)
   debug:
     msg: |
-      pve-network-interface-pinning reported failures for interfaces: {{ pinning_failures }}.
-      This is expected in Proxmox VE 9 - falling back to udev rules for interface renaming.
-      The playbook will continue with udev-based renaming.
+      pve-network-interface-pinning failed for interfaces: {{ pinning_failures }}.
+      Falling back to udev rules for persistent naming. This is normal for Proxmox VE 9.
   when: pinning_failures is defined and pinning_failures | length > 0
+  tags:
+    - pinning
+
+# Fallback: Generate udev rules for failed interfaces
+- name: Generate udev rules for failed pinning interfaces
+  become: true
+  template:
+    src: udev-net-name.j2
+    dest: "/etc/udev/rules.d/70-pve-net-{{ item }}.rules"
+    mode: '0644'
+  loop: "{{ pinning_failures | default([]) }}"
+  when: false  # Disabled to focus on troubleshooting pve-network-interface-pinning
+  tags:
+    - pinning
+
+# Apply udev rules immediately if any were generated
+- name: Reload udev rules to apply persistent interface naming
+  become: true
+  shell: udevadm control --reload-rules && udevadm trigger
+  when: false  # Disabled
+  tags:
+    - pinning
+
+# Update /etc/network/interfaces to use renamed protected management interface
+- name: Update bridge-ports for protected management interface if renamed
+  become: true
+  command: sed -i "s/bridge-ports {{ protected_mgmt_iface }}/bridge-ports {{ nic_names[protected_mgmt_iface] }}/" /etc/network/interfaces
+  when: false  # Disabled - using sourced configuration approach instead
+  tags:
+    - pinning

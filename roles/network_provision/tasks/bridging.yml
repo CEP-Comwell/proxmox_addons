@@ -18,9 +18,14 @@
       - eth_norm is defined
     fail_msg: "Required variables not set. Please run discovery and naming tasks first."
 
+- name: Debug protected management interface
+  debug:
+    msg: "Protected management interface: {{ protected_mgmt_iface }}"
+  when: protected_mgmt_iface is defined
+
 - name: Calculate available 10GbE interfaces (excluding protected)
   set_fact:
-    available_10gbe: "{{ nic_names | dict2items | selectattr('value','match','^xg') | map(attribute='key') | reject('equalto', protected_mgmt_iface) | list }}"
+    available_10gbe: "{{ nic_names | dict2items | selectattr('value','match','^xg') | map(attribute='key') | select('ne', protected_mgmt_iface) | list }}"
 
 - name: Get normalized names for available 10GbE interfaces
   set_fact:
@@ -35,12 +40,29 @@
 
 - name: Fill 1GbE fallbacks for bridges without 10GbE
   set_fact:
-    bridge_assignments: >-
-      {{ bridge_assignments | combine({
-           'vmbr99': bridge_assignments.vmbr99 if bridge_assignments.vmbr99 else ([eth_norm[0]] if eth_norm | length > 0 else []),
-           'vmbr2': bridge_assignments.vmbr2 if bridge_assignments.vmbr2 else ([eth_norm[1]] if eth_norm | length > 1 else ([eth_norm[0]] if eth_norm | length > 0 and not bridge_assignments.vmbr99 else [])),
-           'vmbr1': bridge_assignments.vmbr1 if bridge_assignments.vmbr1 else ([eth_norm[2]] if eth_norm | length > 2 else ([eth_norm[1]] if eth_norm | length > 1 and not bridge_assignments.vmbr2 else ([eth_norm[0]] if eth_norm | length > 0 and not bridge_assignments.vmbr99 and not bridge_assignments.vmbr2 else [])))
-         }) }}
+    # Separate eth interfaces from other interfaces and sort eth numerically
+    eth_interfaces: "{{ interfaces | select('match', '^eth[0-9]+$') | sort }}"
+    other_interfaces: "{{ interfaces | reject('match', '^eth[0-9]+$') | list }}"
+    bridges_needing_fallback: "{{ bridge_assignments | dict2items | selectattr('value', 'equalto', []) | map(attribute='key') | list }}"
+
+- name: Create prioritized interface list for fallback assignments
+  set_fact:
+    # Prioritize eth interfaces first, then other interfaces
+    prioritized_interfaces: "{{ eth_interfaces + other_interfaces }}"
+
+- name: Assign fallback interfaces to bridges needing them
+  set_fact:
+    bridge_assignments: "{{ bridge_assignments | combine({item.0: [item.1]}) }}"
+  loop: "{{ bridges_needing_fallback | zip(prioritized_interfaces) | list }}"
+  when: bridges_needing_fallback | length > 0 and prioritized_interfaces | length > 0
+
+# Ensure protected management interface is not assigned to any bridge
+- name: Ensure protected management interface is not assigned to any bridge
+  set_fact:
+    bridge_assignments: "{{ bridge_assignments | combine({item.key: item.value | reject('equalto', protected_mgmt_iface)}) }}"
+  loop: "{{ bridge_assignments | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
 
 # Validate bridge assignments - ensure exactly 1 interface per bridge
 - name: Validate bridge assignments - ensure exactly 1 interface per bridge
@@ -132,6 +154,16 @@
     src: interfaces-bridges.j2
     dest: /etc/network/interfaces.d/ansible-bridges
     mode: '0644'
+
+# Reload network configuration for PVE 9 SDN compatibility
+- name: Reload network configuration for PVE 9 SDN compatibility
+  become: true
+  when: not (provision_generate_only | default(false))
+  command: ifreload -a
+  changed_when: true
+
+# Note: Removed direct modification of /etc/network/interfaces to follow proper sourcing practices
+# Proxmox GUI should still display bridges if they are active in the system
 
 # Summary - show final state for bridges
 - name: Summary - show final state for bridges

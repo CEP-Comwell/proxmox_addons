@@ -54,12 +54,15 @@
     other_norm: "{{ nic_names | dict2items | rejectattr('value','match','^(xg|eth)') | map(attribute='value') | list }}"
   when: nic_names is defined
 
-# Skip interfaces that are already properly named (xg1/xg2, eth1+, etc.)
+# Skip interfaces that are already properly named (current name matches target name)
 - name: Identify already properly named interfaces
   set_fact:
-    already_named: "{{ interfaces | select('match', '^(xg[12]|eth[1-9]+)$') | list }}"
+    already_named: "{{ already_named | default([]) + [item] }}"
+  loop: "{{ interfaces }}"
+  when: 
+    - nic_names is defined
+    - item in nic_names
+    - nic_names[item] == item
 
-# Remove already named interfaces from the renaming process
-- name: Remove already named interfaces from interfaces list
-  set_fact:
-    interfaces: "{{ interfaces | difference(already_named) }}"
+# Keep already named interfaces in the list for potential bridge assignment
+# (don't remove them from interfaces list)

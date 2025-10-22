@@ -35,29 +35,7 @@
   set_fact:
     protected_mgmt_iface: "{{ protected_mgmt_iface_raw.stdout | default('') }}"
 
-# Additional detection: if vmbr0 exists, match its MAC to find the physical interface
-- name: Detect management interface by vmbr0 MAC if present
-  shell: |
-    if [ -e /sys/class/net/vmbr0/address ]; then
-      vmbr_mac=$(cat /sys/class/net/vmbr0/address)
-      for i in /sys/class/net/*; do
-        if [ -e "$i/address" ]; then
-          mac=$(cat "$i/address")
-          if [ "$mac" = "$vmbr_mac" ]; then
-            basename "$i"
-            exit 0
-          fi
-        fi
-      done
-    fi
-  register: detected_mgmt_by_mac
-  changed_when: false
-  failed_when: false
-
-- name: Set protected_mgmt_iface from vmbr0 MAC detection when found
-  set_fact:
-    protected_mgmt_iface: "{{ detected_mgmt_by_mac.stdout }}"
-  when: detected_mgmt_by_mac is defined and detected_mgmt_by_mac.stdout != ''
+# MAC detection removed - enslavement detection is sufficient
 
 - name: Remove protected management interface from interfaces list
   set_fact:
@@ -76,3 +54,15 @@
 - name: Build link_modes_map (interface -> ethtool stdout)
   set_fact:
     link_modes_map: "{{ dict( all_interfaces | zip(link_modes.results | map(attribute='stdout') | list) ) }}"
+
+# Gather MAC addresses for interfaces
+- name: Gather MAC addresses for interfaces
+  shell: cat /sys/class/net/{{ item }}/address
+  loop: "{{ all_interfaces }}"
+  register: mac_results
+  changed_when: false
+
+# Build macs map (interface -> MAC address)
+- name: Build macs map
+  set_fact:
+    macs: "{{ dict(all_interfaces | zip(mac_results.results | map(attribute='stdout') | list)) }}"

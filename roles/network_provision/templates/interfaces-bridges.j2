@@ -6,6 +6,7 @@ iface {{ bridge_name }} inet manual
         bridge-ports {{ interfaces | join(' ') }}
         bridge-stp off
         bridge-fd 0
+        bridge-vlan-aware yes
 
 {% endif %}
 {% endfor %}
