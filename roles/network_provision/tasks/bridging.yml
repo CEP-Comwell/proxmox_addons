@@ -1,32 +1,59 @@
 ---
 # NEW: Bridge creation and persistence - simplified for fixed architecture
-# Fixed bridge assignments for hybrid spine-leaf architecture:
-# - vmbr99: Management Bridge (all 10Gb interfaces)
-# - vmbr1: VM Bridge (first 2 1Gb interfaces)
-# - vmbr2: External Bridge (remaining 1Gb interfaces)
+# Fixed bridge assignments for hybrid spine-leaf architecture (1 interface per bridge):
+# 10GbE Priority order: vmbr99 (management) > vmbr2 (external) > vmbr1 (VM)
+# - vmbr99: Management Bridge (first available 10Gb interface)
+# - vmbr2: External Bridge (second 10Gb interface if available, otherwise first 1Gb interface)
+# - vmbr1: VM Bridge (third 10Gb interface if available, otherwise next available 1Gb interface)
 
 # Build fixed bridge assignments based on normalized interface names
-- name: Build fixed bridge assignments for spine-leaf architecture
+# Limit to 1 interface per bridge to avoid STP issues
+# Priority order for 10GbE: vmbr99 > vmbr2 > vmbr1
+- name: Calculate available 10GbE interfaces (excluding protected)
+  set_fact:
+    available_10gbe: "{{ nic_names | dict2items | selectattr('value','match','^xg') | map(attribute='key') | reject('equalto', protected_mgmt_iface) | list }}"
+
+- name: Get normalized names for available 10GbE interfaces
+  set_fact:
+    available_10gbe_norm: "{{ available_10gbe | map('extract', nic_names) | list }}"
+
+- name: Assign 10GbE interfaces by priority order
   set_fact:
     bridge_assignments:
-      vmbr99: "{{ xg_norm }}"        # All 10Gb interfaces to management bridge
-      vmbr1: "{{ eth_norm[0:2] }}"   # First 2 1Gb interfaces to VM bridge
-      vmbr2: "{{ eth_norm[2:] }}"    # Remaining 1Gb interfaces to external bridge
+      vmbr99: "{{ [available_10gbe_norm[0]] if available_10gbe_norm | length > 0 else [] }}"  # Highest priority 10GbE
+      vmbr2: "{{ [available_10gbe_norm[1]] if available_10gbe_norm | length > 1 else [] }}"  # Second priority 10GbE
+      vmbr1: "{{ [available_10gbe_norm[2]] if available_10gbe_norm | length > 2 else [] }}"  # Third priority 10GbE
 
-# Build apply_bridge_assignments (convert normalized names to actual interface names)
-- name: Build apply_bridge_assignments (convert normalized names to actual interface names)
+- name: Fill 1GbE fallbacks for bridges without 10GbE
   set_fact:
-    apply_bridge_assignments: >-
-      {{ apply_bridge_assignments | default({}) | combine({item.key: (nic_names | dict2items |
-      selectattr('value', 'in', item.value) | map(attribute='key') |
-      reject('equalto', protected_mgmt_iface) | list)}) }}
+    bridge_assignments: >-
+      {{ bridge_assignments | combine({
+           'vmbr99': bridge_assignments.vmbr99 if bridge_assignments.vmbr99 else ([eth_norm[0]] if eth_norm | length > 0 else []),
+           'vmbr2': bridge_assignments.vmbr2 if bridge_assignments.vmbr2 else ([eth_norm[1]] if eth_norm | length > 1 else ([eth_norm[0]] if eth_norm | length > 0 and not bridge_assignments.vmbr99 else [])),
+           'vmbr1': bridge_assignments.vmbr1 if bridge_assignments.vmbr1 else ([eth_norm[2]] if eth_norm | length > 2 else ([eth_norm[1]] if eth_norm | length > 1 and not bridge_assignments.vmbr2 else ([eth_norm[0]] if eth_norm | length > 0 and not bridge_assignments.vmbr99 and not bridge_assignments.vmbr2 else [])))
+         }) }}
+
+# Validate bridge assignments - ensure exactly 1 interface per bridge
+- name: Validate bridge assignments - ensure exactly 1 interface per bridge
+  assert:
+    that: item.value | length == 1
+    fail_msg: "Bridge {{ item.key }} has {{ item.value | length }} interfaces assigned, but exactly 1 interface per bridge is required for SDN stability"
   loop: "{{ bridge_assignments | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}: {{ item.value }}"
   when: item.key != 'vmbr0'
 
-# Debug apply_bridge_assignments mapping
-- name: Debug apply_bridge_assignments mapping
-  debug:
-    var: apply_bridge_assignments
+# Validate no interface conflicts - ensure each interface is assigned to exactly 1 bridge
+- name: Validate no interface conflicts - ensure each interface is assigned to exactly 1 bridge
+  set_fact:
+    all_assigned_interfaces: "{{ bridge_assignments | dict2items | selectattr('key', 'ne', 'vmbr0') | map(attribute='value') | flatten | list }}"
+  when: bridge_assignments is defined
+
+- name: Check for interface conflicts
+  assert:
+    that: (all_assigned_interfaces | count) == (all_assigned_interfaces | unique | count)
+    fail_msg: "Interface conflict detected: {{ all_assigned_interfaces | difference(all_assigned_interfaces | unique) | join(', ') }} are assigned to multiple bridges. Each interface must be assigned to exactly 1 bridge."
+  when: all_assigned_interfaces is defined
 
 # Pause for confirmation before applying assignments (if requested)
 - name: Pause for confirmation before applying assignments
@@ -41,16 +68,37 @@
     if ! ip link show {{ item }} >/dev/null 2>&1; then
       ip link add name {{ item }} type bridge
     fi
-  loop: "{{ apply_bridge_assignments | default(bridge_assignments) | list }}"
+  loop: "{{ bridge_assignments | list }}"
   loop_control:
     label: "{{ item }}"
   when: not (provision_generate_only | default(false))
+
+# Clean up unmanaged interfaces from bridges
+- name: Clean up unmanaged interfaces from bridges
+  become: true
+  when: not (provision_generate_only | default(false))
+  shell: |
+    # Get all interfaces currently attached to this bridge
+    current_interfaces=$(ip link show master {{ item.key }} 2>/dev/null | awk '/^[0-9]+:/ {gsub(/[:@].*/, "", $2); print $2}' || true)
+    
+    # Check each current interface
+    for iface in $current_interfaces; do
+      # If interface is not in the desired list for this bridge, detach it
+      if ! echo "{{ item.value | join(' ') }}" | grep -q "\\b$iface\\b"; then
+        echo "Detaching unmanaged interface $iface from {{ item.key }}"
+        ip link set dev $iface nomaster || true
+        ip link set dev $iface down || true
+      fi
+    done
+  loop: "{{ bridge_assignments | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
 
 # Attach each interface to its bridge
 - name: Attach each interface to its bridge
   become: true
   when: not (provision_generate_only | default(false))
-  loop: "{{ (apply_bridge_assignments | default(bridge_assignments)) | dict2items | subelements('value') }}"
+  loop: "{{ bridge_assignments | dict2items | subelements('value') }}"
   loop_control:
     label: "{{ item.0.key }}:{{ item.1 }}"
   vars:
@@ -75,8 +123,8 @@
     path: /etc/network/interfaces
     marker: "# {mark} ANSIBLE MANAGED BRIDGES - DO NOT EDIT MANUALLY"
     block: |
-      {% for bridge_name, interfaces in (apply_bridge_assignments | default(bridge_assignments)).items() %}
-      {% if bridge_name != 'vmbr0' %}
+      {% for bridge_name, interfaces in bridge_assignments.items() %}
+      {% if bridge_name != 'vmbr0' and interfaces %}
       auto {{ bridge_name }}
       iface {{ bridge_name }} inet manual
               bridge-ports {{ interfaces | join(' ') }}

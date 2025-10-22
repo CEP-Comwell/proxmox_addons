@@ -1,9 +1,9 @@
 ---
 # NEW: Interface discovery - consolidated from both old roles
-# Gather all physical network interfaces except common virtual and bridge types
+# Gather all physical network interfaces except common virtual, bridge types, and already-renamed interfaces
 - name: Get list of physical interfaces
   shell: |
-    ls -1 /sys/class/net | grep -vE '^(lo|vmbr|tap|fw|bonding_masters|veth|br|docker|virbr|wg|tun|bond|bridge)'
+    ls -1 /sys/class/net | grep -vE '^(lo|vmbr|tap|fw|bonding_masters|veth|br|docker|virbr|wg|tun|bond|bridge)' | grep -vE '^(eth|xg)[0-9]+$'
   register: interfaces_raw
   changed_when: false
 

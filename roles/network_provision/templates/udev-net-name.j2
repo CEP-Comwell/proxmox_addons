@@ -1,0 +1,2 @@
+# Udev rule to rename {{ item }} to {{ nic_names[item] }}
+SUBSYSTEM=="net", KERNEL=="{{ item }}", NAME="{{ nic_names[item] }}"

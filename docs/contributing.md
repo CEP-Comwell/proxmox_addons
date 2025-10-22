@@ -138,13 +138,100 @@ This repository uses a modular structure for automation projects. Please follow 
 		ansible-playbook -i inventory subproject/playbooks/my_playbook.yml
 		```
 
-	---
+---
 
-	For a canonical role README template and checklist, see `docs/role_readme_template.md`.
+For a canonical role README template and checklist, see `docs/role_readme_template.md`.
 
-	## Guidance for LLMs and automated code assistants
+## Infrastructure Automation: Ansible vs Proxmox API
 
-	We encourage using automated tools (including LLM-based code assistants) to speed development, but to keep the repository stable please ensure the following when an LLM or automated editor makes changes:
+When developing automation for Proxmox environments, choose the appropriate tool based on the operation type. This guidance helps maintain clean separation between direct system management and API-based infrastructure management.
+
+### Use Ansible/Shell Commands When:
+
+1. **Direct File System Operations**
+   - Editing `/etc/network/interfaces`, `/etc/udev/rules.d/`, or system config files
+   - Creating custom udev rules for interface renaming
+   - Managing systemd services or udev rule reloading
+
+2. **Low-Level Network Configuration**
+   - Running `ip link`, `brctl`, or `ethtool` commands for interface management
+   - Complex interface detection using `ls -1 /sys/class/net` with filters
+   - Manual bridge creation/destruction during troubleshooting
+
+3. **Proxmox Version Compatibility Issues**
+   - When Proxmox API behavior changes between versions
+   - Working around API limitations or bugs
+   - Implementing custom workarounds for specific Proxmox versions
+
+4. **Complex Shell-Based Logic**
+   - Parsing `ethtool` output for link speed detection
+   - Multi-step operations requiring shell piping or conditional logic
+   - One-time setup tasks before API management
+
+### Use Proxmox API When:
+
+1. **VM/Container Lifecycle Management**
+   - Creating, starting, stopping VMs/containers
+   - Managing VM configurations, disk attachments, network interfaces
+   - Bulk operations across multiple VMs
+
+2. **Cluster Management**
+   - Managing cluster membership, HA configurations
+   - Resource pool management and permissions
+   - Backup scheduling and storage management
+
+3. **Network Bridge Management**
+   - Creating/managing Linux bridges through Proxmox's abstraction layer
+   - Managing bridge properties and attached VMs
+   - SDN integration and firewall rules
+
+4. **Storage Operations**
+   - Creating/managing storage pools, volumes, and backups
+   - Storage migration and replication
+   - iSCSI/LVM/ZFS configuration
+
+5. **Monitoring and Metrics**
+   - Accessing performance metrics and logs
+   - Health monitoring and alerting
+   - Resource usage tracking
+
+6. **User/Access Management**
+   - Managing users, groups, and API tokens
+   - Permission and role assignments
+   - Authentication configuration
+
+7. **Declarative Infrastructure**
+   - Ongoing configuration management and drift detection
+   - Automated remediation of configuration changes
+   - Integration with infrastructure-as-code workflows
+
+### Hybrid Approach (Recommended):
+
+8. **Bootstrap with Shell, Manage with API**
+   - Use shell commands for initial network setup and interface renaming
+   - Switch to Proxmox API for ongoing VM/network management
+   - Example: Shell commands for complex interface renaming logic, API for VM lifecycle
+
+9. **API with Shell Fallbacks**
+   - Primary operations via API, shell commands as fallbacks
+   - Use API for standard operations, shell for edge cases
+   - Log API failures and automatically retry with shell methods
+
+### Key Decision Factors:
+
+- **Stability**: API for production stability, shell for troubleshooting
+- **Version Compatibility**: Shell commands when API changes between Proxmox versions
+- **Complexity**: API for simple operations, shell for complex parsing/logic
+- **Idempotency**: API generally better for idempotent operations
+- **Debugging**: Shell commands provide better visibility during development
+
+---
+
+## Guidance for LLMs and automated code assistants
+
+**Important**: Before making any infrastructure automation changes, review the "Infrastructure Automation: Ansible vs Proxmox API" section above to choose the appropriate tool for each task type. This ensures consistent architectural decisions across the codebase.
+
+We encourage using automated tools (including LLM-based code assistants) to speed development, but to keep the repository stable please ensure the following when an LLM or automated editor makes changes:
 
 	- Small, focused changes: prefer narrow PRs that change one role or one small area rather than sweeping edits across many files.
 	- Run local checks after any generated change:

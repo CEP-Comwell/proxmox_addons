@@ -40,6 +40,7 @@ Add a one-line pointer at the top of each role README directing contributors to 
 
 When a language model or automated code assistant edits role files, ensure the following before committing or opening a PR:
 
+- **Review infrastructure automation guidelines**: Read and follow the "Infrastructure Automation: Ansible vs Proxmox API" section in `docs/contributing.md` to choose the appropriate tool (Ansible/shell vs Proxmox API) for each task type.
 - Keep changes focused to a single role or small, related set of files.
 - Run formatting and lint checks:
   - `yamllint -d "extends: default, rules: {line-length: {max: 160}, indentation: {spaces: 2}}" roles/<role>/tasks/*.yml`

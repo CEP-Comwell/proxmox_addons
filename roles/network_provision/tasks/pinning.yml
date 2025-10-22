@@ -8,6 +8,34 @@
   failed_when: false
   changed_when: false  # Don't mark as changed since we're handling existing pins
 
+# If pve-network-interface-pinning fails, create udev rules manually for Proxmox VE 9
+- name: Create udev rules manually if pve-network-interface-pinning fails
+  become: true
+  template:
+    src: udev-net-name.j2
+    dest: "/etc/udev/rules.d/70-pve-net-{{ item }}.rules"
+    mode: '0644'
+  loop: "{{ interfaces }}"
+  when: >
+    pin_gen_results is defined and
+    (pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([])) | length > 0
+
+# Reload udev rules to apply new interface renaming
+- name: Reload udev rules to apply new interface renaming
+  become: true
+  command: udevadm control --reload-rules && udevadm trigger
+  when: >
+    pin_gen_results is defined and
+    (pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([])) | length > 0
+
+# Reload udev rules to apply new interface naming
+- name: Reload udev rules to apply new interface naming
+  become: true
+  command: udevadm control --reload-rules && udevadm trigger
+  when: >
+    pin_gen_results is defined and
+    (pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([])) | length > 0
+
 - name: Collect pinning failures
   set_fact:
     pinning_failures: >-
@@ -18,6 +46,6 @@
   debug:
     msg: |
       pve-network-interface-pinning reported failures for interfaces: {{ pinning_failures }}.
-      This is likely due to existing pins - the playbook will continue.
-      Check stderr for details in the earlier task output.
+      This is expected in Proxmox VE 9 - falling back to udev rules for interface renaming.
+      The playbook will continue with udev-based renaming.
   when: pinning_failures is defined and pinning_failures | length > 0
