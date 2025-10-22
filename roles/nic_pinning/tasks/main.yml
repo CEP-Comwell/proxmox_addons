@@ -10,6 +10,29 @@
   set_fact:
     interfaces: "{{ interfaces_raw.stdout_lines }}"
 
+- name: Detect interface currently enslaved to vmbr0 (protect Proxmox management NIC)
+  shell: |
+    for f in /sys/class/net/*; do
+      if [ -e "$f/master" ]; then
+        master=$(readlink -f "$f/master" 2>/dev/null || true)
+        if [ "$(basename "$master")" = "vmbr0" ]; then
+          basename "$f"
+          exit 0
+        fi
+      fi
+    done
+  register: protected_mgmt_iface_raw
+  changed_when: false
+
+- name: Set protected management interface fact
+  set_fact:
+    protected_mgmt_iface: "{{ protected_mgmt_iface_raw.stdout | default('') }}"
+
+- name: Remove protected management interface from interfaces list
+  set_fact:
+    interfaces: "{{ interfaces | difference([protected_mgmt_iface]) }}"
+  when: protected_mgmt_iface is defined and protected_mgmt_iface != ''
+
 # Get supported link modes for each interface (used for naming logic)
 - name: Gather Supported link modes for each interface
   shell: |
@@ -139,4 +162,17 @@
     mode: '0644'
   tags: [nic_pinning]
   when: bridge_assignments is defined and bridge_assignments | length > 0
+
+- name: Gather MAC for protected management interface (if any)
+  shell: cat /sys/class/net/{{ protected_mgmt_iface }}/address
+  register: protected_mgmt_mac_raw
+  changed_when: false
+  when: protected_mgmt_iface is defined and protected_mgmt_iface != ''
+  tags: [nic_pinning]
+
+- name: Set protected mgmt mac fact
+  set_fact:
+    protected_mgmt_mac: "{{ protected_mgmt_mac_raw.stdout if protected_mgmt_mac_raw is defined else '' }}"
+  when: protected_mgmt_mac_raw is defined
+  tags: [nic_pinning]
 

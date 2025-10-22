@@ -98,6 +98,13 @@
   when: prov_template_stat.stat.exists
   tags: [provision]
 
+- name: If template declares a protected management interface, set fact
+  set_fact:
+    protected_management_interface: "{{ provision_template.protected_management_interface | default('') }}"
+    protected_management_mac: "{{ provision_template.protected_management_mac | default('') }}"
+  when: prov_template_stat.stat.exists
+  tags: [provision]
+
 - name: Build list of interfaces referenced by template (if any)
   set_fact:
     template_assigned_ifaces: >-
@@ -109,6 +116,12 @@
   set_fact:
     template_unknown_ifaces: "{{ template_assigned_ifaces | difference(interfaces | default([])) }}"
   when: prov_template_stat.stat.exists
+  tags: [provision]
+
+- name: Fail if template tries to reassign the protected management interface
+  fail:
+    msg: "Template attempts to change protected management interface {{ protected_management_interface }}. Remove it from bridge_assignments to avoid losing connectivity."
+  when: prov_template_stat.stat.exists and protected_management_interface is defined and (protected_management_interface in (provision_template.bridge_assignments | dict2items | map(attribute='value') | list | flatten))
   tags: [provision]
 
 - name: Fail if template references interfaces not present on host
@@ -142,6 +155,12 @@
   when: provision_preferred_mgmt_mac is defined and provision_preferred_mgmt_mac != '' and kernel_to_mac is defined
   tags: [provision]
 
+- name: Validate preferred mgmt MAC exists (fail with available MACs if not found)
+  fail:
+    msg: "Preferred mgmt MAC {{ provision_preferred_mgmt_mac }} not found on host. Available MACs: {{ kernel_to_mac.values() | list }}"
+  when: provision_preferred_mgmt_mac is defined and provision_preferred_mgmt_mac != '' and (kernel_to_mac is defined) and ((kernel_to_mac | dict2items | map(attribute='value') | list) is defined) and (provision_preferred_mgmt_mac not in (kernel_to_mac | dict2items | map(attribute='value') | list))
+  tags: [provision]
+
 - name: If preferred mgmt specified by interface name, and present, override mgmt_bridge assignment
   set_fact:
     bridge_assignments: "{{ bridge_assignments | combine({ mgmt_bridge: [ provision_preferred_mgmt_name ] }) }}"
@@ -151,7 +170,7 @@
 - name: Build apply_bridge_assignments (filter to interfaces actually present)
   set_fact:
     apply_bridge_assignments: >-
-      {{ dict( bridge_assignments | dict2items | map( {'key': item.key, 'value': (item.value | select('in', interfaces) | list) } ) | list ) }}
+      {{ dict( bridge_assignments | dict2items | map( {'key': item.key, 'value': (item.value | select('in', interfaces) | reject('equalto', protected_management_interface) | list) } ) | list ) }}
   when: bridge_assignments is defined
   tags: [provision]
 

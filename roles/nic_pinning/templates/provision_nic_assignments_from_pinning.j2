@@ -5,6 +5,11 @@ detected_interfaces:
   - {{ k }}
 {% endfor %}
 
+{% if protected_mgmt_iface is defined and protected_mgmt_iface != '' %}
+protected_management_interface: {{ protected_mgmt_iface }}
+protected_management_mac: {{ protected_mgmt_mac | default('') }}
+{% endif %}
+
 bridges:
   - {{ mgmt_bridge }}
   - {{ vm_bridge }}

@@ -26,6 +26,8 @@ This file contains examples and variable references below.
   - The template (default `/tmp/provision_nic_assignments-{{ inventory_hostname }}.yml`) contains three sections: `detected_interfaces`, `bridges`, and `bridge_assignments`.
   - Edit `bridge_assignments` to map normalized interface names (e.g. `xg1`, `eth1`, `nic2`) to your desired bridges.
 
+Important: the role protects the interface currently enslaved to `vmbr0` (the Proxmox web management interface). The `nic_pinning` role detects this interface and the generated template includes `protected_management_interface` and `protected_management_mac`. `provision` will refuse to reassign or change that interface — remove it from `bridge_assignments` if you accidentally included it and re-run.
+
 - Step 3: Apply
 
   - Run `provision`. The role validates the template, optionally honors `provision_preferred_mgmt_mac` or `provision_preferred_mgmt_name`, and maps normalized names back to kernel interface names before applying.
@@ -69,6 +71,21 @@ ansible-playbook -i inventory.yml edgesec-sdn/playbooks/provision.yml \
   -e provision_template_path=/tmp/provision_nic_assignments-pve-node1.yml \
   -e provision_confirm_before_apply=true
 ```
+
+## One-shot interactive workflow
+
+If you'd like a guided generate/edit/apply flow that opens the generated template in your local $EDITOR, use the wrapper playbook `edgesec-sdn/playbooks/provision_workflow.yml`.
+
+Example (will run `nic_pinning`, fetch the template to the control node, open your editor, then push back and run `provision`):
+
+```bash
+ansible-playbook -i inventory.yml edgesec-sdn/playbooks/provision_workflow.yml --limit pve-node1
+```
+
+Notes:
+- The wrapper fetches the template to `./fetched_templates/<host>.yml` on the control node.
+- It opens the file with `$EDITOR` (falls back to `vi`).
+- After you save and exit, the edited file is pushed back to the target and `provision` runs.
 
 ## Troubleshooting
 

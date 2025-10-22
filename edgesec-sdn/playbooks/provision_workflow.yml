@@ -1,0 +1,35 @@
+---
+# Wrapper playbook to run nic_pinning, open generated template locally for edit, then run provision
+# Usage: ansible-playbook -i inventory provision_workflow.yml --limit pve-node1 -e provision_confirm_before_apply=true
+
+- name: Generate template (nic_pinning)
+  hosts: proxmox-hosts
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Ensure nic_pinning runs and generates the suggestion file
+      import_role:
+        name: nic_pinning
+
+    - name: Fetch generated provision template to control node
+      fetch:
+        src: "{{ provision_template_path | default('/tmp/provision_nic_assignments-' ~ inventory_hostname ~ '.yml') }}"
+        dest: "./fetched_templates/{{ inventory_hostname }}.yml"
+        flat: true
+      run_once: false
+
+- name: Edit template on control node and apply (provision)
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Open fetched template in $EDITOR
+      local_action: shell "${EDITOR:-vi} ./fetched_templates/{{ groups['proxmox-hosts'][0] }}.yml"
+
+    - name: Push edited template back to host(s)
+      copy:
+        src: "./fetched_templates/{{ groups['proxmox-hosts'][0] }}.yml"
+        dest: "{{ provision_template_path | default('/tmp/provision_nic_assignments-' ~ groups['proxmox-hosts'][0] ~ '.yml') }}"
+      delegate_to: "{{ groups['proxmox-hosts'][0] }}"
+
+    - name: Run provision role to apply assignments
+      import_playbook: provision.yml
