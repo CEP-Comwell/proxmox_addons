@@ -8,3 +8,8 @@
   shell: systemctl restart networking
   become: true
   ignore_errors: true
+
+- name: reload_network
+  command: ifreload -a
+  become: true
+  ignore_errors: true

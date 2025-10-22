@@ -11,7 +11,7 @@
     url: "{{ pve_network_interface_pinning_url }}"
     dest: "{{ pve_network_interface_pinning_path }}"
     mode: '0755'
-  when: pve_network_interface_pinning_url is defined and pve_network_interface_pinning_url | length > 0
+  when: pve_network_interface_pinning_url is defined and pve_network_interface_pinning_url is not none and pve_network_interface_pinning_url | length > 0
   become: true
 
 - name: Ensure pve-network-interface-pinning is executable
@@ -19,5 +19,5 @@
     path: "{{ pve_network_interface_pinning_path }}"
     mode: '0755'
     state: file
-  when: pve_network_interface_pinning_url is defined and pve_network_interface_pinning_url | length > 0
+  when: pve_network_interface_pinning_url is defined and pve_network_interface_pinning_url is not none and pve_network_interface_pinning_url | length > 0
   become: true

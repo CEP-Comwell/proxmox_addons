@@ -1,10 +1,13 @@
 ---
-# NEW: Bridge creation and persistence - simplified for fixed architecture
-# Fixed bridge assignments for hybrid spine-leaf architecture (1 interface per bridge):
-# 10GbE Priority order: vmbr99 (management) > vmbr2 (external) > vmbr1 (VM)
+# PVE 9 SDN Bridge Configuration using Proxmox API
+# Fixed bridge assignments for hybrid spine-leaf architecture (1 interface per bridge)
 # - vmbr99: Management Bridge (first available 10Gb interface)
 # - vmbr2: External Bridge (second 10Gb interface if available, otherwise first 1Gb interface)
 # - vmbr1: VM Bridge (third 10Gb interface if available, otherwise next available 1Gb interface)
+#
+# Optional reboot and verification:
+# Set provision_reboot_after_config=true to automatically reboot and verify network status
+# Example: ansible-playbook ... -e provision_reboot_after_config=true
 
 # Build fixed bridge assignments based on normalized interface names
 # Limit to 1 interface per bridge to avoid STP issues
@@ -92,78 +95,62 @@
     prompt: "Proceed to apply bridge assignments? (press Enter to continue or CTRL-C to abort)"
   when: provision_confirm_before_apply | default(false) and not (provision_generate_only | default(false))
 
-# Ensure each bridge exists (create if missing)
-- name: Ensure each bridge exists (create if missing)
+# Get current Proxmox network configuration
+- name: Get current Proxmox network configuration
   become: true
-  shell: |
-    if ! ip link show {{ item }} >/dev/null 2>&1; then
-      ip link add name {{ item }} type bridge
-    fi
-  loop: "{{ bridge_assignments | list }}"
-  loop_control:
-    label: "{{ item }}"
+  command: pvesh get /nodes/localhost/network --output-format json
+  register: proxmox_network_config
+  changed_when: false
   when: not (provision_generate_only | default(false))
 
-# Clean up unmanaged interfaces from bridges
-- name: Clean up unmanaged interfaces from bridges
+# Parse existing network interfaces
+- name: Parse existing network interfaces
+  set_fact:
+    existing_interfaces: "{{ proxmox_network_config.stdout | from_json | map(attribute='iface') | list }}"
+  when: not (provision_generate_only | default(false)) and proxmox_network_config.stdout is defined
+
+# Create or update bridges using Proxmox API
+- name: Create or update bridges using Proxmox API
   become: true
   when: not (provision_generate_only | default(false))
-  shell: |
-    # Get all interfaces currently attached to this bridge
-    current_interfaces=$(ip link show master {{ item.key }} 2>/dev/null | awk '/^[0-9]+:/ {gsub(/[:@].*/, "", $2); print $2}' || true)
-    
-    # Check each current interface
-    for iface in $current_interfaces; do
-      # If interface is not in the desired list for this bridge, detach it
-      if ! echo "{{ item.value | join(' ') }}" | grep -q "\\b$iface\\b"; then
-        echo "Detaching unmanaged interface $iface from {{ item.key }}"
-        ip link set dev $iface nomaster || true
-        ip link set dev $iface down || true
-      fi
-    done
   loop: "{{ bridge_assignments | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
+  vars:
+    bridge_name: "{{ item.key }}"
+    bridge_ports: "{{ item.value | join(',') }}"
+  command: |
+    bash -c "
+    if /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q '^\\b{{ bridge_name }}\\b$'; then
+      pvesh set /nodes/localhost/network/{{ bridge_name }} -type bridge -bridge_ports '{{ bridge_ports }}' -bridge_vlan_aware yes -autostart yes
+    else
+      pvesh create /nodes/localhost/network -iface {{ bridge_name }} -type bridge -bridge_ports '{{ bridge_ports }}' -bridge_vlan_aware yes -autostart yes
+    fi
+    "
 
-# Attach each interface to its bridge
-- name: Attach each interface to its bridge
+# Ensure interfaces referenced in bridges are declared
+- name: Ensure interfaces referenced in bridges are declared
   become: true
   when: not (provision_generate_only | default(false))
   loop: "{{ bridge_assignments | dict2items | subelements('value') }}"
   loop_control:
-    label: "{{ item.0.key }}:{{ item.1 }}"
+    label: "{{ item.1 }}"
   vars:
-    bridge: "{{ item.0.key }}"
     iface: "{{ item.1 }}"
-  shell: |
-    current_master="$(readlink -f /sys/class/net/{{ iface }}/master 2>/dev/null || true)"
-    if [ -n "$current_master" ] && [ "$(basename "$current_master")" != "{{ bridge }}" ]; then
-      ip link set dev {{ iface }} nomaster || true
+  command: |
+    bash -c "
+    if ! /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q '^\\b{{ iface }}\\b$'; then
+      pvesh create /nodes/localhost/network -iface {{ iface }} -type eth
     fi
-    # ensure interface is down before enslaving
-    ip link set dev {{ iface }} down || true
-    ip link set dev {{ iface }} master {{ bridge }} || true
-    ip link set dev {{ bridge }} up || true
-    ip link set dev {{ iface }} up || true
+    "
 
-# Persist bridge configuration to /etc/network/interfaces.d/
-- name: Persist bridge configuration to /etc/network/interfaces.d/
+# Reload network configuration through Proxmox API
+- name: Reload network configuration
   become: true
   when: not (provision_generate_only | default(false))
-  template:
-    src: interfaces-bridges.j2
-    dest: /etc/network/interfaces.d/ansible-bridges
-    mode: '0644'
-
-# Reload network configuration for PVE 9 SDN compatibility
-- name: Reload network configuration for PVE 9 SDN compatibility
-  become: true
-  when: not (provision_generate_only | default(false))
-  command: ifreload -a
+  command: pvesh set /nodes/localhost/network
   changed_when: true
-
-# Note: Removed direct modification of /etc/network/interfaces to follow proper sourcing practices
-# Proxmox GUI should still display bridges if they are active in the system
+  register: network_reload_result
 
 # Summary - show final state for bridges
 - name: Summary - show final state for bridges
@@ -174,3 +161,55 @@
 - name: Show bridges state
   debug:
     var: bridges_state.stdout_lines
+
+- name: Show Proxmox network configuration
+  become: true
+  command: pvesh get /nodes/localhost/network
+  register: final_proxmox_config
+  changed_when: false
+
+- name: Display final Proxmox network configuration
+  debug:
+    msg: "{{ final_proxmox_config.stdout_lines | join('\n') }}"
+
+# Optional reboot and verification (controlled by variable)
+- name: Reboot system to apply network changes
+  reboot:
+    reboot_timeout: 300
+    msg: "Rebooting system to apply network configuration changes"
+  when: provision_reboot_after_config | default(false)
+  register: reboot_result
+
+- name: Wait for system to stabilize after reboot
+  command: sleep 160
+  when: provision_reboot_after_config | default(false) and reboot_result is defined and reboot_result.changed
+  changed_when: false
+
+- name: Verify bridges are active after reboot
+  command: ip -br link show type bridge
+  register: post_reboot_bridges
+  when: provision_reboot_after_config | default(false) and reboot_result is defined and reboot_result.changed
+  changed_when: false
+
+- name: Verify Proxmox network configuration after reboot
+  become: true
+  command: pvesh get /nodes/localhost/network
+  register: post_reboot_config
+  when: provision_reboot_after_config | default(false) and reboot_result is defined and reboot_result.changed
+  changed_when: false
+
+- name: Display post-reboot verification results
+  debug:
+    msg: |
+      === Post-Reboot Network Verification ===
+      Bridge Status:
+      {{ post_reboot_bridges.stdout_lines | join('\n') }}
+
+      Proxmox Network Configuration:
+      {{ post_reboot_config.stdout_lines | join('\n') }}
+
+      ✅ Network configuration successfully applied and verified after reboot!
+  when: provision_reboot_after_config | default(false) and reboot_result is defined and reboot_result.changed
+
+# Handlers (currently unused but available for future use)
+handlers: []

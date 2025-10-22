@@ -58,7 +58,7 @@
 - name: Identify already properly named interfaces
   set_fact:
     already_named: "{{ already_named | default([]) + [item] }}"
-  loop: "{{ interfaces }}"
+  loop: "{{ interfaces + [protected_mgmt_iface] | default([]) }}"
   when: 
     - nic_names is defined
     - item in nic_names

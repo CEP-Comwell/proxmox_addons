@@ -10,4 +10,5 @@
     # Optional overrides; set these with -e when running if you want to control behavior
     # provision_confirm_before_apply: false
   roles:
+    - prereqs           # Install prerequisite packages (jq, git, etc.)
     - network_provision  # Streamlined single role for interface naming and bridge creation

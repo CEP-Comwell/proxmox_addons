@@ -12,7 +12,10 @@ sections:
   - project_structure
   - infrastructure_automation
   - platform_considerations
+  - sdn_provisioning_guidelines
+  - network_configuration_commands
   - llm_guidance
+  - quick_reference
 ---
 
 # Contributing Guide
@@ -35,14 +38,37 @@ sections:
 - [Infrastructure Automation: Ansible vs Proxmox API](#infrastructure-automation-ansible-vs-proxmox-api)
   - [Use Ansible/Shell Commands When](#use-ansibleshell-commands-when)
   - [Use Proxmox API When](#use-proxmox-api-when)
-  - [Hybrid Approach](#hybrid-approach-recommended)
+  - [Hybrid Approach (Recommended)](#hybrid-approach-recommended)
   - [Key Decision Factors](#key-decision-factors)
 - [Platform-Specific Considerations](#platform-specific-considerations)
   - [Proxmox VE 9 Environment](#proxmox-ve-9-environment)
   - [Known Platform Limitations](#known-platform-limitations)
   - [Version-Specific Behaviors](#version-specific-behaviors)
   - [Recommended Approaches by Component](#recommended-approaches-by-component)
+- [Proxmox VE 9 SDN Provisioning Guidelines](#proxmox-ve-9-sdn-provisioning-guidelines)
+  - [Interface Pinning First, Then SDN Provisioning](#interface-pinning-first-then-sdn-provisioning)
+  - [Primary Method: pvesh API for SDN](#primary-method-pvesh-api-for-sdn)
+  - [Bridge Creation Best Practices](#bridge-creation-best-practices)
+  - [Configuration Application](#configuration-application)
+  - [Verification Steps](#verification-steps)
+  - [Common Issues and Solutions](#common-issues-and-solutions)
+  - [Automated Testing](#automated-testing)
+  - [Migration from Manual SDN Bridge Creation](#migration-from-manual-sdn-bridge-creation)
+- [Proxmox VE 9 Network Configuration Commands](#proxmox-ve-9-network-configuration-commands)
+  - [Essential pvesh SDN Commands (After Interface Pinning)](#essential-pvesh-sdn-commands-after-interface-pinning)
+  - [Essential Device Discovery Commands](#essential-device-discovery-commands)
+  - [Network Bridge and VLAN Commands](#network-bridge-and-vlan-commands)
+  - [System Information Commands](#system-information-commands)
+  - [Troubleshooting Commands](#troubleshooting-commands)
+  - [Automation-Friendly Commands](#automation-friendly-commands)
+  - [Proxmox VE 9 Specific Considerations](#proxmox-ve-9-specific-considerations)
+  - [Common Device Query Patterns](#common-device-query-patterns)
 - [Guidance for LLMs and automated code assistants](#guidance-for-llms-and-automated-code-assistants)
+  - [Best Practices for Automated Changes](#best-practices-for-automated-changes)
+  - [Error Remediation Checklist](#error-remediation-checklist)
+- [Quick Reference](#quick-reference)
+  - [Automation Decision Matrix](#automation-decision-matrix)
+  - [Essential Commands for Contributors](#essential-commands-for-contributors)
 
 ---
 
@@ -153,26 +179,29 @@ When developing automation for Proxmox environments, choose the appropriate tool
 ### Use Ansible/Shell Commands When:
 
 1. **Direct File System Operations**
-   - Editing `/etc/network/interfaces`, `/etc/udev/rules.d/`, or system config files
-   - Creating custom udev rules for interface renaming
-   - Managing systemd services or udev rule reloading
+   - Editing `/etc/network/interfaces` or system config files
+   - Managing systemd services
 
-2. **Low-Level Network Configuration**
+2. **Interface Pinning and Renaming**
+   - Using `pve-network-interface-pinning` for persistent interface naming
+   - Interface detection and PCI address mapping for naming
+
+3. **Low-Level Network Configuration**
    - Running `ip link`, `brctl`, or `ethtool` commands for interface management
    - Complex interface detection using `ls -1 /sys/class/net` with filters
    - Manual bridge creation/destruction during troubleshooting
 
-3. **Proxmox Version Compatibility Issues**
+4. **Proxmox Version Compatibility Issues**
    - When Proxmox API behavior changes between versions
    - Working around API limitations or bugs
    - Implementing custom workarounds for specific Proxmox versions
 
-4. **Complex Shell-Based Logic**
+5. **Complex Shell-Based Logic**
    - Parsing `ethtool` output for link speed detection
    - Multi-step operations requiring shell piping or conditional logic
    - One-time setup tasks before API management
 
-### Use Proxmox API When:
+### Use Proxmox API (pvesh) When:
 
 1. **VM/Container Lifecycle Management**
    - Creating, starting, stopping VMs/containers
@@ -184,10 +213,11 @@ When developing automation for Proxmox environments, choose the appropriate tool
    - Resource pool management and permissions
    - Backup scheduling and storage management
 
-3. **Network Bridge Management**
-   - Creating/managing Linux bridges through Proxmox's abstraction layer
-   - Managing bridge properties and attached VMs
-   - SDN integration and firewall rules
+3. **SDN Network Provisioning (After Interface Pinning)**
+   - Creating/managing Linux bridges through Proxmox's SDN abstraction layer
+   - Managing bridge properties, VLAN awareness, and attached VMs
+   - Applying network configuration changes with `pvesh set /nodes/localhost/network`
+   - Ensuring bridge persistence with `-autostart yes` parameter
 
 4. **Storage Operations**
    - Creating/managing storage pools, volumes, and backups
@@ -211,13 +241,13 @@ When developing automation for Proxmox environments, choose the appropriate tool
 
 ### Hybrid Approach (Recommended):
 
-8. **Bootstrap with Shell, Manage with API**
-   - Use shell commands for initial network setup and interface renaming
-   - Switch to Proxmox API for ongoing VM/network management
-   - Example: Shell commands for complex interface renaming logic, API for VM lifecycle
+8. **Interface Pinning First, Then SDN Provisioning**
+   - Use `pve-network-interface-pinning` for persistent interface naming
+   - After interfaces are properly named/pinned, switch to pvesh API for SDN bridge creation
+   - Example: Pinning ensures eth0/eth1 are consistent, then pvesh creates bridges on those interfaces
 
 9. **API with Shell Fallbacks**
-   - Primary operations via API, shell commands as fallbacks
+   - Primary operations via pvesh API, shell commands as fallbacks
    - Use API for standard operations, shell for edge cases
    - Log API failures and automatically retry with shell methods
 
@@ -227,39 +257,40 @@ When developing automation for Proxmox environments, choose the appropriate tool
 decision_factors:
   stability:
     api_preferred: true
-    shell_for: "troubleshooting"
-    reasoning: "API for production stability, shell for troubleshooting"
+    shell_for: "interface pinning only"
+    reasoning: "pvesh API for SDN, pve-network-interface-pinning for interface naming"
   version_compatibility:
     shell_when: "API changes between Proxmox versions"
     api_fallback: false
   complexity:
-    api_for: "simple operations"
-    shell_for: "complex parsing/logic"
+    api_for: "SDN operations"
+    shell_for: "interface detection and pinning"
   idempotency:
     api_better: true
-    reasoning: "API generally better for idempotent operations"
+    reasoning: "pvesh API generally better for idempotent SDN operations"
   debugging:
     shell_better: true
-    reasoning: "Shell commands provide better visibility during development"
+    reasoning: "Shell commands provide better visibility for interface issues"
 ```
 
 ## Platform-Specific Considerations
 
 ### Proxmox VE 9 Environment
 - **OS**: Debian 13 (Bookworm)
-- **Networking**: systemd-networkd disabled by default
-- **Interface Management**: Traditional ifupdown system with `/etc/network/interfaces`
-- **API Compatibility**: Some Proxmox VE 8 API calls may behave differently
+- **Networking**: systemd-networkd disabled by default, traditional ifupdown system
+- **SDN Provisioning**: pvesh API is the primary method for network configuration
+- **Interface Management**: `/etc/network/interfaces` with Proxmox SDN abstraction
+- **API Compatibility**: Full pvesh API support for SDN operations
 
 ### Known Platform Limitations
-- **`pve-network-interface-pinning`**: Unreliable in Proxmox VE 9 - prefer manual udev rules
-- **systemd .link files**: Don't work (systemd-networkd disabled) - use udev rules instead
-- **Network bridge management**: Proxmox API preferred for production, shell for complex troubleshooting
+- **Network bridge management**: pvesh API preferred for SDN operations after interface pinning
+- **Bridge persistence**: Requires `-autostart yes` parameter for activation after reboot
+- **Network changes**: Must use `pvesh set /nodes/localhost/network` to apply configurations
 
 ### Version-Specific Behaviors
-- **Proxmox VE 8 vs 9**: Interface pinning tools may fail in VE 9 - fallback to manual methods
-- **Debian 12 vs 13**: Different systemd configurations and network management approaches
-- **API Changes**: Always test API calls against target Proxmox version before production use
+- **Proxmox VE 8 vs 9**: pvesh API behavior consistent, but VE 9 requires explicit autostart for bridges
+- **Debian 12 vs 13**: Different systemd configurations, but network management via pvesh API
+- **API Changes**: Always test pvesh commands against target Proxmox version
 
 ### Recommended Approaches by Component
 
@@ -269,75 +300,198 @@ decision_factors:
     "proxmox_ve_8": {
       "os": "Debian 12 (Bullseye)",
       "networking": "systemd-networkd available",
-      "interface_tools": "pve-network-interface-pinning reliable"
+      "interface_tools": "pve-network-interface-pinning"
     },
     "proxmox_ve_9": {
       "os": "Debian 13 (Bookworm)",
       "networking": "systemd-networkd disabled by default",
-      "interface_tools": "pve-network-interface-pinning unreliable",
-      "interface_management": "traditional ifupdown with /etc/network/interfaces"
+      "interface_tools": "pve-network-interface-pinning",
+      "sdn_provisioning": "pvesh API (primary method)",
+      "bridge_persistence": "requires -autostart yes"
     }
   },
   "component_approaches": {
     "vm_management": {
-      "proxmox_ve_8": "API",
-      "proxmox_ve_9": "API",
+      "proxmox_ve_8": "pvesh API",
+      "proxmox_ve_9": "pvesh API",
       "reasoning": "Stable across versions",
       "recommended": true
     },
     "network_bridges": {
-      "proxmox_ve_8": "API",
-      "proxmox_ve_9": "API/Shell",
-      "reasoning": "API for standard ops, shell for complex configs",
-      "fallback_method": "shell"
+      "proxmox_ve_8": "pvesh API",
+      "proxmox_ve_9": "pvesh API (primary)",
+      "reasoning": "SDN abstraction layer provides consistent interface",
+      "autostart_required": true
     },
     "interface_renaming": {
       "proxmox_ve_8": "pve-network-interface-pinning",
-      "proxmox_ve_9": "udev rules",
-      "reasoning": "Tool unreliable in VE 9",
-      "alternative": "manual udev rules"
+      "proxmox_ve_9": "pve-network-interface-pinning",
+      "reasoning": "Exception for interface naming - use pve-network-interface-pinning",
+      "alternative": "none - pinning handles interface consistency"
     },
     "storage_management": {
-      "proxmox_ve_8": "API",
-      "proxmox_ve_9": "API",
+      "proxmox_ve_8": "pvesh API",
+      "proxmox_ve_9": "pvesh API",
       "reasoning": "Consistent behavior",
       "recommended": true
     },
     "firewall_rules": {
-      "proxmox_ve_8": "API",
-      "proxmox_ve_9": "API",
+      "proxmox_ve_8": "pvesh API",
+      "proxmox_ve_9": "pvesh API",
       "reasoning": "Well-supported",
       "recommended": true
     },
     "user_management": {
-      "proxmox_ve_8": "API",
-      "proxmox_ve_9": "API",
+      "proxmox_ve_8": "pvesh API",
+      "proxmox_ve_9": "pvesh API",
       "reasoning": "Standard functionality",
       "recommended": true
     }
   },
-  "known_limitations": {
-    "pve_network_interface_pinning": {
-      "status": "unreliable",
-      "affected_versions": ["proxmox_ve_9"],
-      "recommended_alternative": "manual udev rules"
-    },
-    "systemd_link_files": {
-      "status": "not_working",
-      "reason": "systemd-networkd disabled",
-      "recommended_alternative": "udev rules"
-    },
-    "network_bridge_management": {
-      "production": "proxmox_api",
-      "troubleshooting": "shell_commands"
-    }
+  "pve9_sdn_guidelines": {
+    "primary_method": "pvesh API",
+    "bridge_creation": "pvesh create /nodes/localhost/network -type bridge -bridge_ports <interface> -bridge_vlan_aware yes -autostart yes",
+    "single_interface_only": "SDN bridges can only have one physical interface connected",
+    "vlan_awareness_required": "bridge_vlan_aware yes is mandatory for SDN functionality",
+    "apply_changes": "pvesh set /nodes/localhost/network",
+    "verification": "pvesh get /nodes/localhost/network",
+    "bridge_persistence": "always include -autostart yes",
+    "reboot_handling": "bridges activate automatically after reboot with autostart"
   }
 }
 ```
 
 For programmatic access, this JSON structure can be used to determine the appropriate automation approach based on Proxmox version and component type.
 
-## Proxmox VE 9 CLI Commands and Device Queries
+## Proxmox VE 9 SDN Provisioning Guidelines
+
+Based on extensive testing and troubleshooting, the following guidelines ensure reliable SDN network provisioning in Proxmox VE 9. These guidelines apply to SDN bridge creation and management, not interface pinning/renaming.
+
+### Interface Pinning First, Then SDN Provisioning
+- **Complete interface pinning** using `pve-network-interface-pinning` before SDN operations
+- **Ensure consistent interface names** (eth0, eth1, etc.) before creating bridges
+- **SDN provisioning assumes** interfaces are already properly named/pinned
+
+### Primary Method: pvesh API for SDN
+- **Always use pvesh** for SDN network operations (bridge creation/management)
+- **Use Proxmox's SDN abstraction layer** for all bridge and network management
+- **Do not use pvesh** for interface pinning - use `pve-network-interface-pinning` instead
+
+### Bridge Creation Best Practices
+```bash
+# Always include these parameters for reliable bridge creation:
+pvesh create /nodes/localhost/network \
+  -type bridge \
+  -bridge_ports "eth0" \
+  -bridge_vlan_aware yes \
+  -autostart yes
+```
+
+**Critical Parameters:**
+- `-autostart yes`: Ensures bridge activates automatically after reboot
+- `-bridge_vlan_aware yes`: **Required** for SDN-capable bridges - enables VLAN support
+- `-bridge_ports "eth0"`: **Only one interface** can be connected to an SDN-capable bridge
+- `-type bridge`: Specifies SDN bridge type
+
+**Important SDN Guidelines:**
+- SDN-capable bridges can only have **one physical interface** connected
+- VLAN awareness (`-bridge_vlan_aware yes`) is **mandatory** for SDN functionality
+- Multiple VLANs can be configured on the same bridge interface
+- Use VLAN tagging for multiple network segments on a single physical link
+
+### Configuration Application
+```bash
+# Always apply changes after bridge creation:
+pvesh set /nodes/localhost/network
+```
+
+**Important:** Bridges will show as "Pending changes" in the Proxmox GUI until `pvesh set /nodes/localhost/network` is executed.
+
+### Verification Steps
+```bash
+# Verify configuration in Proxmox:
+pvesh get /nodes/localhost/network
+
+# Verify bridge status after reboot:
+ip -br link show type bridge
+```
+
+### Common Issues and Solutions
+- **Interface pinning fails**: Check `pve-network-interface-pinning` output and system logs
+- **Bridge not active after reboot**: Missing `-autostart yes` parameter
+- **Pending changes in GUI**: Forgot to run `pvesh set /nodes/localhost/network`
+- **Bridge creation fails**: Check interface names and ensure they exist
+- **Multiple interfaces on SDN bridge**: SDN bridges can only have **one physical interface** connected
+- **VLAN issues**: Ensure `-bridge_vlan_aware yes` is set (mandatory for SDN)
+
+### Automated Testing
+When implementing network provisioning roles, include automated verification:
+- Test interface pinning with `pve-network-interface-pinning` first
+- Test bridge creation with `pvesh create`
+- Apply changes with `pvesh set`
+- Reboot and verify with `ip link show`
+- Use conditional tasks for automated testing with `provision_reboot_after_config: true`
+
+### Migration from Manual SDN Bridge Creation
+If migrating from manual shell-based bridge creation to pvesh API:
+1. Ensure interface pinning is working correctly first
+2. Replace manual `brctl` commands with pvesh bridge creation
+3. Use pvesh API for all SDN bridge management
+4. Test thoroughly with reboot cycles to ensure persistence
+
+### ✅ **Recommended Approach**
+
+Instead of using VLAN interfaces as bridge ports:
+
+1. **Create a VLAN-aware bridge** on a physical NIC:
+   ```bash
+   pvesh create /nodes/localhost/network \
+     -type bridge \
+     -iface vmbr2 \
+     -bridge_ports eth1 \
+     -bridge_vlan_aware 1 \
+     -autostart 1
+   ```
+
+2. **Use SDN to define VLAN zones and VNets**:
+   - Each VNet corresponds to a VLAN ID.
+   - VMs can be attached to VNets with VLAN tags.
+   - SDN will manage the VLAN tagging and bridge mapping.
+
+3. **Let SDN handle VLANs dynamically**:
+   - Avoid manually creating `vmbrX.Y` interfaces unless for host-level access.
+   - Use SDN zones and VNets for VM-level VLAN segmentation.
+
+---
+
+### 🧩 TL;DR
+
+| Configuration | SDN-Compatible | Recommended |
+|---------------|----------------|-------------|
+| `bridge_ports eth1` on VLAN-aware bridge | ✅ Yes | ✅ Yes |
+| `bridge_ports vmbr0.10 vmbr0.20` | ❌ No | ❌ Not recommended |
+
+---
+
+## Proxmox VE 9 Network Configuration Commands
+
+### Essential pvesh SDN Commands (After Interface Pinning)
+
+```bash
+# Network configuration management
+pvesh get /nodes/localhost/network                # Show current network configuration
+pvesh set /nodes/localhost/network                # Apply pending network changes
+pvesh create /nodes/localhost/network             # Create new network interface
+pvesh delete /nodes/localhost/network/<iface>     # Delete network interface
+
+# Bridge creation for SDN
+pvesh create /nodes/localhost/network -type bridge -bridge_ports "eth0" -bridge_vlan_aware yes -autostart yes
+pvesh create /nodes/localhost/network -type bridge -iface vmbr2 -bridge_ports eth1 -bridge_vlan_aware 1 -autostart 1
+
+# Network verification
+pvesh get /nodes/localhost/network | jq '.[] | select(.type == "bridge")'  # Show bridges only
+ip -br link show type bridge                     # Verify bridge status after configuration
+```
 
 ### Essential Device Discovery Commands
 
@@ -352,11 +506,6 @@ ethtool -i <interface>                         # Show driver information
 # PCI device information
 lspci | grep -i ethernet                       # Find Ethernet devices by PCI address
 lspci -v -s <pci_address>                      # Detailed PCI device information
-
-# Udev and device naming
-udevadm info -a -n <interface>                 # Complete udev attributes for interface
-udevadm info -q property -n <interface>        # Udev properties only
-find /etc/udev/rules.d -name "*net*" -exec cat {} \;  # Show network udev rules
 
 # Systemd network status (VE 9: disabled by default)
 systemctl status systemd-networkd              # Check if systemd-networkd is running
@@ -411,9 +560,13 @@ dig <hostname>                                # Detailed DNS query
 
 # Log inspection
 journalctl -u systemd-networkd                 # systemd-networkd logs (if enabled)
-journalctl -u systemd-udev                     # udev service logs
 dmesg | grep -i eth                           # Kernel messages for Ethernet devices
 tail -f /var/log/syslog | grep -i network      # Live network-related syslog
+
+# pvesh troubleshooting
+pvesh get /nodes/localhost/network             # Check current network configuration
+pvesh get /nodes/localhost/network | jq '.[] | select(.type == "bridge")'  # Show bridges only
+ip -br link show type bridge                   # Verify active bridges
 
 # Process and service status
 ps aux | grep -E "(dhcp|dns|network)"          # Network-related processes
@@ -447,9 +600,11 @@ done
 ### Proxmox VE 9 Specific Considerations
 
 - **systemd-networkd**: Disabled by default - use traditional `/etc/network/interfaces`
+- **Interface pinning**: Use `pve-network-interface-pinning` for persistent naming
+- **SDN Provisioning**: pvesh API is the primary method for network configuration after pinning
+- **Bridge Persistence**: Always include `-autostart yes` when creating bridges
+- **Network Changes**: Use `pvesh set /nodes/localhost/network` to apply configurations
 - **Interface naming**: Predictable naming with PCI address mapping
-- **udev rules**: Essential for custom interface renaming (PCI address to ethX mapping)
-- **pve-network-interface-pinning**: May be unreliable - prefer manual udev rules
 - **Network scripts**: Located in `/etc/network/interfaces.d/` for modular configuration
 
 ### Common Device Query Patterns
@@ -470,6 +625,19 @@ device_discovery_patterns:
   
   # Find interfaces by driver
   by_driver: "find /sys/class/net -name '*' -exec sh -c 'echo -n \"{}: \"; ethtool -i $(basename {}) | grep driver' \\;"
+
+pvesh_sdn_patterns:
+  # Create VLAN-aware bridge with autostart (single physical interface only)
+  create_bridge: "pvesh create /nodes/localhost/network -type bridge -bridge_ports '{interface}' -bridge_vlan_aware yes -autostart yes"
+  
+  # Apply network configuration changes
+  apply_changes: "pvesh set /nodes/localhost/network"
+  
+  # Verify bridge configuration
+  verify_bridge: "pvesh get /nodes/localhost/network | jq '.[] | select(.type == \"bridge\" and .iface == \"{bridge_name}\")'"
+  
+  # Check bridge status after reboot
+  check_bridge_status: "ip -br link show type bridge | grep {bridge_name}"
 ```
 
 ## Guidance for LLMs and automated code assistants
@@ -511,20 +679,22 @@ Including this guidance in PRs created by assistants makes reviews faster and re
     "use_api_when": [
       "vm_lifecycle_management",
       "cluster_management",
+      "sdn_network_provisioning",
       "storage_operations",
       "monitoring_metrics",
       "user_access_management",
       "declarative_infrastructure"
     ],
     "use_shell_when": [
+      "interface_pinning_and_renaming",
       "direct_file_operations",
       "low_level_network_config",
       "version_compatibility_issues",
       "complex_shell_logic"
     ],
     "hybrid_approach": {
-      "bootstrap_with_shell": "initial_setup",
-      "manage_with_api": "ongoing_operations",
+      "interface_pinning_first": "use pve-network-interface-pinning",
+      "then_sdn_provisioning": "use pvesh API for bridges",
       "fallback_to_shell": "api_failures"
     },
     "platform_defaults": {
@@ -533,9 +703,17 @@ Including this guidance in PRs created by assistants makes reviews faster and re
         "networking": "systemd-networkd_available"
       },
       "proxmox_ve_9": {
-        "interface_renaming": "udev_rules",
-        "networking": "ifupdown_system"
+        "interface_renaming": "pve-network-interface-pinning",
+        "networking": "ifupdown_system",
+        "bridge_autostart": "required"
       }
+    },
+    "pvesh_sdn_essentials": {
+      "note": "Use after interface pinning is complete - single physical interface only",
+      "create_bridge": "pvesh create /nodes/localhost/network -type bridge -bridge_ports <interface> -bridge_vlan_aware yes -autostart yes",
+      "apply_changes": "pvesh set /nodes/localhost/network",
+      "verify_config": "pvesh get /nodes/localhost/network",
+      "check_bridges": "ip -br link show type bridge"
     }
   }
 }

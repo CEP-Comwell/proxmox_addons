@@ -5,6 +5,7 @@ prereq_packages:
   - ethtool
   - lm-sensors
   - wget
+  - jq
 
 # Optional: provide a URL to download the pve-network-interface-pinning script/binary
 # Example: https://example.com/pve-network-interface-pinning
