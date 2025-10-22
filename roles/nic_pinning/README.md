@@ -21,6 +21,12 @@ Variables and integration points
 - The role respects the `provision_template_path` variable so it writes the suggestion where `provision` will look for it. Default is configured in `roles/provision/defaults/main.yml`.
 - If you use the combined playbook `edgesec-sdn/playbooks/provision.yml`, `nic_pinning` runs before `provision` and produces the template `provision` will load.
 
+Prerequisites and installing `pve-network-interface-pinning`
+
+We provide a small `prereqs` role (`roles/prereqs`) that installs common packages (`git`, `ethtool`, `lm-sensors`, `wget`) and can optionally download `pve-network-interface-pinning` for you. To use it, add `prereqs` as the first role in your play.
+
+If you prefer to install the script manually on a node, place the executable at `/usr/local/bin/pve-network-interface-pinning` and make it executable (`chmod +x`). The `nic_pinning` role will call it when present.
+
 Usage examples
 
 1) Run only nic_pinning to pin names and generate the suggestion file:

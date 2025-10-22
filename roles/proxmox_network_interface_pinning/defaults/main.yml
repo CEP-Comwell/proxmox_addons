@@ -1,0 +1,44 @@
+---
+# Defaults for proxmox_network_interface_pinning role
+
+# Git repo to clone the tool from
+pnip_repo_url: "https://git.proxmox.com/git/proxmox-network-interface-pinning.git"
+
+# Where to clone/build the repository
+pnip_src_dir: "/usr/local/src/proxmox-network-interface-pinning"
+
+# Path expected for the installed CLI binary (created by `make install`)
+pnip_installed_bin: "/usr/local/bin/proxmox-network-interface-pinning"
+
+# Packages required to build the tool (Debian/Ubuntu). Adjust in playbook/group_vars for other distros.
+pnip_build_packages:
+  - build-essential
+  - git
+  - make
+  - pkg-config
+  - libudev-dev
+  - libsystemd-dev
+
+# Whether to run `generate` for mappings supplied in pnip_generate_map
+pnip_auto_generate: false
+
+# Map of kernel-interface -> target-name to generate .link files for.
+# Example: pnip_generate_map:
+#   - { interface: enp3s0, target_name: eth1 }
+pnip_generate_map: []
+
+# Destination directory where the tool writes .link files (expected)
+pnip_link_dir: "/usr/local/lib/systemd/network"
+
+# Whether the role should update system files. Defaults to false; enabling will perform backups.
+pnip_update_network_interfaces: false
+pnip_update_pve_hostfw: false
+pnip_update_pve_sdn_controllers: false
+
+# Optional templates/contents to write when updates are enabled. Keep empty by default.
+pnip_interfaces_template: "proxmox_network_interface_pinning/provision_interfaces.j2"
+pnip_hostfw_template: "proxmox_network_interface_pinning/provision_host_fw.j2"
+pnip_controllers_template: "proxmox_network_interface_pinning/provision_controllers_cfg.j2"
+
+# Optional interface inspection after install
+pnip_inspect_interfaces: false

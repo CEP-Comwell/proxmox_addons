@@ -1,0 +1,144 @@
+---
+# Tasks for proxmox_network_interface_pinning role
+
+- name: Ensure build dependencies are installed (Debian/Ubuntu)
+  apt:
+    name: "{{ pnip_build_packages }}"
+    state: present
+    update_cache: yes
+  become: true
+  tags: build
+
+- name: Create source directory parent
+  file:
+    path: "{{ pnip_src_dir | dirname }}"
+    state: directory
+    mode: '0755'
+  become: true
+
+- name: Clone proxmox-network-interface-pinning repo (idempotent)
+  git:
+    repo: "{{ pnip_repo_url }}"
+    dest: "{{ pnip_src_dir }}"
+    update: yes
+    version: HEAD
+  become: true
+  register: pnip_git
+
+- name: Build and install proxmox-network-interface-pinning
+  make:
+    chdir: "{{ pnip_src_dir }}"
+    target: install
+  become: true
+  when: pnip_git.changed or not (pnip_installed_bin is file)
+  notify: restart systemd
+
+- name: Ensure installed binary exists and is executable
+  stat:
+    path: "{{ pnip_installed_bin }}"
+  register: pnip_bin_stat
+
+- name: Fail if the proxmox-network-interface-pinning binary was not installed
+  fail:
+    msg: "proxmo x-network-interface-pinning binary not found at {{ pnip_installed_bin }} after install"
+  when: not pnip_bin_stat.stat.exists
+
+# Optionally generate .link files using the installed tool for mappings provided
+- name: Generate .link files using proxmox-network-interface-pinning for provided map
+  command: "{{ pnip_installed_bin }} generate --interface {{ item.interface }} --target-name {{ item.target_name }}"
+  become: true
+  args:
+    creates: "{{ pnip_link_dir }}/10-{{ item.target_name }}.link"
+  loop: "{{ pnip_generate_map }}"
+  when: pnip_auto_generate and (pnip_generate_map | length > 0)
+  tags: generate
+
+# Ensure link directory exists (some installs use /usr/local/lib/systemd/network)
+- name: Ensure link directory exists
+  file:
+    path: "{{ pnip_link_dir }}"
+    state: directory
+    mode: '0755'
+  become: true
+
+# Backup & optionally update /etc/network/interfaces
+- name: Backup /etc/network/interfaces before changes
+  copy:
+    src: /etc/network/interfaces
+    dest: "/root/interfaces.pre-pnip.{{ inventory_hostname }}"
+    remote_src: yes
+  when: pnip_update_network_interfaces
+  become: true
+
+- name: Apply /etc/network/interfaces template if enabled
+  template:
+    src: "{{ pnip_interfaces_template }}"
+    dest: /etc/network/interfaces
+    backup: yes
+  when: pnip_update_network_interfaces
+  become: true
+  notify: restart networking
+
+# Backup & optionally update /etc/pve/nodes/<nodename>/host.fw
+- name: Backup pve host.fw (if present and enabled)
+  copy:
+    src: "/etc/pve/nodes/{{ inventory_hostname }}/host.fw"
+    dest: "/root/host.fw.pre-pnip.{{ inventory_hostname }}"
+    remote_src: yes
+  when: pnip_update_pve_hostfw and (ansible_facts is defined)
+  become: true
+  ignore_errors: true
+
+- name: Apply host.fw template (if enabled)
+  template:
+    src: "{{ pnip_hostfw_template }}"
+    dest: "/etc/pve/nodes/{{ inventory_hostname }}/host.fw"
+    backup: yes
+  when: pnip_update_pve_hostfw
+  become: true
+  notify: restart pveservice
+  ignore_errors: true
+
+# Backup & optionally update /etc/pve/sdn/controllers.cfg
+- name: Backup pve sdn controllers.cfg if present
+  copy:
+    src: /etc/pve/sdn/controllers.cfg
+    dest: "/root/controllers.cfg.pre-pnip.{{ inventory_hostname }}"
+    remote_src: yes
+  when: pnip_update_pve_sdn_controllers
+  become: true
+  ignore_errors: true
+
+- name: Apply controllers.cfg template (if enabled)
+  template:
+    src: "{{ pnip_controllers_template }}"
+    dest: /etc/pve/sdn/controllers.cfg
+    backup: yes
+  when: pnip_update_pve_sdn_controllers
+  become: true
+  notify: restart pveservice
+  ignore_errors: true
+
+# Optional inspection of interfaces: link speed and PCI info
+- name: Inspect interfaces (ethtool + lspci) when enabled
+  block:
+    - name: Gather ethtool info for each interface
+      shell: ethtool {{ item }} 2>/dev/null | sed -n '1,30p'
+      loop: "{{ lookup('ansible.builtin.pipe', 'ls -1 /sys/class/net | grep -v lo') | splitlines() }}"
+      register: ethtool_out
+      changed_when: false
+
+    - name: Gather PCI location for interfaces
+      shell: |
+        basename "$(readlink -f /sys/class/net/{{ item }}/device 2>/dev/null || true)"
+      loop: "{{ lookup('ansible.builtin.pipe', 'ls -1 /sys/class/net | grep -v lo') | splitlines() }}"
+      register: pci_out
+      changed_when: false
+
+    - name: Show inspection summary
+      debug:
+        msg: |
+          ethtool: {{ ethtool_out.results }}
+          pci: {{ pci_out.results }}
+  when: pnip_inspect_interfaces
+  tags: inspect

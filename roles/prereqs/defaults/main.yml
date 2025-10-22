@@ -1,0 +1,14 @@
+---
+# Packages installed by default on Debian/Ubuntu-based Proxmox hosts
+prereq_packages:
+  - git
+  - ethtool
+  - lm-sensors
+  - wget
+
+# Optional: provide a URL to download the pve-network-interface-pinning script/binary
+# Example: https://example.com/pve-network-interface-pinning
+pve_network_interface_pinning_url: null
+
+# If provided, the script will be placed into this path and made executable
+pve_network_interface_pinning_path: /usr/local/bin/pve-network-interface-pinning

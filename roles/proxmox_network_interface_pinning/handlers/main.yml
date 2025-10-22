@@ -1,0 +1,13 @@
+---
+# Handlers for proxmox_network_interface_pinning role
+- name: restart systemd
+  become: true
+  command: systemctl daemon-reload
+
+- name: restart networking
+  become: true
+  command: systemctl restart networking
+
+- name: restart pveservice
+  become: true
+  command: systemctl restart pvedaemon.service
