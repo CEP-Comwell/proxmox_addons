@@ -9,6 +9,15 @@
 # Build fixed bridge assignments based on normalized interface names
 # Limit to 1 interface per bridge to avoid STP issues
 # Priority order for 10GbE: vmbr99 > vmbr2 > vmbr1
+
+- name: Verify required variables are set before proceeding with bridge configuration
+  assert:
+    that:
+      - nic_names is defined
+      - protected_mgmt_iface is defined
+      - eth_norm is defined
+    fail_msg: "Required variables not set. Please run discovery and naming tasks first."
+
 - name: Calculate available 10GbE interfaces (excluding protected)
   set_fact:
     available_10gbe: "{{ nic_names | dict2items | selectattr('value','match','^xg') | map(attribute='key') | reject('equalto', protected_mgmt_iface) | list }}"
@@ -115,23 +124,14 @@
     ip link set dev {{ bridge }} up || true
     ip link set dev {{ iface }} up || true
 
-# Persist bridge configuration to /etc/network/interfaces
-- name: Persist bridge configuration to /etc/network/interfaces
+# Persist bridge configuration to /etc/network/interfaces.d/
+- name: Persist bridge configuration to /etc/network/interfaces.d/
   become: true
   when: not (provision_generate_only | default(false))
-  blockinfile:
-    path: /etc/network/interfaces
-    marker: "# {mark} ANSIBLE MANAGED BRIDGES - DO NOT EDIT MANUALLY"
-    block: |
-      {% for bridge_name, interfaces in bridge_assignments.items() %}
-      {% if bridge_name != 'vmbr0' and interfaces %}
-      auto {{ bridge_name }}
-      iface {{ bridge_name }} inet manual
-              bridge-ports {{ interfaces | join(' ') }}
-              bridge-stp off
-              bridge-fd 0
-      {% endif %}
-      {% endfor %}
+  template:
+    src: interfaces-bridges.j2
+    dest: /etc/network/interfaces.d/ansible-bridges
+    mode: '0644'
 
 # Summary - show final state for bridges
 - name: Summary - show final state for bridges

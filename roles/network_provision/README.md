@@ -71,30 +71,65 @@ ansible-playbook -i inventory edgesec-sdn/playbooks/provision.yml -v
 
 The role executes tasks in the following order using `import_tasks`:
 
-1. **discovery.yml** (`--tags discovery`): Interface detection and link mode analysis
-   - Scans `/sys/class/net` for physical interfaces (excludes virtual, bridge, and already-renamed interfaces)
-   - Detects management interface currently enslaved to vmbr0 (protects Proxmox management NIC)
-   - Gathers supported link modes for each interface using `ethtool`
-   - Builds interface-to-capability mapping for naming decisions
+### 1. **discovery.yml** (`--tags discovery`): Interface Detection and Analysis
+**Purpose**: Scan system for physical network interfaces and analyze their capabilities.
 
-2. **naming.yml** (`--tags naming`): Assign normalized names (xg1/xg2, eth1-4, nicN)
-   - 10Gb interfaces → `xg1`, `xg2` (sequential, up to 2 interfaces)
-   - 1Gb interfaces → `eth1`, `eth2`, `eth3`, `eth4` (sequential, up to 4 interfaces)
-   - Fallback → `nic1`, `nic2`, etc. for remaining interfaces
-   - Preserves interface order and protects management interface
+**Key Operations**:
+- **Interface enumeration**: `ls -1 /sys/class/net | grep -vE '^(lo|vmbr|tap|fw|bonding_masters|veth|br|docker|virbr|wg|tun|bond|bridge)'`
+  - Excludes virtual interfaces, bridges, and already-renamed interfaces
+- **Management interface protection**: Detect interface enslaved to vmbr0 using `/sys/class/net/*/master` symlinks
+- **Link mode analysis**: `ethtool <interface> | grep 'Supported link modes'` for each interface
+  - Identifies 10Gb vs 1Gb capabilities for intelligent bridge assignment
+- **MAC address correlation**: Match vmbr0 MAC with physical interfaces for management protection
 
-3. **pinning.yml** (`--tags pinning`): Create persistent interface renaming
-   - Attempts to use `pve-network-interface-pinning` tool first
-   - Falls back to manual udev rules for Proxmox VE 9 compatibility
-   - Creates systemd .link files or udev rules in `/etc/udev/rules.d/`
-   - Reloads udev rules to apply naming immediately
+**Variables Set**: `interfaces`, `protected_mgmt_iface`, `link_modes_map`
 
-4. **bridging.yml** (`--tags bridging`): Create bridges and assign interfaces with persistence
-   - Calculates optimal bridge assignments based on interface capabilities
-   - Creates bridges if they don't exist (`ip link add`)
-   - Attaches exactly 1 interface per bridge (no STP complexity)
-   - Updates `/etc/network/interfaces` with `blockinfile` for persistence
-   - Validates assignments and shows final bridge state
+### 2. **naming.yml** (`--tags naming`): Interface Normalization and Mapping
+**Purpose**: Assign standardized names (xg1/xg2, eth1-4) based on interface capabilities.
+
+**Key Operations**:
+- **Capability detection**: Parse `link_modes_map` for "10000" (10Gb) vs "1000" (1Gb) interfaces
+- **Management protection**: Reserve `xg1` for 10Gb management interface if detected
+- **Sequential naming**:
+  - 10Gb interfaces: `xg1`, `xg2` (max 2, preserves order)
+  - 1Gb interfaces: `eth1`, `eth2`, `eth3`, `eth4` (max 4, preserves order)
+  - Remaining: `nic1`, `nic2`, etc.
+- **Already-named detection**: Skip interfaces matching `^(xg[12]|eth[1-9]+)$` patterns
+- **Mapping generation**: Create `nic_names` dictionary: `{"nic1": "eth1", "nic6": "xg2", ...}`
+
+**Variables Set**: `ten_g_ifaces`, `nic_names`, `xg_norm`, `eth_norm`
+
+### 3. **pinning.yml** (`--tags pinning`): Persistent Interface Renaming
+**Purpose**: Create persistent interface naming rules for boot-time application.
+
+**Key Operations**:
+- **Primary method**: `pve-network-interface-pinning generate --interface <name> --target-name <new_name>`
+  - Attempts Proxmox VE 8+ native pinning tool
+  - Creates `/etc/systemd/network/10-pve-<interface>.link` files
+- **Fallback method** (VE 9): Manual udev rule creation
+  - Template: `SUBSYSTEM=="net", KERNEL=="<current>", NAME="<target>"`
+  - Creates `/etc/udev/rules.d/70-pve-net-<interface>.rules` files
+- **Rule activation**: `udevadm control --reload-rules && udevadm trigger --subsystem-match=net`
+  - Applies naming immediately when possible
+- **Failure handling**: Detects pinning failures and switches to udev fallback automatically
+
+**Variables Set**: `pinning_failures`
+
+### 4. **bridging.yml** (`--tags bridging`): Bridge Creation and Interface Assignment
+**Purpose**: Create SDN bridges and assign exactly 1 interface per bridge.
+
+**Key Operations**:
+- **Bridge priority assignment**:
+  - `vmbr99` (Management): First available 10Gb interface (highest priority)
+  - `vmbr2` (External): Second 10Gb interface, or first 1Gb if no second 10Gb
+  - `vmbr1` (VM): Third 10Gb interface, or next available 1Gb interface
+- **Bridge creation**: `ip link add name <bridge> type bridge` (if not exists)
+- **Interface cleanup**: Detach unmanaged interfaces from bridges using `ip link set <iface> nomaster`
+- **Interface attachment**: `ip link set <iface> master <bridge>` with proper up/down sequencing
+- **Configuration persistence**: Create `/etc/network/interfaces.d/ansible-bridges` with bridge definitions
+- **Validation**: Ensure exactly 1 interface per bridge, no interface conflicts
+
+**Variables Set**: `bridge_assignments`, `available_10gbe`, `available_10gbe_norm`
 
 ## Variables
 
@@ -159,7 +194,7 @@ Location: `/etc/udev/rules.d/`
 Manual udev rules created when `pve-network-interface-pinning` fails (expected in Proxmox VE 9).
 
 ### Network Interfaces Configuration
-Location: `/etc/network/interfaces`
+Location: `/etc/network/interfaces.d/ansible-bridges`
 ```bash
 # ANSIBLE MANAGED BRIDGES - DO NOT EDIT MANUALLY
 auto vmbr99
@@ -235,8 +270,8 @@ ip -br link show type bridge
 # Show interfaces attached to bridges
 for br in vmbr99 vmbr1 vmbr2; do echo "=== $br ==="; ip link show master $br; done
 
-# Check /etc/network/interfaces configuration
-grep -A 5 "auto vmbr" /etc/network/interfaces
+# Check /etc/network/interfaces.d/ configuration
+cat /etc/network/interfaces.d/ansible-bridges
 ```
 
 ### Changes Not Persistent After Reboot
@@ -248,7 +283,8 @@ lsinitramfs /boot/initrd.img | grep -E "systemd/network|10-pve"
 # Check udev rules are loaded (VE 9)
 udevadm info --export-db | grep -A 5 -B 5 "INTERFACE.*xg\|eth"
 
-# Verify network interfaces configuration
+# Verify network interfaces.d configuration
+cat /etc/network/interfaces.d/ansible-bridges
 systemctl status networking
 journalctl -u networking --no-pager -n 20
 ```
@@ -259,7 +295,7 @@ journalctl -u networking --no-pager -n 20
 |-------|---------|----------|
 | **Interface not renamed** | Interface still shows PCI name after reboot | Check udev rules in `/etc/udev/rules.d/` and reload with `udevadm trigger` |
 | **Bridge not created** | `ip link show` doesn't show vmbr* | Run bridging tasks separately: `ansible-playbook ... --tags bridging` |
-| **Multiple interfaces on bridge** | STP issues, network instability | Role enforces exactly 1 interface per bridge - check interface assignments |
+| **Multiple interfaces on bridge** | STP issues, network instability | Role enforces exactly 1 interface per bridge - check `/etc/network/interfaces.d/ansible-bridges` |
 | **Management interface lost** | Cannot access Proxmox web UI | Role protects vmbr0-enslaved interface - check discovery task output |
 | **VE 9 compatibility** | `pve-network-interface-pinning` failures | Expected - role falls back to udev rules automatically |
 
@@ -291,16 +327,75 @@ For a canonical role README checklist/template, see `../../docs/role_readme_temp
 
 When using LLM assistants or automated code tools to modify this role:
 
+### Critical: Proxmox Network Interface Management Rules
+
+**🚨 NEVER directly modify `/etc/network/interfaces` in Proxmox! 🚨**
+
+**Proxmox Network Architecture Requirements:**
+- **Main interfaces file**: `/etc/network/interfaces` contains only `source /etc/network/interfaces.d/*`
+- **Bridge configurations**: MUST be placed in `/etc/network/interfaces.d/ansible-bridges`
+- **No duplicates**: Never create duplicate bridge definitions across files
+- **Single source of truth**: All bridge configurations managed exclusively through this role
+
+**Correct Approach:**
+```bash
+# ❌ WRONG - Never modify main interfaces file directly
+echo "auto vmbr1..." >> /etc/network/interfaces
+
+# ✅ CORRECT - Use interfaces.d subdirectory
+cat > /etc/network/interfaces.d/ansible-bridges << EOF
+# ANSIBLE MANAGED BRIDGES - DO NOT EDIT MANUALLY
+auto vmbr99
+iface vmbr99 inet manual
+        bridge-ports xg2
+        bridge-stp off
+        bridge-fd 0
+EOF
+```
+
+**Validation Commands:**
+```bash
+# Check for duplicates
+grep -r "auto vmbr" /etc/network/interfaces*
+
+# Verify main file only sources subdirectories
+grep -v "^#" /etc/network/interfaces | grep -v "^source"
+
+# Confirm bridge persistence
+cat /etc/network/interfaces.d/ansible-bridges
+```
+
 ### Role-Specific Considerations
 - **Task Structure**: This role uses `import_tasks` for modularity - modify individual task files (`discovery.yml`, `naming.yml`, `pinning.yml`, `bridging.yml`) rather than `main.yml`
 - **Tagging Support**: Use `--tags` for selective execution: `discovery`, `naming`, `pinning`, `bridging`
 - **Proxmox VE 9 Compatibility**: The role automatically falls back to udev rules when `pve-network-interface-pinning` fails
 - **Bridge Architecture**: Maintains exactly 1 interface per bridge - do not add multiple interfaces to avoid STP issues
+- **Configuration Location**: Bridge definitions saved to `/etc/network/interfaces.d/ansible-bridges` (not main interfaces file)
 
-### Development Guidelines
-- **Review infrastructure automation guidelines**: Read "Infrastructure Automation: Ansible vs Proxmox API" in `docs/contributing.md`
-- **Follow the checklist**: See `docs/role_readme_template.md` for comprehensive testing requirements
-- **Test with tagging**: Use selective task execution for focused testing: `ansible-playbook ... --tags discovery,naming`
-- **Validate assignments**: The role validates bridge assignments - ensure exactly 1 interface per bridge
-- **Keep changes focused**: Modify individual task files rather than the entire role
-- **Include rationale**: Commit messages should explain architectural decisions, especially around interface assignments
+### General Command Line Tool Usage Rules
+
+**Query vs Modify Principle:**
+- **Query operations**: Use command line tools freely to gather information (`ip link show`, `brctl show`, `cat /etc/network/interfaces`, etc.)
+- **Modification operations**: When direct system modifications are necessary, ALWAYS include:
+  1. **Clear description** of what will be modified
+  2. **Purpose** of the proposed changes
+  3. **Expected outcome** after execution
+  4. **Rollback instructions** if applicable
+
+**Example Modification Request:**
+```bash
+# ❌ Vague command without context
+ip link set eth1 down
+
+# ✅ Properly documented modification
+# Purpose: Prepare interface for renaming from eth1 to eth2
+# Expected: eth1 will be brought down to allow name change
+# Rollback: ip link set eth1 up (if needed)
+ip link set eth1 down
+```
+
+**Safety Guidelines:**
+- Prefer Ansible modules over direct shell commands when possible
+- Test modifications on non-production systems first
+- Include verification commands after modifications
+- Document any persistent changes made to system files

@@ -23,7 +23,7 @@
 # Reload udev rules to apply new interface renaming
 - name: Reload udev rules to apply new interface renaming
   become: true
-  command: udevadm control --reload-rules && udevadm trigger
+  shell: udevadm control --reload-rules && udevadm trigger
   when: >
     pin_gen_results is defined and
     (pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([])) | length > 0
@@ -31,7 +31,7 @@
 # Reload udev rules to apply new interface naming
 - name: Reload udev rules to apply new interface naming
   become: true
-  command: udevadm control --reload-rules && udevadm trigger
+  shell: udevadm control --reload-rules && udevadm trigger
   when: >
     pin_gen_results is defined and
     (pin_gen_results.results | selectattr('rc','ne',0) | map(attribute='item') | list | default([])) | length > 0

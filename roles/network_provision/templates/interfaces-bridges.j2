@@ -1,0 +1,11 @@
+# ANSIBLE MANAGED BRIDGES - DO NOT EDIT MANUALLY
+{% for bridge_name, interfaces in bridge_assignments.items() %}
+{% if bridge_name != 'vmbr0' and interfaces %}
+auto {{ bridge_name }}
+iface {{ bridge_name }} inet manual
+        bridge-ports {{ interfaces | join(' ') }}
+        bridge-stp off
+        bridge-fd 0
+
+{% endif %}
+{% endfor %}
