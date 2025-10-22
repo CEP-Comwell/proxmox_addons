@@ -6,7 +6,11 @@
   hosts: proxmox-hosts
   become: true
   gather_facts: false
+  vars:
+    # Optional overrides; set these with -e when running if you want to control behavior
+    # provision_template_path: '/tmp/provision_nic_assignments-{{ inventory_hostname }}.yml'
+    # provision_preferred_mgmt_mac: 'aa:bb:cc:dd:ee:ff'
+    # provision_confirm_before_apply: false
   roles:
     - nic_pinning
-    - 
-    #- provision
+    - provision

@@ -112,3 +112,31 @@
   become: true
   notify:
     - restart networking
+
+- name: Build lists of normalized names by type
+  set_fact:
+    xg_norm: "{{ nic_names | dict2items | selectattr('value','match','^xg') | map(attribute='value') | list }}"
+    eth_norm: "{{ nic_names | dict2items | selectattr('value','match','^eth') | map(attribute='value') | list }}"
+    other_norm: "{{ nic_names | dict2items | rejectattr('value','match','^(xg|eth)') | map(attribute='value') | list }}"
+  when: nic_names is defined
+  tags: [nic_pinning]
+
+- name: Build default bridge_assignments heuristics
+  set_fact:
+    bridge_assignments: >-
+      {{ {
+        (mgmt_bridge): ([eth_norm[0]] if (eth_norm | length) > 0 else ([other_norm[0]] if (other_norm | length) > 0 else [])),
+        (vm_bridge): (xg_norm | default([])),
+        (ext_bridge): ((eth_norm[1:] if (eth_norm | length) > 1 else []) + (other_norm[1:] if (other_norm | length) > 1 else []) )
+      } }}
+  when: nic_names is defined
+  tags: [nic_pinning]
+
+- name: Render suggested provision assignments from nic_pinning
+  template:
+    src: provision_nic_assignments_from_pinning.j2
+    dest: "{{ provision_template_path | default('/tmp/provision_nic_assignments-' ~ inventory_hostname ~ '.yml') }}"
+    mode: '0644'
+  tags: [nic_pinning]
+  when: bridge_assignments is defined and bridge_assignments | length > 0
+

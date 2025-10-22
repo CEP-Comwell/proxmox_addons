@@ -78,12 +78,102 @@
     var: bridge_assignments
   tags: [provision]
 
-- name: Attach each interface to its bridge
+- name: Render NIC assignment template (writes a suggested assignment you can edit)
+  template:
+    src: nic_assignments.j2
+    dest: "{{ provision_template_path | default('/tmp/provision_nic_assignments-' ~ inventory_hostname ~ '.yml') }}"
+    mode: '0644'
+  tags: [provision]
+
+- name: Check for edited NIC assignment template file
+  stat:
+    path: "{{ provision_template_path | default('/tmp/provision_nic_assignments-' ~ inventory_hostname ~ '.yml') }}"
+  register: prov_template_stat
+  tags: [provision]
+
+- name: Load edited NIC assignment template if present
+  include_vars:
+    file: "{{ provision_template_path | default('/tmp/provision_nic_assignments-' ~ inventory_hostname ~ '.yml') }}"
+    name: provision_template
+  when: prov_template_stat.stat.exists
+  tags: [provision]
+
+- name: Build list of interfaces referenced by template (if any)
+  set_fact:
+    template_assigned_ifaces: >-
+      {{ (provision_template.bridge_assignments | default({}) | dict2items | map(attribute='value') | list | flatten) | default([]) }}
+  when: prov_template_stat.stat.exists
+  tags: [provision]
+
+- name: Find unknown interfaces referenced in template
+  set_fact:
+    template_unknown_ifaces: "{{ template_assigned_ifaces | difference(interfaces | default([])) }}"
+  when: prov_template_stat.stat.exists
+  tags: [provision]
+
+- name: Fail if template references interfaces not present on host
+  fail:
+    msg: "Template contains interfaces not present on host: {{ template_unknown_ifaces }}"
+  when: prov_template_stat.stat.exists and (template_unknown_ifaces | length > 0)
+  tags: [provision]
+
+- name: Use edited template assignments when provided
+  set_fact:
+    bridge_assignments: "{{ provision_template.bridge_assignments }}"
+  when: prov_template_stat.stat.exists
+  tags: [provision]
+
+- name: Gather MAC addresses for discovered kernel interfaces
+  shell: cat /sys/class/net/{{ item }}/address
+  loop: "{{ interfaces }}"
+  register: prov_if_mac
+  changed_when: false
+  tags: [provision]
+
+- name: Build kernel->mac map
+  set_fact:
+    kernel_to_mac: "{{ dict( prov_if_mac.results | map(attribute='item') | zip( prov_if_mac.results | map(attribute='stdout') ) ) }}"
+  when: prov_if_mac is defined
+  tags: [provision]
+
+- name: If preferred mgmt specified by MAC, override mgmt_bridge assignment
+  set_fact:
+    bridge_assignments: "{{ bridge_assignments | combine({ mgmt_bridge: [ (kernel_to_mac | dict2items | selectattr('value','equalto', provision_preferred_mgmt_mac) | map(attribute='key') | first) ] }) }}"
+  when: provision_preferred_mgmt_mac is defined and provision_preferred_mgmt_mac != '' and kernel_to_mac is defined
+  tags: [provision]
+
+- name: If preferred mgmt specified by interface name, and present, override mgmt_bridge assignment
+  set_fact:
+    bridge_assignments: "{{ bridge_assignments | combine({ mgmt_bridge: [ provision_preferred_mgmt_name ] }) }}"
+  when: provision_preferred_mgmt_name is defined and provision_preferred_mgmt_name != '' and (provision_preferred_mgmt_name in interfaces)
+  tags: [provision]
+
+- name: Build apply_bridge_assignments (filter to interfaces actually present)
+  set_fact:
+    apply_bridge_assignments: >-
+      {{ dict( bridge_assignments | dict2items | map( {'key': item.key, 'value': (item.value | select('in', interfaces) | list) } ) | list ) }}
+  when: bridge_assignments is defined
+  tags: [provision]
+
+- name: Debug apply_bridge_assignments mapping
+  debug:
+    var: apply_bridge_assignments
+  tags: [provision]
+
+- name: Pause for confirmation before applying assignments
+  pause:
+    prompt: "Proceed to apply bridge assignments? (press Enter to continue or CTRL-C to abort)"
+  when: provision_confirm_before_apply | default(false) and not (provision_generate_only | default(false))
+  tags: [provision]
+
+
+ - name: Attach each interface to its bridge
   become: true
+  when: not (provision_generate_only | default(false))
   vars:
     iface: "{{ item.1 }}"
     bridge: "{{ item.0 }}"
-  loop: "{{ bridge_assignments | dict2items | subelements('value') }}"
+  loop: "{{ (apply_bridge_assignments | default(bridge_assignments)) | dict2items | subelements('value') }}"
   loop_control:
     label: "{{ bridge }}:{{ iface }}"
   block:
