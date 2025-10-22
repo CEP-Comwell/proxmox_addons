@@ -49,7 +49,7 @@ ansible-playbook -i inventory edgesec-sdn/playbooks/provision.yml --tags pinning
 ansible-playbook -i inventory edgesec-sdn/playbooks/provision.yml --skip-tags discovery
 ```
 
-### Run the Provision Playbook
+### Run the Network Provisioning Playbook
 ```bash
 # From repository root - full provisioning
 ansible-playbook -i inventory edgesec-sdn/playbooks/provision.yml
