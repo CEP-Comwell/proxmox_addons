@@ -14,11 +14,14 @@
 ## Playbooks
 
 Located in `playbooks/`:
-- `provision_network.yml`: **Phase 1** - Single node VXLAN setup, creates VLAN-aware bridges and SDN zones.
-- `preflight_connectivity.yml`: **Phase 2** - Connectivity verification between nodes before fabric finalization.
-- `establish_fabric.yml`: **Phase 3** - Fabric finalization with VNI mappings and EVPN overlay establishment.
-- `provision_complete_sdn.yml`: **RECOMMENDED** - Complete SDN provisioning with NFTables (network_provision → vxlan → nftables roles).
-- `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks for multi-site SDN deployment.
+- `provision.yml`: Basic node provisioning (prerequisites + network interface setup)
+- `provision_network.yml`: **Phase 1** - Single node VXLAN setup, creates VLAN-aware bridges and SDN zones
+- `setup_complete_sdn.yml`: **Phases 1-2** - Complete SDN infrastructure (VXLAN bridges + connectivity verification)
+- `provision_complete_sdn.yml`: **RECOMMENDED** - Complete SDN provisioning with NFTables (network_provision → vxlan → nftables roles)
+- `preflight_connectivity.yml`: **Phase 2** - Connectivity verification between nodes before fabric finalization
+- `establish_fabric.yml`: **Phase 3** - Fabric finalization with VNI mappings and EVPN overlay establishment
+- `nftables_bridge_rules.yml`: Standalone NFTables bridge access control setup
+- `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks for multi-site SDN deployment
 
 ## Multi-Phase SDN Provisioning Process
 
@@ -37,7 +40,13 @@ This SDN implementation follows a structured 3-phase approach using Proxmox VE 9
 
 **Complete SDN Setup** (Recommended):
 ```bash
-# Run full SDN infrastructure setup (vxlan + preflight + establish_fabric)
+# Run full SDN infrastructure setup with NFTables (network_provision + vxlan + nftables)
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml
+```
+
+**Basic SDN Setup** (Phases 1-2):
+```bash
+# Setup VXLAN bridges and connectivity verification
 ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml
 ```
 
@@ -47,22 +56,22 @@ ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml
 ansible-playbook -i ../../inventory playbooks/provision_network.yml
 ```
 
-**Full VXLAN Role**:
+**Basic Provisioning**:
 ```bash
-# Run complete vxlan role with SDN components
-ansible-playbook -i ../../inventory -e "ansible-playbook-run-role=roles/vxlan" site.yml
+# Basic node setup (prerequisites + network interfaces)
+ansible-playbook -i ../../inventory playbooks/provision.yml
 ```
 
 **Single Node Testing**:
 ```bash
 # Test on specific node with verbose output
-ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml --limit pve-node1 -v
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml --limit pve-node1 -v
 ```
 
 **Dry Run Check**:
 ```bash
 # Validate playbook syntax and logic without changes
-ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml --check
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml --check
 ```
 
 **📖 [Detailed VXLAN Role Documentation](../../roles/vxlan/README.md)**
