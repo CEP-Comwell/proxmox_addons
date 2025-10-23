@@ -1,13 +1,8 @@
 ---
-# Playbook: preflight_connectivity.yml
-# Description: Verifies connectivity to remote nodes after provisioning
-# Usage: ansible-playbook -i ../../inventory preflight_connectivity.yml
+# Phase 2: Connectivity Check - Verify reachability between nodes before fabric finalization
+- name: Preflight connectivity verification for SDN fabric
+  hosts: proxmox_nodes
+  become: true
 
-
-- name: Preflight connectivity check
-  hosts: proxmox
-  become: yes
-  gather_facts: yes
   roles:
-    - role: preflight
-    - role: nftables
+    - preflight

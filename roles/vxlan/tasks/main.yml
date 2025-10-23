@@ -1,50 +1,93 @@
 
-# This task file creates bridges and VXLAN overlays on all nodes using the Proxmox API.
-# Requires variables from group_vars/vxlan.yml and group_vars/proxmox_vault.yml
-#
-# NOTE: In production, use Ansible Vault or HashiCorp Vault for secrets.
-#
-# If the Proxmox API is insufficient for any feature, add a comment and use CLI/Ansible as a fallback.
+# Phase 1: Single Node VXLAN Setup - Create VLAN-aware bridges and SDN zones
+# This task file creates SDN bridges, fabric, controller, zones, and VNets using pvesh
+# Requires interface pinning to be completed first
 
-- name: Create bridges via Proxmox API
-  community.general.proxmox_network:
-    api_host: "{{ proxmox_api_host }}"
-    api_user: "{{ proxmox_api_user }}"
-    api_password: "{{ proxmox_api_password }}"
-    validate_certs: "{{ proxmox_api_validate_certs | default(false) }}"
-    node: "{{ inventory_hostname }}"
-    name: "{{ item.name }}"
-    type: bridge
-    state: present
-  loop: "{{ bridges }}"
-  loop_control:
-    label: "{{ item.name }}"
+- name: Create VLAN-aware SDN bridges
+  ansible.builtin.command: >
+    pvesh create /nodes/localhost/network
+    -type bridge
+    -iface {{ item.name }}
+    -bridge_ports {{ item.interface }}
+    -bridge_vlan_aware 1
+    -autostart 1
+  loop:
+    - { name: 'vmbr99', interface: 'eth0' }  # Management bridge
+    - { name: 'vmbr1', interface: 'eth1' }   # Tenant bridge
+    - { name: 'vmbr2', interface: 'eth2' }   # Gateway bridge
+  register: bridge_creation
+  changed_when: bridge_creation.rc == 0
 
-- name: Create VXLAN overlays via Proxmox API
-  community.general.proxmox_network:
-    api_host: "{{ proxmox_api_host }}"
-    api_user: "{{ proxmox_api_user }}"
-    api_password: "{{ proxmox_api_password }}"
-    validate_certs: "{{ proxmox_api_validate_certs | default(false) }}"
-    node: "{{ inventory_hostname }}"
-    name: "{{ vxlan.name }}"
-    type: vxlan
-    bridge: "{{ bridge.name }}"
-    tag: "{{ vxlan.vni }}"
-    state: present
-  loop: "{{ bridges }}"
-  loop_control:
-    loop_var: bridge
-  vars:
-    vxlan_list: "{{ bridge.vxlan_overlays | default([]) }}"
-  with_items: "{{ vxlan_list }}"
-  loop_control:
-    loop_var: vxlan
-    label: "{{ vxlan.name }} on {{ bridge.name }}"
+- name: Apply bridge configuration changes
+  ansible.builtin.command: pvesh set /nodes/localhost/network
+  when: bridge_creation.changed
 
-# If the Proxmox API does not support a required feature, add a CLI/Ansible fallback here with a comment.
-# Example:
-# - name: Workaround for unsupported feature
-#   ansible.builtin.command: ...
-#   when: api_feature_missing
-#   # Proxmox API does not support <feature>; using CLI/Ansible as a workaround.
+- name: Create SDN fabric
+  ansible.builtin.command: >
+    pvesh create /cluster/sdn/fabrics
+    -fabricid edgefabric
+    -type openfabric
+  register: fabric_creation
+  changed_when: fabric_creation.rc == 0
+
+- name: Create SDN EVPN controller
+  ansible.builtin.command: >
+    pvesh create /cluster/sdn/controllers
+    -controllerid evpn-core
+    -type evpn
+    -asn 65000
+    -peers 10.0.0.1
+    -fabric edgefabric
+  register: controller_creation
+  changed_when: controller_creation.rc == 0
+
+- name: Create SDN zones
+  ansible.builtin.command: >
+    pvesh create /cluster/sdn/zones
+    -zoneid {{ item.zoneid }}
+    -type evpn
+    -controller evpn-core
+    -vrf-vxlan {{ item.vrf_vxlan }}
+    -advertise-subnets 1
+    -mtu 1450
+  loop:
+    - { zoneid: 'tenant-zone', vrf_vxlan: 100 }
+    - { zoneid: 'gateway-zone', vrf_vxlan: 200 }
+  register: zone_creation
+  changed_when: zone_creation.rc == 0
+
+- name: Create SDN VNets
+  ansible.builtin.command: >
+    pvesh create /cluster/sdn/vnets
+    -vnetid {{ item.vnetid }}
+    -zone {{ item.zone }}
+    -tag {{ item.tag }}
+  loop:
+    - { vnetid: 'tenant-vnet', zone: 'tenant-zone', tag: 10 }
+    - { vnetid: 'gateway-vnet', zone: 'gateway-zone', tag: 20 }
+  register: vnet_creation
+  changed_when: vnet_creation.rc == 0
+
+- name: Apply SDN configuration changes
+  ansible.builtin.command: pvesh set /cluster/sdn
+  when: fabric_creation.changed or controller_creation.changed or zone_creation.changed or vnet_creation.changed
+
+- name: Verify bridge configuration
+  ansible.builtin.command: pvesh get /nodes/localhost/network
+  register: network_config
+  changed_when: false
+
+- name: Verify SDN configuration
+  ansible.builtin.command: pvesh get /cluster/sdn
+  register: sdn_config
+  changed_when: false
+
+- name: Display network configuration
+  ansible.builtin.debug:
+    msg: "{{ network_config.stdout }}"
+  when: network_config.stdout is defined
+
+- name: Display SDN configuration
+  ansible.builtin.debug:
+    msg: "{{ sdn_config.stdout }}"
+  when: sdn_config.stdout is defined

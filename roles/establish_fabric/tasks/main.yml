@@ -1,8 +1,81 @@
----
-# Main tasks for establish_fabric role
-# TODO: Add tasks to set up overlay networks, BGP, VXLAN, etc.
-# Example:
-# - name: Configure overlay network
-#   import_role:
-#     name: vxlan
-#   tags: [fabric, verify_fabric]
+# Phase 3: Fabric Finalization - Establish VNI mappings and finalize EVPN overlays
+
+- name: Add node interfaces to SDN fabric
+  ansible.builtin.command: >
+    pvesh create /cluster/sdn/fabrics/edgefabric/nodes
+    -node {{ inventory_hostname }}
+    -interfaces eth0,eth1,eth2
+  register: fabric_node_addition
+  changed_when: fabric_node_addition.rc == 0
+
+- name: Apply SDN fabric configuration
+  ansible.builtin.command: pvesh set /cluster/sdn
+  when: fabric_node_addition.changed
+
+- name: Create SDN subnets (optional)
+  ansible.builtin.command: >
+    pvesh create /cluster/sdn/subnets
+    -subnet {{ item.subnet }}
+    -vnet {{ item.vnet }}
+    -gateway {{ item.gateway }}
+    -snat 1
+  loop:
+    - { subnet: '192.168.10.0/24', vnet: 'tenant-vnet', gateway: '192.168.10.1' }
+    - { subnet: '192.168.20.0/24', vnet: 'gateway-vnet', gateway: '192.168.20.1' }
+  register: subnet_creation
+  changed_when: subnet_creation.rc == 0
+
+- name: Apply subnet configuration changes
+  ansible.builtin.command: pvesh set /cluster/sdn
+  when: subnet_creation.changed
+
+- name: Verify fabric node configuration
+  ansible.builtin.command: pvesh get /cluster/sdn/fabrics/edgefabric/nodes
+  register: fabric_nodes
+  changed_when: false
+
+- name: Display fabric node configuration
+  ansible.builtin.debug:
+    msg: |
+      Fabric nodes in edgefabric:
+      {{ fabric_nodes.stdout }}
+
+- name: Verify SDN zones and VNets
+  ansible.builtin.command: pvesh get /cluster/sdn
+  register: sdn_final_config
+  changed_when: false
+
+- name: Display final SDN configuration
+  ansible.builtin.debug:
+    msg: |
+      Final SDN configuration:
+      {{ sdn_final_config.stdout }}
+
+- name: Verify bridge and VNet associations
+  ansible.builtin.command: >
+    pvesh get /nodes/localhost/network | jq '.[] | select(.type == "bridge") | {iface: .iface, bridge_ports: .bridge_ports}'
+  register: bridge_vnet_check
+  changed_when: false
+  ignore_errors: true
+
+- name: Display bridge configuration
+  ansible.builtin.debug:
+    msg: |
+      Bridge configuration on {{ inventory_hostname }}:
+      {{ bridge_vnet_check.stdout | default('jq not available or no bridges found') }}
+
+- name: Test VNet connectivity (if subnets created)
+  ansible.builtin.command: ping -c 3 {{ item.gateway }}
+  loop:
+    - { gateway: '192.168.10.1' }
+    - { gateway: '192.168.20.1' }
+  register: vnet_ping_test
+  changed_when: false
+  ignore_errors: true
+  when: subnet_creation.changed
+
+- name: Display VNet connectivity test results
+  ansible.builtin.debug:
+    msg: "VNet gateway {{ item.item.gateway }}: {{ 'reachable' if item.rc == 0 else 'unreachable' }}"
+  loop: "{{ vnet_ping_test.results | default([]) }}"
+  when: vnet_ping_test.results is defined

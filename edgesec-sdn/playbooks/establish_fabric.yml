@@ -1,14 +1,8 @@
 ---
-# Playbook: establish_fabric.yml
-# Description: Sets up overlay networks, BGP, VXLAN, etc. across nodes
-# Usage: ansible-playbook -i ../../inventory establish_fabric.yml
+# Phase 3: Fabric Finalization - Establish VNI mappings and finalize EVPN overlays
+- name: Establish SDN fabric and finalize EVPN overlays
+  hosts: proxmox_nodes
+  become: true
 
-
-- name: Establish SDN fabric
-  hosts: proxmox
-  become: yes
-  gather_facts: yes
   roles:
-    - role: vxlan
-    - role: bgp
-    - role: nftables
+    - establish_fabric

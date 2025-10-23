@@ -210,6 +210,3 @@
 
       ✅ Network configuration successfully applied and verified after reboot!
   when: provision_reboot_after_config | default(false) and reboot_result is defined and reboot_result.changed
-
-# Handlers (currently unused but available for future use)
-handlers: []

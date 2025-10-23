@@ -424,6 +424,25 @@ ip -br link show type bridge
 - **Multiple interfaces on SDN bridge**: SDN bridges can only have **one physical interface** connected
 - **VLAN issues**: Ensure `-bridge_vlan_aware yes` is set (mandatory for SDN)
 
+### ⚠️ SDN Architecture Limitations
+
+**Critical constraints for SDN bridge configuration:**
+
+| Limitation | Details | Workaround |
+|------------|---------|------------|
+| **Single Physical Interface** | SDN bridges can only connect to **one physical interface** | Use separate bridges for each physical interface |
+| **VLAN Awareness Required** | `-bridge_vlan_aware yes` is **mandatory** for SDN functionality | Always include this parameter |
+| **No Pre-tagged VLAN Interfaces** | Cannot use `vmbr0.10` or similar VLAN subinterfaces as bridge ports | Use physical interfaces and let SDN manage VLANs |
+| **GUI Pending Changes** | Bridges show "Pending changes" until `pvesh set /nodes/localhost/network` runs | Always apply changes after bridge creation |
+| **Autostart Required** | Bridges don't activate after reboot without `-autostart yes` | Include autostart parameter for persistence |
+| **Interface Pinning First** | SDN operations fail if interfaces aren't pinned consistently | Always run interface pinning before SDN provisioning |
+
+**Why these limitations exist:**
+- SDN provides a virtualization layer over Linux bridging
+- Single interface design ensures clean VLAN trunking
+- VLAN awareness enables dynamic SDN zone management
+- Autostart ensures network availability after system reboots
+
 ### Automated Testing
 When implementing network provisioning roles, include automated verification:
 - Test interface pinning with `pve-network-interface-pinning` first
@@ -438,6 +457,44 @@ If migrating from manual shell-based bridge creation to pvesh API:
 2. Replace manual `brctl` commands with pvesh bridge creation
 3. Use pvesh API for all SDN bridge management
 4. Test thoroughly with reboot cycles to ensure persistence
+
+### Complete SDN Provisioning Workflow Example
+
+Here's a complete example of the recommended workflow from interface pinning through SDN bridge creation:
+
+```bash
+# Step 1: Generate and apply interface pinning rules
+pve-network-interface-pinning generate
+pve-network-interface-pinning apply
+
+# Step 2: Verify interface names are consistent
+ip link show | grep -E "^[0-9]+: (eth[0-9]+|eno[0-9]+|ens[0-9]+)"
+
+# Step 3: Create VLAN-aware SDN bridge
+pvesh create /nodes/localhost/network \
+  -type bridge \
+  -iface vmbr2 \
+  -bridge_ports eth1 \
+  -bridge_vlan_aware yes \
+  -autostart yes
+
+# Step 4: Apply network configuration changes
+pvesh set /nodes/localhost/network
+
+# Step 5: Verify bridge configuration
+pvesh get /nodes/localhost/network | jq '.[] | select(.iface == "vmbr2")'
+ip -br link show type bridge
+
+# Step 6: Create SDN zones and VNets (optional, for VLAN segmentation)
+# This would be done through the Proxmox web GUI or additional pvesh commands
+```
+
+**Key Points:**
+- Always run interface pinning **before** SDN operations
+- Use physical interfaces (eth0, eth1, etc.) as bridge ports, not VLAN subinterfaces
+- Include `-autostart yes` for bridge persistence across reboots
+- Run `pvesh set /nodes/localhost/network` to apply changes
+- Test bridge status with both `pvesh get` and `ip link show`
 
 ### ✅ **Recommended Approach**
 
@@ -462,14 +519,17 @@ Instead of using VLAN interfaces as bridge ports:
    - Avoid manually creating `vmbrX.Y` interfaces unless for host-level access.
    - Use SDN zones and VNets for VM-level VLAN segmentation.
 
+**Why avoid VLAN interfaces as bridge ports?**
+VLAN interfaces (e.g., `vmbr0.10`, `vmbr0.20`) are tagged subinterfaces that represent pre-configured VLAN segments. SDN bridges expect trunk ports capable of handling multiple VLANs dynamically through the SDN abstraction layer. Using pre-tagged VLAN interfaces bypasses SDN's VLAN management and can cause conflicts with SDN zone and VNet configurations.
+
 ---
 
 ### 🧩 TL;DR
 
-| Configuration | SDN-Compatible | Recommended |
-|---------------|----------------|-------------|
-| `bridge_ports eth1` on VLAN-aware bridge | ✅ Yes | ✅ Yes |
-| `bridge_ports vmbr0.10 vmbr0.20` | ❌ No | ❌ Not recommended |
+| Configuration | SDN-Compatible | Recommended | Rationale |
+|---------------|----------------|-------------|-----------|
+| `bridge_ports eth1` on VLAN-aware bridge | ✅ Yes | ✅ Yes | Physical trunk port allows SDN VLAN management |
+| `bridge_ports vmbr0.10 vmbr0.20` | ❌ No | ❌ Not recommended | Pre-tagged VLAN interfaces bypass SDN abstraction |
 
 ---
 
@@ -491,6 +551,11 @@ pvesh create /nodes/localhost/network -type bridge -iface vmbr2 -bridge_ports et
 # Network verification
 pvesh get /nodes/localhost/network | jq '.[] | select(.type == "bridge")'  # Show bridges only
 ip -br link show type bridge                     # Verify bridge status after configuration
+
+# JSON API examples for programmatic access
+pvesh get /nodes/localhost/network --output-format json                    # Get network config as JSON
+pvesh get /nodes/localhost/network --output-format json | jq '.[] | select(.type == "bridge" and .bridge_vlan_aware == true)'  # Filter VLAN-aware bridges
+pvesh get /nodes/localhost/network --output-format json | jq '.[] | select(.iface | startswith("vmbr"))'  # Find all vmbr interfaces
 ```
 
 ### Essential Device Discovery Commands
@@ -658,12 +723,94 @@ We encourage using automated tools (including LLM-based code assistants) to spee
 - **Verification steps**: Where possible include or update small verification steps (syntax checks or a tiny run in `--check` mode) as part of the PR so reviewers can quickly validate correctness.
 - **Repository conventions**: Preserve repository conventions (2-space YAML indentation, role layout, `defaults/main.yml` for defaults).
 
+### Structured JSON Snippets for LLM Processing
+
+Use these structured JSON templates to generate consistent automation logic:
+
+```json
+{
+  "network_provisioning_workflow": {
+    "interface_pinning": {
+      "command": "pve-network-interface-pinning generate && pve-network-interface-pinning apply",
+      "verification": "ip link show | grep -E '^[0-9]+: (eth[0-9]+|eno[0-9]+|ens[0-9]+)'",
+      "purpose": "Ensure consistent interface naming before SDN operations"
+    },
+    "sdn_bridge_creation": {
+      "command": "pvesh create /nodes/localhost/network -type bridge -bridge_ports '{interface}' -bridge_vlan_aware yes -autostart yes",
+      "parameters": {
+        "type": "bridge",
+        "bridge_ports": "single physical interface only",
+        "bridge_vlan_aware": "yes (mandatory)",
+        "autostart": "yes (for persistence)"
+      },
+      "verification": "pvesh get /nodes/localhost/network | jq '.[] | select(.iface == \"{bridge_name}\")'"
+    },
+    "configuration_application": {
+      "command": "pvesh set /nodes/localhost/network",
+      "purpose": "Apply pending network changes to activate configuration"
+    }
+  },
+  "ansible_task_patterns": {
+    "pvesh_command_task": {
+      "template": {
+        "name": "Execute pvesh command",
+        "command": "pvesh {{ item.command }} {{ item.parameters | join(' ') }}",
+        "with_items": "{{ pvesh_commands }}",
+        "register": "pvesh_result",
+        "changed_when": "pvesh_result.rc == 0"
+      }
+    },
+    "network_verification_task": {
+      "template": {
+        "name": "Verify network configuration",
+        "command": "pvesh get /nodes/localhost/network",
+        "register": "network_config",
+        "failed_when": "network_config.rc != 0 or 'error' in network_config.stdout"
+      }
+    }
+  },
+  "error_handling_patterns": {
+    "pvesh_error_check": {
+      "failed_when": "'error' in pvesh_result.stdout or pvesh_result.rc != 0",
+      "retries": 3,
+      "delay": 5,
+      "until": "pvesh_result.rc == 0"
+    }
+  }
+}
+```
+
+### Role-Specific LLM Guidance
+
+**For network_provision role:**
+- Always check interface pinning status before SDN operations
+- Use conditional tasks for reboot verification when `provision_reboot_after_config: true`
+- Include both `pvesh get` and `ip link show` verification commands
+- Handle "Pending changes" state by ensuring `pvesh set /nodes/localhost/network` execution
+
+**For roles using network bridges:**
+- Reference bridge interfaces by name (vmbr0, vmbr1, etc.) rather than assuming creation
+- Use `delegate_to: localhost` for pvesh commands targeting the Proxmox host
+- Include network connectivity tests after bridge configuration
+
+### Test Harness Recommendations
+
+When developing automation with LLMs, consider these validation approaches:
+
+1. **Syntax Validation**: Always run `ansible-playbook --syntax-check` on generated playbooks
+2. **Dry Run Testing**: Use `--check` mode to validate logic without making changes
+3. **Idempotency Testing**: Run playbooks multiple times to ensure they don't break on re-execution
+4. **Network Isolation**: Test in isolated environments before production deployment
+
 ### Error Remediation Checklist
 If an automated change introduces a parsing error, the remediation checklist is:
 
 1. Run `ansible-playbook --syntax-check` targeting the playbook that failed to identify the problematic file and line.
 2. Inspect the flagged file(s) for stray Markdown fences, duplicate `---` markers, or duplicated blocks.
 3. Re-run `yamllint` and `ansible-lint` locally, fix issues, and re-run the syntax check.
+4. Check for deprecated YAML constructs or invalid indentation.
+5. Verify that role references use relative paths correctly.
+6. Test with minimal variable sets to isolate configuration issues.
 
 Including this guidance in PRs created by assistants makes reviews faster and reduces back-and-forth.
 

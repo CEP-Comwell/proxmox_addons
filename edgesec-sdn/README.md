@@ -14,16 +14,194 @@
 ## Playbooks
 
 Located in `playbooks/`:
-- `provision_network.yml`: Main SDN fabric provisioning playbook.
+- `provision_network.yml`: **Phase 1** - Single node VXLAN setup, creates VLAN-aware bridges and SDN zones.
+- `preflight_connectivity.yml`: **Phase 2** - Connectivity verification between nodes before fabric finalization.
+- `establish_fabric.yml`: **Phase 3** - Fabric finalization with VNI mappings and EVPN overlay establishment.
 - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks for multi-site SDN deployment.
-- `preflight_connectivity.yml`: Checks connectivity between all Proxmox nodes before BGP peering.
-- `establish_fabric.yml`: Interactive BGP peering and fabric activation.
+
+## Multi-Phase SDN Provisioning Process
+
+This SDN implementation follows a structured 3-phase approach using Proxmox VE 9's pvesh API for reliable SDN deployment:
+
+### 🏗️ Phase 1: Single Node VXLAN Setup (`provision_network.yml`)
+**Purpose**: Provision local bridges and SDN infrastructure on individual nodes.
+
+**Key Actions**:
+- Create VLAN-aware SDN bridges (vmbr99: Management, vmbr1: Tenant, vmbr2: Gateway)
+- Establish SDN fabric and EVPN controller
+- Create SDN zones and VNets
+- Apply network and SDN configuration changes
+
+**Command Example**:
+```bash
+ansible-playbook -i ../../inventory playbooks/provision_network.yml
+```
+
+### 🔍 Phase 2: Connectivity Check (`preflight_connectivity.yml`)
+**Purpose**: Verify reachability and configuration before cluster-wide fabric activation.
+
+**Key Actions**:
+- Ping test all Proxmox nodes
+- Check FRR BGP session status
+- Verify network interfaces and bridge status
+- Validate SDN configuration existence
+
+**Command Example**:
+```bash
+ansible-playbook -i ../../inventory playbooks/preflight_connectivity.yml
+```
+
+### 🧱 Phase 3: Fabric Finalization (`establish_fabric.yml`)
+**Purpose**: Establish VNI mappings and finalize EVPN overlays across the cluster.
+
+**Key Actions**:
+- Add node interfaces to SDN fabric
+- Create SDN subnets (optional)
+- Apply final SDN configuration
+- Test VNet connectivity
+
+**Command Example**:
+```bash
+ansible-playbook -i ../../inventory playbooks/establish_fabric.yml
+```
+
+### 📋 SDN Architecture Overview
+
+- **Bridges**: vmbr99 (Management), vmbr1 (Tenant), vmbr2 (Gateway)
+- **Fabric**: OpenFabric-based SDN with EVPN controller
+- **Zones**: tenant-zone (VRF-VXLAN 100), gateway-zone (VRF-VXLAN 200)
+- **VNets**: tenant-vnet (VLAN 10), gateway-vnet (VLAN 20)
+- **Controller**: EVPN core with ASN 65000
+
+### ⚠️ Important Notes
+
+- Always run interface pinning **before** SDN operations
+- Use `bridge_vlan_aware yes` for all SDN bridges
+- Apply changes with `pvesh set /nodes/localhost/network` and `pvesh set /cluster/sdn`
+- Avoid VLAN subinterfaces (vmbr0.10) as bridge ports
+- Test connectivity between phases to ensure reliability
 
 ## Docker Compose
 
 Place SDN-related Docker Compose files in the `docker/` subdirectory. Each file should be named and documented for its specific purpose (e.g., `docker-compose.sdn.yml`).
 
 ## Usage
+
+### Multi-Phase SDN Deployment
+
+Follow this structured 3-phase approach for reliable SDN deployment:
+
+#### Phase 1: Single Node Setup
+```bash
+# Provision local bridges and SDN infrastructure on individual nodes
+ansible-playbook -i ../../inventory playbooks/provision_network.yml
+
+# Optional: Limit to specific nodes
+ansible-playbook -i ../../inventory playbooks/provision_network.yml --limit proxmox-node-1
+```
+
+#### Phase 2: Connectivity Verification
+```bash
+# Verify reachability between nodes before fabric finalization
+ansible-playbook -i ../../inventory playbooks/preflight_connectivity.yml
+
+# Check specific node connectivity
+ansible-playbook -i ../../inventory playbooks/preflight_connectivity.yml --limit proxmox-node-1
+```
+
+#### Phase 3: Fabric Finalization
+```bash
+# Establish VNI mappings and finalize EVPN overlays
+ansible-playbook -i ../../inventory playbooks/establish_fabric.yml
+
+# Apply to specific nodes only
+ansible-playbook -i ../../inventory playbooks/establish_fabric.yml --limit proxmox-node-1,proxmox-node-2
+```
+
+### Complete Deployment Workflow
+```bash
+# Full SDN deployment (run phases sequentially)
+cd /path/to/proxmox_addons
+
+# Phase 1: Setup individual nodes
+ansible-playbook -i inventory edgesec-sdn/playbooks/provision_network.yml
+
+# Phase 2: Verify connectivity
+ansible-playbook -i inventory edgesec-sdn/playbooks/preflight_connectivity.yml
+
+# Phase 3: Finalize fabric
+ansible-playbook -i inventory edgesec-sdn/playbooks/establish_fabric.yml
+```
+
+### Advanced Usage Examples
+
+#### Dry Run Testing
+```bash
+# Test playbook syntax and logic without making changes
+ansible-playbook -i ../../inventory playbooks/provision_network.yml --check
+
+# Show what would be changed
+ansible-playbook -i ../../inventory playbooks/provision_network.yml --check --diff
+```
+
+#### Verbose Output
+```bash
+# Run with detailed output for troubleshooting
+ansible-playbook -i ../../inventory playbooks/provision_network.yml -v
+
+# Maximum verbosity
+ansible-playbook -i ../../inventory playbooks/provision_network.yml -vvv
+```
+
+#### Selective Execution
+```bash
+# Run only specific tags
+ansible-playbook -i ../../inventory playbooks/provision_network.yml --tags bridges
+
+# Skip specific tags
+ansible-playbook -i ../../inventory playbooks/provision_network.yml --skip-tags verification
+```
+
+#### Parallel Execution
+```bash
+# Run on multiple nodes simultaneously (default)
+ansible-playbook -i ../../inventory playbooks/provision_network.yml
+
+# Limit parallelism
+ansible-playbook -i ../../inventory playbooks/provision_network.yml --forks 2
+```
+
+### Prerequisites
+
+1. **Interface Pinning**: Ensure network interfaces are properly pinned before SDN operations
+2. **Inventory Setup**: Configure your `inventory` file with correct host groups and variables
+3. **SSH Access**: Verify SSH connectivity to all Proxmox nodes
+4. **Permissions**: Ensure Ansible has sudo privileges on target nodes
+
+### Troubleshooting
+
+#### Common Issues
+- **"Pending changes" in Proxmox GUI**: Run `pvesh set /nodes/localhost/network` to apply changes
+- **Bridge not active**: Ensure `-autostart yes` parameter is used
+- **VLAN issues**: Verify `bridge_vlan_aware yes` is set on all SDN bridges
+- **Connectivity failures**: Check physical network connections and interface pinning
+
+#### Verification Commands
+```bash
+# Check bridge status
+ip -br link show type bridge
+
+# Verify SDN configuration
+pvesh get /cluster/sdn
+
+# Check network configuration
+pvesh get /nodes/localhost/network
+
+# Test BGP sessions (if using FRR)
+vtysh -c "show bgp summary"
+```
+
+### Docker Compose Integration
 
 1. Edit inventory and config files as needed.
 2. Run playbooks from the `playbooks/` directory.

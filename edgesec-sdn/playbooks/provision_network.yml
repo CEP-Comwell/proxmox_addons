@@ -1,15 +1,9 @@
 ---
-- name: Provision Proxmox network overlays
-	hosts: proxmox_nodes
-	become: true
+# Phase 1: Single Node VXLAN Setup - Provision local bridges and SDN zones
+- name: Provision local SDN bridges and zones on individual nodes
+  hosts: proxmox_nodes
+  become: true
 
-	roles:
-		- underlay
-		- bgp
-		- vxlan
-		- ipam
-		- vm_nic
-		- nat
-		- proxy
-		- ceph_network
+  roles:
+    - vxlan
 

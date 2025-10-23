@@ -1,9 +1,68 @@
----
-# Main tasks for preflight role
-# TODO: Add tasks to verify connectivity (ping, SSH, API)
-# Example:
-# - name: Ping remote nodes
-#   ansible.builtin.ping:
-#   delegate_to: "{{ item }}"
-#   loop: "{{ groups['all'] }}"
-#   tags: [preflight, verify_preflight]
+# Phase 2: Connectivity Check - Verify reachability between nodes before fabric finalization
+
+- name: Ping all Proxmox nodes for connectivity verification
+  ansible.builtin.ping:
+  register: ping_results
+  ignore_unreachable: true
+
+- name: Display ping results
+  ansible.builtin.debug:
+    msg: "Node {{ item.item }}: {{ 'reachable' if item.ping is defined else 'unreachable' }}"
+  loop: "{{ ping_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Check FRR BGP session status on all nodes
+  ansible.builtin.command: vtysh -c "show bgp summary"
+  register: bgp_status
+  changed_when: false
+  ignore_errors: true
+  when: "'frr' in group_names or 'bgp' in group_names"
+
+- name: Display BGP status
+  ansible.builtin.debug:
+    msg: |
+      BGP Status on {{ inventory_hostname }}:
+      {{ bgp_status.stdout | default('FRR not available or BGP not configured') }}
+  when: bgp_status is defined
+
+- name: Verify network interfaces are up
+  ansible.builtin.command: ip -br link show
+  register: interface_status
+  changed_when: false
+
+- name: Display interface status
+  ansible.builtin.debug:
+    msg: |
+      Network interfaces on {{ inventory_hostname }}:
+      {{ interface_status.stdout }}
+
+- name: Check bridge status
+  ansible.builtin.command: ip -br link show type bridge
+  register: bridge_status
+  changed_when: false
+
+- name: Display bridge status
+  ansible.builtin.debug:
+    msg: |
+      Bridge status on {{ inventory_hostname }}:
+      {{ bridge_status.stdout }}
+
+- name: Verify SDN configuration exists
+  ansible.builtin.command: pvesh get /cluster/sdn
+  register: sdn_check
+  changed_when: false
+  ignore_errors: true
+
+- name: Display SDN configuration status
+  ansible.builtin.debug:
+    msg: |
+      SDN configuration on {{ inventory_hostname }}:
+      {{ sdn_check.stdout | default('SDN not configured yet') }}
+
+- name: Fail if critical connectivity issues detected
+  ansible.builtin.fail:
+    msg: "Critical connectivity issues detected. Check network configuration before proceeding to fabric finalization."
+  when:
+    - ping_results.unreachable | default([]) | length > 0
+    - not ansible_check_mode
