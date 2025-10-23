@@ -1,7 +1,7 @@
 # edgesec-SDN
 
 **Multi-site Deployment**
-  - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site**📖 [Detailed VXLAN Role Documentation](../../roles/vxlan/README.md)**
+  - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site**📖 [Detailed VXLAN Role Documentation]( ./../roles/vxlan/README.md)**
 
 
 
