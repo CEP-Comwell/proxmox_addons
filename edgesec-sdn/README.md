@@ -3,39 +3,9 @@
 **Multi-site Deployment**
   - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site**📖 [Detailed VXLAN Role Documentation](../../roles/vxlan/README.md)**
 
-**NFTables Bridge Rules Usage Examples:**
 
-*Complete SDN with Bridge Isolation:*
-```bash
-# Deploy full SDN infrastructure with NFTables bridge access control
-ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml
-```
 
-*Standalone NFTables Bridge Rules:*
-```bash
-# Apply only NFTables bridge isolation rules to existing SDN setup
-ansible-playbook -i ../../inventory playbooks/nftables_bridge_rules.yml
-```
-
-*Custom Bridge Access Policies:*
-```yaml
-# Include nftables role with custom bridge isolation in your playbook
-- hosts: proxmox-hosts
-  vars:
-    nftables_configure_bridges: true
-    nftables_bridge_access_control:
-      vmbr99:
-        allowed_peers: ["vmbr1", "vmbr2"]
-      vmbr1:
-        allowed_peers: ["vmbr99"]
-        blocked_peers: ["vmbr2"]
-  roles:
-    - nftables
-```
-
-**📖 [NFTables Role Documentation](../../roles/nftables/README.md)**
-
-### � NFTables Role: Bridge Access Controlootstrap.yml`: Per-site bootstrap playbooks 
+### NFTables Role: Bridge Access Control bootstrap.yml`: Per-site bootstrap playbooks 
 <tr>
     <td align="left" valign="top" style="min-width:240px;">
       This directory contains playbooks, Docker Compose files, and documentation for the edgesec-SDN (Software Defined Networking) automation stack.
@@ -67,17 +37,6 @@ Located in `playbooks/`:
   - `provision.yml`: Basic node provisioning (prerequisites + network interface setup)
   - `nftables_bridge_rules.yml`: Standalone NFTables bridge access control setup
 
-## Playbooks - TO BE DEPRECATED
-
-Located in `playbooks/`:
-- `provision.yml`: Basic node provisioning (prerequisites + network interface setup)
-- `provision_network.yml`: **Phase 1** - Single node VXLAN setup, creates VLAN-aware bridges and SDN zones
-- `setup_complete_sdn.yml`: **Phases 1-2** - Complete SDN infrastructure (VXLAN bridges + connectivity verification)
-- `provision_complete_sdn.yml`: **RECOMMENDED** - Complete SDN provisioning with NFTables (network_provision → vxlan → nftables roles)
-- `preflight_connectivity.yml`: **Phase 2** - Connectivity verification between nodes before fabric finalization
-- `establish_fabric.yml`: **Phase 3** - Fabric finalization with VNI mappings and EVPN overlay establishment
-- `nftables_bridge_rules.yml`: Standalone NFTables bridge access control setup
-- `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks for multi-site SDN deployment
 
 ## Multi-Phase SDN Provisioning Process
 
@@ -186,8 +145,37 @@ ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml -e "nft
   roles:
     - nftables
 ```
+**NFTables Bridge Rules Usage Examples:**
 
-**📖 [Complete NFTables Role Documentation](../../roles/nftables/README.md)**
+*Complete SDN with Bridge Isolation:*
+```bash
+# Deploy full SDN infrastructure with NFTables bridge access control
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml
+```
+
+*Standalone NFTables Bridge Rules:*
+```bash
+# Apply only NFTables bridge isolation rules to existing SDN setup
+ansible-playbook -i ../../inventory playbooks/nftables_bridge_rules.yml
+```
+
+*Custom Bridge Access Policies:*
+```yaml
+# Include nftables role with custom bridge isolation in your playbook
+- hosts: proxmox-hosts
+  vars:
+    nftables_configure_bridges: true
+    nftables_bridge_access_control:
+      vmbr99:
+        allowed_peers: ["vmbr1", "vmbr2"]
+      vmbr1:
+        allowed_peers: ["vmbr99"]
+        blocked_peers: ["vmbr2"]
+  roles:
+    - nftables
+```
+
+**📖 [NFTables Role Documentation](../../roles/nftables/README.md)**
 
 ### �🔍 Phase 2: Connectivity Check (`preflight_connectivity.yml`)
 **Purpose**: Verify reachability and configuration before cluster-wide fabric activation.
@@ -531,6 +519,17 @@ flowchart LR
 | Logical Access Zone (RBAC APIs)               | ✅ Admin/Mgmt     | ✅ Read          | ✅ Support    | ✅ Tenant API        |
 | Data Sensitivity Core (Weights/Data)          | ✅ Write/Manage   | ✅ Read          | ❌            | ❌                   |
  
+## Playbooks - TO BE DEPRECATED
+
+Located in `playbooks/`:
+- `provision.yml`: Basic node provisioning (prerequisites + network interface setup)
+- `provision_network.yml`: **Phase 1** - Single node VXLAN setup, creates VLAN-aware bridges and SDN zones
+- `setup_complete_sdn.yml`: **Phases 1-2** - Complete SDN infrastructure (VXLAN bridges + connectivity verification)
+- `provision_complete_sdn.yml`: **RECOMMENDED** - Complete SDN provisioning with NFTables (network_provision → vxlan → nftables roles)
+- `preflight_connectivity.yml`: **Phase 2** - Connectivity verification between nodes before fabric finalization
+- `establish_fabric.yml`: **Phase 3** - Fabric finalization with VNI mappings and EVPN overlay establishment
+- `nftables_bridge_rules.yml`: Standalone NFTables bridge access control setup
+- `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks for multi-site SDN deployment
 
 ## Future Integration:
 
