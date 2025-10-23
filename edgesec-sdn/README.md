@@ -1,7 +1,26 @@
-# edgesec-SDN
+# edgesec-SDN## Playbooks
 
-<table>
-  <tr>
+Located in `playbooks/`:
+
+**Phase 1: Single Node VXLAN Setup**
+  - `provision_network.yml`: Creates VLAN-aware bridges and SDN zones
+  - `setup_complete_sdn.yml`: Complete SDN infrastructure (VXLAN bridges + connectivity verification)
+
+**Phase 2: Connectivity Verification**
+  - `preflight_connectivity.yml`: Verifies reachability between nodes before fabric finalization
+
+**Phase 3: Fabric Finalization**
+  - `establish_fabric.yml`: Establishes VNI mappings and finalizes EVPN overlays
+
+**Complete SDN Provisioning**
+  - `provision_complete_sdn.yml`: **RECOMMENDED** - Full SDN setup with NFTables (network_provision → vxlan → nftables roles)
+
+**Utilities**
+  - `provision.yml`: Basic node provisioning (prerequisites + network interface setup)
+  - `nftables_bridge_rules.yml`: Standalone NFTables bridge access control setup
+
+**Multi-site Deployment**
+  - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks <tr>
     <td align="left" valign="top" style="min-width:240px;">
       This directory contains playbooks, Docker Compose files, and documentation for the edgesec-SDN (Software Defined Networking) automation stack.
     </td>
