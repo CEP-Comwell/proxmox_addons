@@ -1,61 +1,43 @@
 # edgesec-SDN
 
 **Multi-site Deployment**
-  - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks <tr>
-    <**📖 [Complete NFTables Role Documentation](../../roles/nftables/README.md)**
+  - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site**📖 [Detailed VXLAN Role Documentation](../../roles/vxlan/README.md)**
 
-### 🔒 NFTables Bridge Isolation (Phase 1)
-**Purpose**: Implement bridge-level access control and tenant isolation using the nftables role during Phase 1 setup.
+**NFTables Bridge Rules Usage Examples:**
 
-**Key Features**:
-- **Bridge Access Control**: Enforce traffic policies between SDN bridges at the kernel level
-- **Tenant Isolation**: Prevent direct communication between tenant (vmbr1) and gateway (vmbr2) bridges
-- **Management Bridge Priority**: vmbr99 (Management) maintains full bidirectional access to all bridges
-- **Performance-Optimized**: nftables rules applied directly at bridge interfaces for low latency
-
-**Bridge Security Matrix**:
-```
-Traffic Flow Matrix:
-Source → Destination | vmbr99 (Mgmt) | vmbr1 (Tenant) | vmbr2 (Gateway)
-vmbr99 (Mgmt)       | ✅ Allowed     | ✅ Allowed     | ✅ Allowed
-vmbr1 (Tenant)      | ✅ Allowed     | ✅ Allowed     | ❌ Blocked
-vmbr2 (Gateway)     | ✅ Allowed     | ❌ Blocked     | ✅ Allowed
-```
-
-**Integration with Phase 1**:
-- Automatically applied during `provision_complete_sdn.yml` execution
-- Uses the nftables role with `nftables_configure_bridges: true` variable
-- Creates bridge-specific rule files in `/etc/nftables.d/` directory
-- Enables IPv4/IPv6 forwarding for proper routing functionality
-
-**Usage Examples**:
-
-*Enable Bridge Isolation in Complete Setup:*
+*Complete SDN with Bridge Isolation:*
 ```bash
-# Run full SDN with bridge access control (default behavior)
+# Deploy full SDN infrastructure with NFTables bridge access control
 ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml
 ```
 
-*Standalone Bridge Rules Setup:*
+*Standalone NFTables Bridge Rules:*
 ```bash
-# Apply only NFTables bridge isolation rules
+# Apply only NFTables bridge isolation rules to existing SDN setup
 ansible-playbook -i ../../inventory playbooks/nftables_bridge_rules.yml
 ```
 
-*Disable Bridge Isolation:*
-```bash
-# Run SDN setup without bridge access control
-ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml -e "nftables_configure_bridges=false"
+*Custom Bridge Access Policies:*
+```yaml
+# Include nftables role with custom bridge isolation in your playbook
+- hosts: proxmox-hosts
+  vars:
+    nftables_configure_bridges: true
+    nftables_bridge_access_control:
+      vmbr99:
+        allowed_peers: ["vmbr1", "vmbr2"]
+      vmbr1:
+        allowed_peers: ["vmbr99"]
+        blocked_peers: ["vmbr2"]
+  roles:
+    - nftables
 ```
 
-**Future: Inter-VXLAN Rules**:
-When the fabric is established (Phase 3+), additional nftables rules will be introduced for:
-- Inter-VXLAN traffic filtering and policy enforcement
-- Tenant-to-tenant communication controls
-- External access and perimeter security
-- Advanced microsegmentation beyond bridge isolation
+**📖 [NFTables Role Documentation](../../roles/nftables/README.md)**
 
-### 🔍 Phase 2: Connectivity Check (`preflight_connectivity.yml`)align="left" valign="top" style="min-width:240px;">
+### � NFTables Role: Bridge Access Controlootstrap.yml`: Per-site bootstrap playbooks 
+<tr>
+    <td align="left" valign="top" style="min-width:240px;">
       This directory contains playbooks, Docker Compose files, and documentation for the edgesec-SDN (Software Defined Networking) automation stack.
     </td>
     <td align="right" valign="top">
@@ -70,6 +52,7 @@ Located in `playbooks/`:
 **Phase 1: Single Node VXLAN Setup**
   - `provision_network.yml`: Creates VLAN-aware bridges and SDN zones
   - `setup_complete_sdn.yml`: Complete SDN infrastructure (VXLAN bridges + connectivity verification)
+  - `nftables_bridge_rules.yml`: Manages nftables firewall rules for SDN bridge access control and tenant isolation
 
 **Phase 2: Connectivity Verification**
   - `preflight_connectivity.yml`: Verifies reachability between nodes before fabric finalization
