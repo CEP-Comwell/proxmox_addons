@@ -1,7 +1,7 @@
 ---
 # Phase 3: Fabric Finalization - Establish VNI mappings and finalize EVPN overlays
 - name: Establish SDN fabric and finalize EVPN overlays
-  hosts: proxmox_nodes
+  hosts: proxmox-hosts
   become: true
 
   roles:

@@ -1,0 +1,29 @@
+{
+  "description": "Management Bridge (vmbr99) - Full Access Configuration",
+  "bridge_name": "vmbr99",
+  "rules": {
+    "ingress": {
+      "allow_from_management": "accept",
+      "allow_from_tenant": "accept",
+      "allow_from_gateway": "accept",
+      "allow_icmp_echo_reply": "accept",
+      "allow_dhcp_responses": "accept",
+      "allow_established": "accept",
+      "default_policy": "drop"
+    },
+    "egress": {
+      "to_tenant_bridge": "accept",
+      "to_gateway_bridge": "accept",
+      "allow_icmp_echo_request": "accept",
+      "allow_dhcp_requests": "accept",
+      "allow_management_services": "accept",
+      "default_policy": "drop"
+    }
+  },
+  "tenant_isolation": {
+    "prevent_tenant_to_tenant": true,
+    "prevent_gateway_to_tenant": true,
+    "allow_management_to_all": true,
+    "allow_ping_from_management_only": true
+  }
+}

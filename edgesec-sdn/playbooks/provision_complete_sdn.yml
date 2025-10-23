@@ -1,0 +1,44 @@
+---
+# Complete SDN Provisioning with NFTables
+# Orchestrates network_provision → vxlan → nftables roles
+# Provides full SDN infrastructure setup with bridge access control
+
+- name: "Complete SDN Infrastructure Provisioning"
+  hosts: proxmox-hosts
+  become: true
+
+  vars:
+    # NFTables configuration - set to true to enable bridge access control
+    nftables_configure_bridges: true
+
+  pre_tasks:
+    - name: Display provisioning start
+      ansible.builtin.debug:
+        msg: "🚀 Starting Complete SDN Provisioning (network_provision → vxlan → nftables)"
+
+  roles:
+    - network_provision    # Phase 1: Network interface discovery, pinning, and bridging
+    - vxlan               # Phase 2: SDN components (controllers, zones, vnets)
+    - nftables            # Phase 3: Bridge access control and firewall rules
+
+  post_tasks:
+    - name: Display completion summary
+      ansible.builtin.debug:
+        msg: |
+          ✅ Complete SDN Provisioning finished successfully!
+
+          📋 What was configured:
+          🔗 Network interfaces discovered and pinned
+          🌉 SDN bridges created (vmbr99, vmbr1, vmbr2)
+          🎛️  SDN controllers, zones, and VNets established
+          🔒 NFTables bridge access control rules applied
+
+          🧪 Test the setup:
+          - Management (vmbr99) can access all bridges
+          - Tenant (vmbr1) and Gateway (vmbr2) are isolated
+          - Run: ping -I vmbr1 <gateway_ip> (should fail)
+
+          📖 See roles documentation for details:
+          - network_provision: Interface management
+          - vxlan: SDN infrastructure
+          - nftables: Bridge access control

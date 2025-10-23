@@ -1,9 +1,78 @@
 ---
 # Phase 1: Single Node VXLAN Setup - Provision local bridges and SDN zones
 - name: Provision local SDN bridges and zones on individual nodes
-  hosts: proxmox_nodes
+  hosts: proxmox-hosts
   become: true
 
-  roles:
-    - vxlan
+  tasks:
+    - name: Include vxlan role for bridge setup
+      ansible.builtin.include_role:
+        name: vxlan
+        tasks_from: bridges_only
+
+    - name: Run post-reboot verification (manual trigger)
+      ansible.builtin.command: echo "Manual verification trigger"
+      changed_when: false
+      notify: verify post-reboot
+      when: run_verification | default(false) | bool
+
+  handlers:
+    - name: Verify post-reboot configuration
+      ansible.builtin.debug:
+        msg: "🔍 Running post-reboot verification checks..."
+
+    - name: Check network interface status
+      ansible.builtin.command: ip link show
+      register: network_interfaces
+      changed_when: false
+      listen: "verify post-reboot"
+
+    - name: Verify SDN controllers persistence
+      ansible.builtin.command: pvesh get /cluster/sdn/controllers --output-format json
+      register: controllers_check
+      changed_when: false
+      failed_when: controllers_check.rc != 0
+      listen: "verify post-reboot"
+
+    - name: Verify SDN zones persistence
+      ansible.builtin.command: pvesh get /cluster/sdn/zones --output-format json
+      register: zones_check
+      changed_when: false
+      failed_when: zones_check.rc != 0
+      listen: "verify post-reboot"
+
+    - name: Verify SDN vnets persistence
+      ansible.builtin.command: pvesh get /cluster/sdn/vnets --output-format json
+      register: vnets_check
+      changed_when: false
+      failed_when: vnets_check.rc != 0
+      listen: "verify post-reboot"
+
+    - name: Verify bridge configuration in interfaces file
+      ansible.builtin.command: grep -E "vmbr[0-9]+" /etc/network/interfaces
+      register: interfaces_check
+      changed_when: false
+      failed_when: false  # Allow this to fail if no bridges found
+      listen: "verify post-reboot"
+
+    - name: Display verification results
+      ansible.builtin.debug:
+        msg: |
+          ✅ Post-reboot verification completed:
+
+          🔗 Network Interfaces:
+          {{ network_interfaces.stdout | default('No output') }}
+
+          🎛️  SDN Controllers:
+          {{ controllers_check.stdout | default('No output') }}
+
+          🏷️  SDN Zones:
+          {{ zones_check.stdout | default('No output') }}
+
+          🌐 SDN VNets:
+          {{ vnets_check.stdout | default('No output') }}
+
+          🌉 Bridge Configuration:
+          {{ interfaces_check.stdout | default('No bridges found in /etc/network/interfaces') }}
+      listen: "verify post-reboot"
 

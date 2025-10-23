@@ -1,0 +1,74 @@
+---
+# Configure NFTables for SDN bridges
+# This task file sets up IP forwarding and nftables rules for SDN bridges
+
+- name: Enable IP forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    reload: true
+
+- name: Enable IPv6 forwarding (if needed)
+  ansible.posix.sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: '1'
+    state: present
+    reload: true
+  when: ansible_distribution_major_version | int >= 9
+
+- name: Install nftables package
+  ansible.builtin.package:
+    name: nftables
+    state: present
+
+- name: Create NFTables configuration directory
+  ansible.builtin.file:
+    path: /etc/nftables.d
+    state: directory
+    mode: '0755'
+
+- name: Create NFTables rules for each bridge
+  ansible.builtin.template:
+    src: "templates/{{ item.name }}_rules.nft.j2"
+    dest: "/etc/nftables.d/{{ item.name }}_rules.nft"
+    mode: '0644'
+  loop:
+    - { name: 'vmbr99', description: 'Management Bridge' }
+    - { name: 'vmbr1', description: 'Tenant Bridge' }
+    - { name: 'vmbr2', description: 'Gateway Bridge' }
+  notify: reload nftables
+
+- name: Create tenant-specific NFTables rules (if tenants defined)
+  ansible.builtin.template:
+    src: templates/tenant_bridge_rules.nft.j2
+    dest: "/etc/nftables.d/tenant_{{ item.tenant_id }}_{{ item.bridge }}_rules.nft"
+    mode: '0644'
+  loop: "{{ tenants | default([]) }}"
+  when: tenants is defined and tenants | length > 0
+  notify: reload nftables
+
+- name: Create main nftables configuration
+  ansible.builtin.template:
+    src: templates/main.nft.j2
+    dest: /etc/nftables.conf
+    mode: '0644'
+  notify: reload nftables
+
+- name: Enable and start nftables service
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: true
+    state: started
+
+- name: Verify nftables rules are loaded
+  ansible.builtin.command: nft list ruleset
+  register: nftables_ruleset
+  changed_when: false
+
+- name: Display loaded nftables rules
+  ansible.builtin.debug:
+    msg: |
+      📋 Current NFTables Ruleset:
+      {{ nftables_ruleset.stdout }}
+  when: nftables_ruleset.stdout is defined

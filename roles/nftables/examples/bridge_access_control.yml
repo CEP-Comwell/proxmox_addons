@@ -1,0 +1,35 @@
+# Example: Using nftables role with bridge access control
+# This replaces the standalone nftables_bridge_rules.yml playbook
+
+- name: Configure Proxmox hosts with nftables and bridge isolation
+  hosts: proxmox-hosts
+  become: true
+
+  vars:
+    # Enable bridge access control
+    nftables_configure_bridges: true
+
+    # Optional: Override default bridge configurations
+    # nftables_bridge_access_control:
+    #   vmbr99:
+    #     allowed_peers: ["vmbr1", "vmbr2"]
+    #   vmbr1:
+    #     allowed_peers: ["vmbr99"]
+
+  pre_tasks:
+    - name: Display configuration start
+      ansible.builtin.debug:
+        msg: "🔥 Setting up NFTables with SDN bridge access control..."
+
+  roles:
+    - nftables
+
+  post_tasks:
+    - name: Display completion message
+      ansible.builtin.debug:
+        msg: |
+          ✅ NFTables configuration complete!
+          📋 Bridge isolation is now active:
+             - Management (vmbr99) can access all bridges
+             - Tenant (vmbr1) and Gateway (vmbr2) are isolated from each other
+             - Test with: ping -I vmbr1 <gateway_ip> (should fail)

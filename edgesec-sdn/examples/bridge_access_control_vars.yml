@@ -1,46 +1,31 @@
-# Default variables for nftables role
-# You can expand this for per-zone/group rules later
-nftables_default_policy: "drop"
-nftables_allow_icmp: true
-nftables_allow_management_to_all: true
-# Placeholder for future dynamic rules
-nftables_explicit_rules: []
+# Ansible Variables for SDN Bridge Access Control
+# This implements: Management can access all, but tenant/gateway bridges are isolated
 
 # Bridge Access Control Variables
-nftables_configure_bridges: false
-nftables_bridge_rules_dir: "/etc/nftables.d"
-
-# Bridge configurations (when nftables_configure_bridges is true)
-nftables_bridges:
-  - name: vmbr99
-    description: "Management Bridge"
-  - name: vmbr1
-    description: "Tenant Bridge"
-  - name: vmbr2
-    description: "Gateway Bridge"
-
-# Bridge Access Control Policies
-nftables_bridge_access_control:
+bridge_access_control:
   vmbr99:
+    # Management Bridge - Full Access
     ingress_policy: "allow_from_all_responses"
     egress_policy: "allow_to_all"
     allowed_peers: ["vmbr1", "vmbr2"]
     blocked_peers: []
 
   vmbr1:
+    # Tenant Bridge - Management Only
     ingress_policy: "management_only"
     egress_policy: "management_only"
     allowed_peers: ["vmbr99"]
     blocked_peers: ["vmbr2"]
 
   vmbr2:
+    # Gateway Bridge - Management Only
     ingress_policy: "management_only"
     egress_policy: "management_only"
     allowed_peers: ["vmbr99"]
     blocked_peers: ["vmbr1"]
 
-# Detailed Rule Sets for each bridge
-nftables_bridge_rules:
+# Detailed Rule Sets
+nftables_rules:
   vmbr99:
     ingress:
       - "iif \"vmbr99\" arp accept"
@@ -76,3 +61,16 @@ nftables_bridge_rules:
       - "iif \"vmbr2\" oif \"vmbr99\" accept"
       - "iif \"vmbr2\" oif \"vmbr1\" drop"
       - "iif \"vmbr2\" oif \"vmbr99\" icmp type echo-reply accept"
+
+# Ping Test Matrix (what should work)
+ping_matrix:
+  from_vmbr99_to_vmbr1: "ALLOWED (management → tenant)"
+  from_vmbr99_to_vmbr2: "ALLOWED (management → gateway)"
+  from_vmbr1_to_vmbr99: "ALLOWED (responses only)"
+  from_vmbr2_to_vmbr99: "ALLOWED (responses only)"
+  from_vmbr1_to_vmbr2: "BLOCKED (tenant isolation)"
+  from_vmbr2_to_vmbr1: "BLOCKED (gateway isolation)"
+
+# Usage Example:
+# ansible-playbook playbooks/nftables_bridge_rules.yml \
+#   -e @examples/bridge_access_control_vars.yml

@@ -1,0 +1,94 @@
+# SDN Bridge Rules for Proxmox VE
+# This file contains nftables rules for SDN bridges (vmbr99, vmbr1, vmbr2)
+
+# Bridge filtering table
+table bridge filter {
+    # Base chain for bridge traffic
+    chain base_chain {
+        type filter hook prerouting priority -300;
+
+        # Allow ARP traffic on all bridges
+        meta ibrname { "vmbr99", "vmbr1", "vmbr2" } meta protocol arp accept;
+
+        # Allow DHCP traffic on all bridges
+        meta ibrname { "vmbr99", "vmbr1", "vmbr2" } udp dport 67 udp sport 68 accept;
+        meta ibrname { "vmbr99", "vmbr1", "vmbr2" } udp dport 68 udp sport 67 accept;
+
+        # Drop invalid packets
+        meta ibrname { "vmbr99", "vmbr1", "vmbr2" } ct state invalid drop;
+    }
+
+    # Forward chain for inter-bridge traffic
+    chain forward_chain {
+        type filter hook forward priority -200;
+
+        # Allow forwarding between SDN bridges
+        meta ibrname { "vmbr99", "vmbr1", "vmbr2" } meta obrname { "vmbr99", "vmbr1", "vmbr2" } accept;
+
+        # Allow established connections
+        ct state established,related accept;
+
+        # Default drop for bridge forwarding
+        drop;
+    }
+}
+
+# NAT table for bridge traffic
+table ip nat {
+    # Postrouting chain for outbound traffic
+    chain postrouting {
+        type nat hook postrouting priority 100;
+
+        # Masquerade outbound traffic from bridges (if needed)
+        # Uncomment and modify as needed for your network setup
+        # meta ibrname "vmbr99" ip saddr 192.168.99.0/24 masquerade;
+        # meta ibrname "vmbr1" ip saddr 192.168.10.0/24 masquerade;
+        # meta ibrname "vmbr2" ip saddr 192.168.20.0/24 masquerade;
+    }
+}
+
+# IP filtering table
+table ip filter {
+    # Input chain
+    chain input {
+        type filter hook input priority 0;
+
+        # Allow loopback
+        iif "lo" accept;
+
+        # Allow established connections
+        ct state established,related accept;
+
+        # Allow ICMP
+        icmp type { echo-request, echo-reply, destination-unreachable, time-exceeded } accept;
+
+        # Allow SSH (modify port if needed)
+        tcp dport 22 accept;
+
+        # Allow Proxmox web interface
+        tcp dport { 8006, 5900, 3128 } accept;
+
+        # Default drop
+        drop;
+    }
+
+    # Forward chain
+    chain forward {
+        type filter hook forward priority 0;
+
+        # Allow forwarding for established connections
+        ct state established,related accept;
+
+        # Allow forwarding between bridge interfaces
+        iif { "vmbr99", "vmbr1", "vmbr2" } oif { "vmbr99", "vmbr1", "vmbr2" } accept;
+
+        # Default drop
+        drop;
+    }
+
+    # Output chain
+    chain output {
+        type filter hook output priority 0;
+        accept;
+    }
+}

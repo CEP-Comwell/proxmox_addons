@@ -1,0 +1,125 @@
+{
+  "nftables_bridge_config": {
+    "vmbr99_management": {
+      "description": "Management Bridge - Full Access to All",
+      "ingress_rules": [
+        {
+          "description": "Allow ARP from all bridges",
+          "rule": "iif \"vmbr99\" arp accept"
+        },
+        {
+          "description": "Allow DHCP responses",
+          "rule": "iif \"vmbr99\" udp dport 67 udp sport 68 accept"
+        },
+        {
+          "description": "Allow established connections (responses)",
+          "rule": "iif \"vmbr99\" ct state established,related accept"
+        },
+        {
+          "description": "Allow ICMP echo replies from tenant/gateway",
+          "rule": "iif \"vmbr99\" icmp type echo-reply accept"
+        },
+        {
+          "description": "Drop invalid packets",
+          "rule": "iif \"vmbr99\" ct state invalid drop"
+        }
+      ],
+      "egress_rules": [
+        {
+          "description": "Allow all traffic to tenant bridge (vmbr1)",
+          "rule": "iif \"vmbr99\" oif \"vmbr1\" accept"
+        },
+        {
+          "description": "Allow all traffic to gateway bridge (vmbr2)",
+          "rule": "iif \"vmbr99\" oif \"vmbr2\" accept"
+        },
+        {
+          "description": "Allow ICMP echo requests to all bridges",
+          "rule": "iif \"vmbr99\" oif { \"vmbr1\", \"vmbr2\" } icmp type echo-request accept"
+        },
+        {
+          "description": "Allow established connections",
+          "rule": "ct state established,related accept"
+        }
+      ]
+    },
+    "vmbr1_tenant": {
+      "description": "Tenant Bridge - Management Access Only",
+      "ingress_rules": [
+        {
+          "description": "Allow traffic from management bridge only",
+          "rule": "iif \"vmbr1\" iif != \"vmbr99\" drop"
+        },
+        {
+          "description": "Allow ARP from management",
+          "rule": "iif \"vmbr1\" arp accept"
+        },
+        {
+          "description": "Allow DHCP",
+          "rule": "iif \"vmbr1\" udp dport 67 udp sport 68 accept"
+        },
+        {
+          "description": "Allow ICMP echo requests from management",
+          "rule": "iif \"vmbr1\" icmp type echo-request accept"
+        },
+        {
+          "description": "Allow established connections",
+          "rule": "iif \"vmbr1\" ct state established,related accept"
+        }
+      ],
+      "egress_rules": [
+        {
+          "description": "Allow responses to management bridge only",
+          "rule": "iif \"vmbr1\" oif \"vmbr99\" accept"
+        },
+        {
+          "description": "Block all traffic to gateway bridge",
+          "rule": "iif \"vmbr1\" oif \"vmbr2\" drop"
+        },
+        {
+          "description": "Allow ICMP echo replies to management",
+          "rule": "iif \"vmbr1\" oif \"vmbr99\" icmp type echo-reply accept"
+        }
+      ]
+    },
+    "vmbr2_gateway": {
+      "description": "Gateway Bridge - Management Access Only",
+      "ingress_rules": [
+        {
+          "description": "Allow traffic from management bridge only",
+          "rule": "iif \"vmbr2\" iif != \"vmbr99\" drop"
+        },
+        {
+          "description": "Allow ARP from management",
+          "rule": "iif \"vmbr2\" arp accept"
+        },
+        {
+          "description": "Allow DHCP",
+          "rule": "iif \"vmbr2\" udp dport 67 udp sport 68 accept"
+        },
+        {
+          "description": "Allow ICMP echo requests from management",
+          "rule": "iif \"vmbr2\" icmp type echo-request accept"
+        },
+        {
+          "description": "Allow established connections",
+          "rule": "iif \"vmbr2\" ct state established,related accept"
+        }
+      ],
+      "egress_rules": [
+        {
+          "description": "Allow responses to management bridge only",
+          "rule": "iif \"vmbr2\" oif \"vmbr99\" accept"
+        },
+        {
+          "description": "Block all traffic to tenant bridge",
+          "rule": "iif \"vmbr2\" oif \"vmbr1\" drop"
+        },
+        {
+          "description": "Allow ICMP echo replies to management",
+          "rule": "iif \"vmbr2\" oif \"vmbr99\" icmp type echo-reply accept"
+        }
+      ]
+    }
+  }
+}

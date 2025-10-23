@@ -1,0 +1,86 @@
+---
+# Post-reboot verification handlers for vxlan role
+
+- name: Verify post-reboot configuration
+  ansible.builtin.debug:
+    msg: "🔍 Running post-reboot verification checks..."
+
+- name: Check network interface status
+  ansible.builtin.command: ip link show
+  register: network_interfaces
+  changed_when: false
+  listen: "verify post-reboot"
+
+- name: Verify SDN controllers persistence
+  ansible.builtin.command: pvesh get /cluster/sdn/controllers --output-format json
+  register: controllers_check
+  changed_when: false
+  failed_when: controllers_check.rc != 0
+  listen: "verify post-reboot"
+
+- name: Verify SDN zones persistence
+  ansible.builtin.command: pvesh get /cluster/sdn/zones --output-format json
+  register: zones_check
+  changed_when: false
+  failed_when: zones_check.rc != 0
+  listen: "verify post-reboot"
+
+- name: Verify SDN vnets persistence
+  ansible.builtin.command: pvesh get /cluster/sdn/vnets --output-format json
+  register: vnets_check
+  changed_when: false
+  failed_when: vnets_check.rc != 0
+  listen: "verify post-reboot"
+
+- name: Verify bridge configuration in interfaces file
+  ansible.builtin.command: grep -E "vmbr[0-9]+" /etc/network/interfaces
+  register: interfaces_check
+  changed_when: false
+  failed_when: false  # Allow this to fail if no bridges found
+  listen: "verify post-reboot"
+
+- name: Verify VXLAN connectivity between VNets
+  ansible.builtin.command: bridge fdb show | grep -E "00:00:00:00:00:00.*vxlan"
+  register: vxlan_fdb_check
+  changed_when: false
+  failed_when: false  # Allow this to fail if no VXLAN FDB entries
+  listen: "verify vxlan connectivity"
+
+- name: Check VXLAN interface status
+  ansible.builtin.command: ip -d link show type vxlan
+  register: vxlan_interfaces
+  changed_when: false
+  failed_when: false  # Allow this to fail if no VXLAN interfaces
+  listen: "verify vxlan connectivity"
+
+- name: Test VNet routing
+  ansible.builtin.command: ip route show table 100
+  register: vnet_routes_100
+  changed_when: false
+  failed_when: false
+  listen: "verify vxlan connectivity"
+
+- name: Test VNet routing table 200
+  ansible.builtin.command: ip route show table 200
+  register: vnet_routes_200
+  changed_when: false
+  failed_when: false
+  listen: "verify vxlan connectivity"
+
+- name: Display VXLAN connectivity verification results
+  ansible.builtin.debug:
+    msg: |
+      🔗 VXLAN Connectivity Verification:
+
+      🖧 VXLAN Interfaces:
+      {{ vxlan_interfaces.stdout | default('No VXLAN interfaces found') }}
+
+      📋 VXLAN FDB Entries:
+      {{ vxlan_fdb_check.stdout | default('No VXLAN FDB entries found') }}
+
+      🛣️  VRF 100 Routes (Tenant):
+      {{ vnet_routes_100.stdout | default('No routes in VRF 100') }}
+
+      🛣️  VRF 200 Routes (Gateway):
+      {{ vnet_routes_200.stdout | default('No routes in VRF 200') }}
+  listen: "verify vxlan connectivity"

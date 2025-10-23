@@ -1,0 +1,49 @@
+# Phase 1: Bridge Setup Only - Create VLAN-aware bridges
+# This task file creates SDN bridges using pvesh
+# Requires interface pinning to be completed first
+
+- name: Check if SDN bridges already exist
+  ansible.builtin.command: pvesh get /nodes/localhost/network --output-format json
+  register: existing_network
+  changed_when: false
+  ignore_errors: true
+  check_mode: false
+
+- name: Parse existing network configuration
+  ansible.builtin.set_fact:
+    existing_bridges: "{{ existing_network.stdout | from_json | map(attribute='iface') | select('match', 'vmbr.*') | list }}"
+  when: existing_network is defined and existing_network.rc == 0
+
+- name: Create or update VLAN-aware SDN bridges
+  ansible.builtin.command: >
+    {% if item.name in existing_bridges | default([]) %}
+    echo "Bridge {{ item.name }} already exists, skipping reconfiguration"
+    {% else %}
+    pvesh create /nodes/localhost/network
+    -type bridge
+    -iface {{ item.name }}
+    -bridge_ports {{ item.interface }}
+    -bridge_vlan_aware 1
+    -autostart 1
+    {% endif %}
+  loop:
+    - { name: 'vmbr99', interface: 'eth0' }  # Management bridge
+    - { name: 'vmbr1', interface: 'eth1' }   # Tenant bridge
+    - { name: 'vmbr2', interface: 'eth2' }   # Gateway bridge
+  register: bridge_creation
+  changed_when: bridge_creation.rc == 0
+
+- name: Apply bridge configuration changes
+  ansible.builtin.command: pvesh set /nodes/localhost/network
+  when: bridge_creation.changed
+  notify: verify post-reboot
+
+- name: Verify bridge configuration
+  ansible.builtin.command: pvesh get /nodes/localhost/network
+  register: network_config
+  changed_when: false
+
+- name: Display network configuration
+  ansible.builtin.debug:
+    msg: "{{ network_config.stdout }}"
+  when: network_config.stdout is defined

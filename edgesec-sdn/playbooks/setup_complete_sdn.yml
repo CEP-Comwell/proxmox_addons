@@ -1,0 +1,33 @@
+---
+# Complete SDN Infrastructure Setup - Phase 1-2 (Phase 3 optional)
+# Runs roles in sequence: vxlan (bridges + SDN), preflight (connectivity check)
+# establish_fabric (fabric finalization) is optional for basic EVPN setup
+
+- name: "Phase 1-3: Complete SDN Infrastructure Setup"
+  hosts: proxmox-hosts
+  become: true
+
+  pre_tasks:
+    - name: Display phase information
+      ansible.builtin.debug:
+        msg: "🚀 Starting Complete SDN Infrastructure Setup (Phases 1-2)"
+
+  roles:
+    - vxlan           # Phase 1: Create bridges and SDN components
+    - preflight       # Phase 2: Connectivity verification
+    # - establish_fabric # Phase 3: Fabric finalization (optional for basic EVPN)
+
+  post_tasks:
+    - name: Configure NFTables rules for bridges (optional)
+      ansible.builtin.include_tasks: tasks/configure_nftables.yml
+      when: configure_nftables | default(false) | bool
+
+    - name: Display completion message
+      ansible.builtin.debug:
+        msg: "✅ Complete SDN Infrastructure Setup finished successfully"
+
+  handlers:
+    - name: reload nftables
+      ansible.builtin.systemd:
+        name: nftables
+        state: restarted

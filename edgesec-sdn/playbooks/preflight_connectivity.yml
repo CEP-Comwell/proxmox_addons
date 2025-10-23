@@ -1,7 +1,7 @@
 ---
 # Phase 2: Connectivity Check - Verify reachability between nodes before fabric finalization
 - name: Preflight connectivity verification for SDN fabric
-  hosts: proxmox_nodes
+  hosts: proxmox-hosts
   become: true
 
   roles:

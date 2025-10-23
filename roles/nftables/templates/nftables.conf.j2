@@ -4,6 +4,13 @@
 
 flush ruleset
 
+# Include bridge-specific rules if configured
+{% if nftables_configure_bridges %}
+include "{{ nftables_bridge_rules_dir }}/vmbr99_rules.nft"
+include "{{ nftables_bridge_rules_dir }}/vmbr1_rules.nft"
+include "{{ nftables_bridge_rules_dir }}/vmbr2_rules.nft"
+{% endif %}
+
 table inet filter {
   chain input {
     type filter hook input priority 0;

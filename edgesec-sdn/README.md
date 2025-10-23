@@ -17,6 +17,7 @@ Located in `playbooks/`:
 - `provision_network.yml`: **Phase 1** - Single node VXLAN setup, creates VLAN-aware bridges and SDN zones.
 - `preflight_connectivity.yml`: **Phase 2** - Connectivity verification between nodes before fabric finalization.
 - `establish_fabric.yml`: **Phase 3** - Fabric finalization with VNI mappings and EVPN overlay establishment.
+- `provision_complete_sdn.yml`: **RECOMMENDED** - Complete SDN provisioning with NFTables (network_provision → vxlan → nftables roles).
 - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks for multi-site SDN deployment.
 
 ## Multi-Phase SDN Provisioning Process
@@ -32,10 +33,39 @@ This SDN implementation follows a structured 3-phase approach using Proxmox VE 9
 - Create SDN zones and VNets
 - Apply network and SDN configuration changes
 
-**Command Example**:
+**Usage Examples**:
+
+**Complete SDN Setup** (Recommended):
 ```bash
+# Run full SDN infrastructure setup (vxlan + preflight + establish_fabric)
+ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml
+```
+
+**Bridge-Only Setup**:
+```bash
+# Setup only network bridges (legacy provision_network.yml)
 ansible-playbook -i ../../inventory playbooks/provision_network.yml
 ```
+
+**Full VXLAN Role**:
+```bash
+# Run complete vxlan role with SDN components
+ansible-playbook -i ../../inventory -e "ansible-playbook-run-role=roles/vxlan" site.yml
+```
+
+**Single Node Testing**:
+```bash
+# Test on specific node with verbose output
+ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml --limit pve-node1 -v
+```
+
+**Dry Run Check**:
+```bash
+# Validate playbook syntax and logic without changes
+ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml --check
+```
+
+**📖 [Detailed VXLAN Role Documentation](../../roles/vxlan/README.md)**
 
 ### 🔍 Phase 2: Connectivity Check (`preflight_connectivity.yml`)
 **Purpose**: Verify reachability and configuration before cluster-wide fabric activation.
@@ -118,20 +148,32 @@ ansible-playbook -i ../../inventory playbooks/establish_fabric.yml
 ansible-playbook -i ../../inventory playbooks/establish_fabric.yml --limit proxmox-node-1,proxmox-node-2
 ```
 
-### Complete Deployment Workflow
+### Complete SDN Provisioning with NFTables (`provision_complete_sdn.yml`)
+**Purpose**: Single-command complete SDN infrastructure setup with bridge access control.
+
+**What it does**:
+- **network_provision role**: Interface discovery, naming, pinning, and bridging
+- **vxlan role**: SDN controllers, zones, VNets, and bridge configuration  
+- **nftables role**: Bridge access control with tenant isolation
+
+**Usage**:
 ```bash
-# Full SDN deployment (run phases sequentially)
-cd /path/to/proxmox_addons
+# Complete SDN setup with NFTables bridge access control
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml
 
-# Phase 1: Setup individual nodes
-ansible-playbook -i inventory edgesec-sdn/playbooks/provision_network.yml
+# Limit to specific nodes
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml --limit proxmox-node-1
 
-# Phase 2: Verify connectivity
-ansible-playbook -i inventory edgesec-sdn/playbooks/preflight_connectivity.yml
-
-# Phase 3: Finalize fabric
-ansible-playbook -i inventory edgesec-sdn/playbooks/establish_fabric.yml
+# Disable NFTables (just network + SDN setup)
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml -e "nftables_configure_bridges=false"
 ```
+
+**Security Model**:
+- Management bridge (vmbr99): Full access to all tenant/gateway bridges
+- Tenant bridge (vmbr1): Restricted to management only (isolated from vmbr2)
+- Gateway bridge (vmbr2): Restricted to management only (isolated from vmbr1)
+
+**📖 [Complete NFTables Role Documentation](../../roles/nftables/README.md)**
 
 ### Advanced Usage Examples
 
@@ -170,6 +212,47 @@ ansible-playbook -i ../../inventory playbooks/provision_network.yml
 # Limit parallelism
 ansible-playbook -i ../../inventory playbooks/provision_network.yml --forks 2
 ```
+
+#### VXLAN Connectivity Verification
+```bash
+# Trigger VXLAN connectivity checks after SDN setup
+ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml -e "run_verification=true"
+
+# Check VXLAN interfaces and FDB entries
+ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml --tags "verify_vxlan_connectivity"
+```
+
+#### Complete SDN with NFTables
+```bash
+# Single-command complete SDN setup with bridge access control
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml
+
+# Disable NFTables for basic SDN setup only
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml -e "nftables_configure_bridges=false"
+```
+
+### Tenant Management
+
+The nftables role supports granular tenant isolation and policy enforcement. Bridge access control is now handled by the dedicated nftables role.
+
+#### Tenant Variables Structure (in nftables role)
+```yaml
+nftables_configure_bridges: true
+nftables_bridge_access_control:
+  vmbr99:
+    allowed_peers: ["vmbr1", "vmbr2"]
+  vmbr1:
+    allowed_peers: ["vmbr99"]
+    blocked_peers: ["vmbr2"]
+```
+
+#### Features
+- **Ingress/Egress Control**: Separate rules for traffic entering and leaving bridges
+- **Tenant Isolation**: Network segmentation between tenants
+- **Bridge-Specific Rules**: Individual firewall policies per SDN bridge
+- **JSON Configuration**: Structured policy definitions for access control
+
+**📖 [Detailed NFTables Role Documentation](../../roles/nftables/README.md)**
 
 ### Prerequisites
 

@@ -73,9 +73,3 @@
   changed_when: false
   ignore_errors: true
   when: subnet_creation.changed
-
-- name: Display VNet connectivity test results
-  ansible.builtin.debug:
-    msg: "VNet gateway {{ item.item.gateway }}: {{ 'reachable' if item.rc == 0 else 'unreachable' }}"
-  loop: "{{ vnet_ping_test.results | default([]) }}"
-  when: vnet_ping_test.results is defined

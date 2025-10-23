@@ -6,7 +6,7 @@
 # RBAC and microsegmentation ready
 
 # Bridge Definitions:
-mgmt_bridge: "vmbr0"   # Management (left)
+mgmt_bridge: "vmbr99"   # Management (left)
 vm_bridge: "vmbr1"     # Tenant/Service (center)
 ext_bridge: "vmbr2"    # External (right)
 

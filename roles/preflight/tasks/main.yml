@@ -7,10 +7,7 @@
 
 - name: Display ping results
   ansible.builtin.debug:
-    msg: "Node {{ item.item }}: {{ 'reachable' if item.ping is defined else 'unreachable' }}"
-  loop: "{{ ping_results.results }}"
-  loop_control:
-    label: "{{ item.item }}"
+    msg: "Node {{ inventory_hostname }}: {{ 'reachable' if ping_results.ping is defined else 'unreachable' }}"
 
 - name: Check FRR BGP session status on all nodes
   ansible.builtin.command: vtysh -c "show bgp summary"
@@ -64,5 +61,5 @@
   ansible.builtin.fail:
     msg: "Critical connectivity issues detected. Check network configuration before proceeding to fabric finalization."
   when:
-    - ping_results.unreachable | default([]) | length > 0
+    - ping_results.failed | default(false)
     - not ansible_check_mode
