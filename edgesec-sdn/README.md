@@ -1,5 +1,17 @@
-# edgesec-SDN Playbooks
+# edgesec-SDN
 
+**Multi-site Deployment**
+  - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks <tr>
+    <td align="left" valign="top" style="min-width:240px;">
+      This directory contains playbooks, Docker Compose files, and documentation for the edgesec-SDN (Software Defined Networking) automation stack.
+    </td>
+    <td align="right" valign="top">
+      <img src="../blob/images/multi-site-sdn-fabric.png" alt="Multi-site Proxmox SDN Architecture" width="600" />
+    </td>
+  </tr>
+</table>
+
+## Playbooks
 Located in `playbooks/`:
 
 **Phase 1: Single Node VXLAN Setup**
@@ -19,18 +31,7 @@ Located in `playbooks/`:
   - `provision.yml`: Basic node provisioning (prerequisites + network interface setup)
   - `nftables_bridge_rules.yml`: Standalone NFTables bridge access control setup
 
-**Multi-site Deployment**
-  - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`: Per-site bootstrap playbooks <tr>
-    <td align="left" valign="top" style="min-width:240px;">
-      This directory contains playbooks, Docker Compose files, and documentation for the edgesec-SDN (Software Defined Networking) automation stack.
-    </td>
-    <td align="right" valign="top">
-      <img src="../blob/images/multi-site-sdn-fabric.png" alt="Multi-site Proxmox SDN Architecture" width="600" />
-    </td>
-  </tr>
-</table>
-
-## Playbooks
+## Playbooks - TO BE DEPRECATED
 
 Located in `playbooks/`:
 - `provision.yml`: Basic node provisioning (prerequisites + network interface setup)
