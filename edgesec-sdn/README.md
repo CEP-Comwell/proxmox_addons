@@ -67,7 +67,64 @@ ansible-playbook -i ../../inventory playbooks/setup_complete_sdn.yml --check
 
 **📖 [Detailed VXLAN Role Documentation](../../roles/vxlan/README.md)**
 
-### 🔍 Phase 2: Connectivity Check (`preflight_connectivity.yml`)
+### � NFTables Role: Bridge Access Control
+**Purpose**: Provides firewall rules and tenant isolation for SDN bridge security.
+
+**Key Features**:
+- Bridge access control with tenant separation
+- Management bridge (vmbr99) has full access to all bridges
+- Tenant bridge (vmbr1) restricted to management only (isolated from vmbr2)
+- Gateway bridge (vmbr2) restricted to management only (isolated from vmbr1)
+- IPv4/IPv6 forwarding and basic firewall policies
+
+**Usage Examples:**
+
+*Complete SDN with NFTables (Recommended):*
+```bash
+# Single-command complete SDN setup with bridge access control
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml
+```
+
+*Limit to Specific Nodes:*
+```bash
+# Deploy SDN with NFTables to specific Proxmox nodes
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml --limit proxmox-node-1,proxmox-node-2
+```
+
+*Disable NFTables for Basic SDN Only:*
+```bash
+# Run SDN setup without bridge access control rules
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml -e "nftables_configure_bridges=false"
+```
+
+*Standalone NFTables Role:*
+```yaml
+# Include nftables role in your playbook for firewall management
+- hosts: proxmox-hosts
+  roles:
+    - role: nftables
+      nftables_configure_bridges: true
+```
+
+*Custom Bridge Access Control:*
+```yaml
+# Override default bridge isolation policies
+- hosts: proxmox-hosts
+  vars:
+    nftables_configure_bridges: true
+    nftables_bridge_access_control:
+      vmbr99:
+        allowed_peers: ["vmbr1", "vmbr2"]
+      vmbr1:
+        allowed_peers: ["vmbr99"]
+        blocked_peers: ["vmbr2"]
+  roles:
+    - nftables
+```
+
+**📖 [Complete NFTables Role Documentation](../../roles/nftables/README.md)**
+
+### �🔍 Phase 2: Connectivity Check (`preflight_connectivity.yml`)
 **Purpose**: Verify reachability and configuration before cluster-wide fabric activation.
 
 **Key Actions**:
