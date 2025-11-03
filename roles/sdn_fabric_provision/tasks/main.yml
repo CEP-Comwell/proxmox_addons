@@ -1,0 +1,273 @@
+---
+
+# Main entry point for SDN fabric provisioning
+# Ensures management bridge (vmbr0) is never modified or deleted
+
+- name: Ensure SDN controller exists
+  ansible.builtin.command: >
+    pvesh get /cluster/sdn/controllers/{{ sdn_controller_name | default('evpn-controller') }}
+  register: sdn_controller_check
+  failed_when: false
+  changed_when: false
+
+- name: Create SDN controller if missing (or print if dry_run)
+  block:
+    - name: Print SDN controller create command (dry_run)
+      debug:
+        msg: "[DRY_RUN] Would run: pvesh create /cluster/sdn/controllers -type evpn -asn {{ sdn_asn }} -peers {{ sdn_peers }} -controller {{ sdn_controller_name | default('evpn-controller') }}"
+      when: dry_run | default(false)
+    - name: Actually create SDN controller
+      ansible.builtin.command: >
+        pvesh create /cluster/sdn/controllers \
+          -type evpn \
+          -asn {{ sdn_asn }} \
+          -peers {{ sdn_peers }} \
+          -controller {{ sdn_controller_name | default('evpn-controller') }}
+      when: not (dry_run | default(false))
+  when: sdn_controller_check.rc != 0
+
+- name: Gather SDN fabric state
+  ansible.builtin.command: >-
+    pvesh get /cluster/sdn/fabrics/fabric/{{ sdn_fabric_name | default('fab-core') }} --output-format json
+  register: sdn_fabric_info
+  failed_when: false
+  changed_when: false
+
+- name: Initialize fabric facts
+  ansible.builtin.set_fact:
+    desired_fabric_api: "{{ sdn_fabric_api | default({}) }}"
+    current_sdn_fabric: {}
+    existing_fabric_compare: {}
+    fabric_created: false
+
+- name: Record existing SDN fabric details when present
+  ansible.builtin.set_fact:
+    current_sdn_fabric: "{{ sdn_fabric_info.stdout | from_yaml }}"
+  when:
+    - sdn_fabric_info.rc == 0
+    - sdn_fabric_info.stdout | length > 0
+
+- name: Build desired SDN fabric option map
+  ansible.builtin.set_fact:
+    desired_fabric_compare: >-
+      {{
+        (
+          [
+            {'key': 'protocol', 'value': desired_fabric_api.protocol | default('openfabric')}
+          ]
+          + (desired_fabric_api.ip_prefix is defined
+             | ternary([
+                 {'key': 'ip_prefix', 'value': desired_fabric_api.ip_prefix}
+               ], []))
+          + (desired_fabric_api.ip6_prefix is defined
+             | ternary([
+                 {'key': 'ip6_prefix', 'value': desired_fabric_api.ip6_prefix}
+               ], []))
+          + (desired_fabric_api.hello_interval is defined
+             | ternary([
+                 {'key': 'hello_interval', 'value': desired_fabric_api.hello_interval}
+               ], []))
+          + (desired_fabric_api.csnp_interval is defined
+             | ternary([
+                 {'key': 'csnp_interval', 'value': desired_fabric_api.csnp_interval}
+               ], []))
+          + (desired_fabric_api.area is defined
+             | ternary([
+                 {'key': 'area', 'value': desired_fabric_api.area}
+               ], []))
+        ) | items2dict
+      }}
+
+- name: Build existing fabric option map for comparison
+  ansible.builtin.set_fact:
+    existing_fabric_compare: "{{ current_sdn_fabric | dict2items | selectattr('key', 'in', desired_fabric_compare.keys()) | list | items2dict }}"
+  when: current_sdn_fabric | length > 0
+
+- name: Determine if SDN fabric options drifted
+  ansible.builtin.set_fact:
+    fabric_needs_update: "{{ sdn_fabric_info.rc == 0 and desired_fabric_compare != existing_fabric_compare }}"
+
+- name: Create SDN fabric if missing (or print if dry_run)
+  block:
+    - name: Print SDN fabric create command (dry_run)
+      ansible.builtin.debug:
+        msg: >-
+          [DRY_RUN] Would run: pvesh create /cluster/sdn/fabrics/fabric --id {{ sdn_fabric_name | default('fab-core') }}{% for key, value in desired_fabric_compare.items() %} --{{ key }} {{ value }}{% endfor %}
+      when: dry_run | default(false)
+
+    - name: Create SDN fabric via pvesh
+      ansible.builtin.command: >-
+        pvesh create /cluster/sdn/fabrics/fabric
+        --id {{ sdn_fabric_name | default('fab-core') }}
+        {% for key, value in desired_fabric_compare.items() %}
+        --{{ key }} {{ value }}
+        {% endfor %}
+      when: not (dry_run | default(false))
+      notify: Reload SDN configuration
+
+    - name: Mark SDN fabric as created in this run
+      ansible.builtin.set_fact:
+        fabric_created: true
+      when: not (dry_run | default(false))
+  when: sdn_fabric_info.rc != 0
+
+- name: Update SDN fabric when options drift (or print if dry_run)
+  block:
+    - name: Print SDN fabric update command (dry_run)
+      ansible.builtin.debug:
+        msg: >-
+          [DRY_RUN] Would run: pvesh set /cluster/sdn/fabrics/fabric/{{ sdn_fabric_name | default('fab-core') }}{% if current_sdn_fabric.digest is defined %} --digest {{ current_sdn_fabric.digest }}{% endif %}{% for key, value in desired_fabric_compare.items() %} --{{ key }} {{ value }}{% endfor %}
+      when: dry_run | default(false)
+
+    - name: Apply SDN fabric option updates
+      ansible.builtin.command: >-
+        pvesh set /cluster/sdn/fabrics/fabric/{{ sdn_fabric_name | default('fab-core') }}
+        {% if current_sdn_fabric.digest is defined %} --digest {{ current_sdn_fabric.digest }}{% endif %}
+        {% for key, value in desired_fabric_compare.items() %}
+        --{{ key }} {{ value }}
+        {% endfor %}
+      when: not (dry_run | default(false))
+      notify: Reload SDN configuration
+  when:
+    - sdn_fabric_info.rc == 0
+    - fabric_needs_update | default(false)
+
+- name: Ensure SDN zone exists
+  ansible.builtin.command: >
+    pvesh get /cluster/sdn/zones/{{ sdn_zone_name | default('evpn-core') }}
+  register: sdn_zone_check
+  failed_when: false
+  changed_when: false
+
+- name: Create SDN zone if missing (or print if dry_run)
+  block:
+    - name: Print SDN zone create command (dry_run)
+      debug:
+        msg: "[DRY_RUN] Would run: pvesh create /cluster/sdn/zones -type evpn -zone {{ sdn_zone_name | default('evpn-core') }} -controller {{ sdn_controller_name | default('evpn-controller') }} -vrf-vxlan {{ sdn_l3vni }} -fabric {{ sdn_fabric_name | default('fab-core') }} -mac {{ sdn_anycast_mac }} --advertise-subnets 1"
+      when: dry_run | default(false)
+    - name: Actually create SDN zone
+      ansible.builtin.command: >
+        pvesh create /cluster/sdn/zones \
+          -type evpn \
+          -zone {{ sdn_zone_name | default('evpn-core') }} \
+          -controller {{ sdn_controller_name | default('evpn-controller') }} \
+          -vrf-vxlan {{ sdn_l3vni }} \
+          -fabric {{ sdn_fabric_name | default('fab-core') }} \
+          -mac {{ sdn_anycast_mac }} \
+          --advertise-subnets 1
+      when: not (dry_run | default(false))
+  when: sdn_zone_check.rc != 0
+
+- name: Initialise SDN fabric node facts
+  ansible.builtin.set_fact:
+    desired_fabric_nodes: "{{ sdn_fabric_nodes | default([]) }}"
+    existing_fabric_nodes: []
+    desired_fabric_node_ids: []
+
+- name: Gather SDN fabric node state
+  ansible.builtin.command: >-
+    pvesh get /cluster/sdn/fabrics/node/{{ sdn_fabric_name | default('fab-core') }} --output-format json
+  register: sdn_fabric_nodes_info
+  failed_when: false
+  changed_when: false
+  when:
+    - sdn_fabric_info.rc == 0 or fabric_created | default(false)
+    - not (dry_run | default(false) and sdn_fabric_info.rc != 0)
+
+- name: Cache existing SDN fabric nodes
+  ansible.builtin.set_fact:
+    existing_fabric_nodes: "{{ sdn_fabric_nodes_info.stdout | from_yaml }}"
+  when:
+    - sdn_fabric_nodes_info is defined
+    - sdn_fabric_nodes_info.rc == 0
+    - sdn_fabric_nodes_info.stdout | length > 0
+
+- name: Validate SDN fabric node definitions
+  ansible.builtin.assert:
+    that:
+      - item is mapping
+      - (item.node_id is defined) or (item.node is defined)
+      - (item.ip is defined) or (desired_fabric_compare.ip_prefix is not defined)
+      - (item.ip6 is defined) or (desired_fabric_compare.ip6_prefix is not defined)
+    fail_msg: "Fabric node definition must include node_id plus IPv4/IPv6 details when the fabric specifies corresponding prefixes."
+  loop: "{{ desired_fabric_nodes }}"
+  loop_control:
+    label: "{{ item.node_id | default(item.node | default('undefined')) }}"
+  when:
+    - desired_fabric_nodes | length > 0
+    - sdn_fabric_info.rc == 0 or fabric_created | default(false)
+
+- name: Synchronise SDN fabric nodes
+  ansible.builtin.include_tasks: manage_fabric_node.yml
+  loop: "{{ desired_fabric_nodes }}"
+  loop_control:
+    loop_var: fabric_node
+    label: "{{ fabric_node.node_id | default(fabric_node.node | default(fabric_node)) }}"
+  vars:
+    desired_node_id: "{{ fabric_node.node_id | default(fabric_node.node | default(fabric_node)) }}"
+    desired_node_protocol: "{{ fabric_node.protocol | default(desired_fabric_compare.protocol | default('openfabric')) }}"
+    desired_node_ip: "{{ fabric_node.ip | default(None) }}"
+    desired_node_ip6: "{{ fabric_node.ip6 | default(None) }}"
+    existing_node: "{{ (existing_fabric_nodes | selectattr('node_id', 'equalto', desired_node_id) | list | first) | default(None) }}"
+    node_needs_update: "{{ existing_node is not none and (
+        desired_node_protocol != existing_node.protocol | default('')
+        or (fabric_node.ip is defined and fabric_node.ip != existing_node.ip | default(''))
+        or (fabric_node.ip6 is defined and fabric_node.ip6 != existing_node.ip6 | default(''))
+      ) }}"
+  when:
+    - desired_fabric_nodes | length > 0
+    - sdn_fabric_info.rc == 0 or fabric_created | default(false)
+
+- name: Identify unmanaged SDN fabric nodes
+  ansible.builtin.set_fact:
+    extra_fabric_nodes: "{{ existing_fabric_nodes | map(attribute='node_id') | list | difference(desired_fabric_node_ids) }}"
+  when:
+    - sdn_fabric_node_purge | default(false)
+    - existing_fabric_nodes | length > 0
+
+- name: Print fabric node delete commands (dry_run)
+  ansible.builtin.debug:
+    msg: >-
+      [DRY_RUN] Would run: pvesh delete /cluster/sdn/fabrics/node/{{ sdn_fabric_name | default('fab-core') }}/{{ item }}
+  loop: "{{ extra_fabric_nodes | default([]) }}"
+  when:
+    - dry_run | default(false)
+    - sdn_fabric_node_purge | default(false)
+    - extra_fabric_nodes | default([]) | length > 0
+
+- name: Delete unmanaged SDN fabric nodes
+  ansible.builtin.command: >-
+    pvesh delete /cluster/sdn/fabrics/node/{{ sdn_fabric_name | default('fab-core') }}/{{ item }}
+  loop: "{{ extra_fabric_nodes | default([]) }}"
+  when:
+    - not (dry_run | default(false))
+    - sdn_fabric_node_purge | default(false)
+    - extra_fabric_nodes | default([]) | length > 0
+  notify: Reload SDN configuration
+
+- name: Note SDN config template usage (dry_run)
+  ansible.builtin.debug:
+    msg: "[DRY_RUN] Would render /etc/pve/sdn/sdn.cfg using templates/sdn.cfg.j2 and apply via pvesh set /cluster/sdn."
+  when:
+    - dry_run | default(false)
+    - sdn_manage_config_file | default(false)
+  run_once: true
+
+- name: Deploy SDN configuration file
+  ansible.builtin.template:
+    src: sdn.cfg.j2
+    dest: /etc/pve/sdn/sdn.cfg
+    backup: true
+    unsafe_writes: true
+  when:
+    - not (dry_run | default(false))
+    - sdn_manage_config_file | default(false)
+  notify: Reload SDN configuration
+  run_once: true
+  become: true
+
+# Add more tasks for vnets, subnets, ports as needed
+# Never touch vmbr0 (management bridge)
+
+- name: Provision VNETs, subnets, and ports (excluding vmbr0)
+  ansible.builtin.import_tasks: vnets.yml

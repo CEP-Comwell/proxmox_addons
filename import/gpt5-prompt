@@ -168,6 +168,13 @@ IPv6‑native + overlays: Use Proxmox SDN VXLAN zones and keep routing under FRR
 
  
 
+Additional SDN automation guardrails
+
+- Prefer `/cluster/sdn/fabrics/fabric/{id}` for fabric create/update operations and keep protocol/prefix metadata aligned with automation variables.
+- Always register fabric members via `/cluster/sdn/fabrics/node/{fabric}` with IPv4/IPv6 addresses that reside inside the declared prefixes so SDN reloads stay warning-free.
+- Maintain fabric/zone MTU at 1400 unless upstream requirements change, preserving WireGuard + EVPN headroom within 1500-byte frames.
+- Preserve dry-run/idempotent behaviour in roles, never touch `vmbr0`, and document unavoidable manual/API-gap steps (for example the missing subnet handlers) in README notes or play output.
+
 Phased roadmap 
 
 Phase 0 — Repo, CI, and conventions (1–2 days) 

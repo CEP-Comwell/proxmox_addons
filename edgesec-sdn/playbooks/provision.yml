@@ -12,3 +12,4 @@
   roles:
     - prereqs           # Install prerequisite packages (jq, git, etc.)
     - network_provision  # Streamlined single role for interface naming and bridge creation
+    - sdn_fabric_provision  # Provisions SDN fabric, VNETs, subnets, ports (never touches vmbr0)

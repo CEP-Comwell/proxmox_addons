@@ -1,0 +1,71 @@
+# This file is managed by Ansible (sdn_fabric_provision role). Manual edits may be overwritten.
+# Define SDN controllers, zones, VNETs, and subnets for Proxmox VE.
+sdn: {
+    controller {{ sdn_controller_name | default('evpn-controller') }} {
+        type {{ sdn_controller_type | default('evpn') }}
+        asn {{ sdn_asn }}
+        peers {{ sdn_peers }}
+    }
+
+    fabric {{ sdn_fabric_name | default('fab-core') }} {
+        type {{ (sdn_fabric.type if sdn_fabric is defined and 'type' in sdn_fabric else 'evpn') }}
+        controller {{ (sdn_fabric.controller if sdn_fabric is defined and 'controller' in sdn_fabric else (sdn_controller_name | default('evpn-controller'))) }}
+{% if sdn_fabric is defined and sdn_fabric.nodes is defined and sdn_fabric.nodes | length > 0 %}
+        nodes {{ sdn_fabric.nodes | join(',') }}
+{% endif %}
+{% if sdn_fabric is defined and sdn_fabric.extra is defined %}
+{%   for key, value in sdn_fabric.extra.items() %}
+        {{ key }} {{ value }}
+{%   endfor %}
+{% endif %}
+    }
+
+    zone {{ sdn_zone_name | default('evpn-core') }} {
+        type evpn
+        controller {{ sdn_controller_name | default('evpn-controller') }}
+{% if sdn_fabric_name is defined and sdn_fabric_name %}
+        fabric {{ sdn_fabric_name }}
+{% endif %}
+        vrf-vxlan {{ sdn_l3vni }}
+        mac {{ sdn_anycast_mac }}
+{% if sdn_zone_mtu is defined %}
+        mtu {{ sdn_zone_mtu }}
+{% endif %}
+{% if sdn_advertise_subnets | default(true) %}
+        advertise-subnets 1
+{% endif %}
+{% if sdn_zone_nodes is defined and sdn_zone_nodes | length > 0 %}
+        nodes {{ sdn_zone_nodes | join(',') }}
+{% endif %}
+    }
+
+{% for vnet in sdn_vni_plan | default([]) %}
+{%   set vnet_bridge = vnet.bridge | default('') %}
+{%   if vnet_bridge != 'vmbr0' and (protected_mgmt_iface is not defined or vnet_bridge != protected_mgmt_iface) %}
+    vnet {{ vnet.name }} {
+        zone {{ sdn_zone_name | default('evpn-core') }}
+        type vnet
+        tag {{ vnet.vni }}
+    }
+
+    subnet {{ vnet.name }} {
+        zone {{ sdn_zone_name | default('evpn-core') }}
+        vnet {{ vnet.name }}
+        cidr {{ vnet.cidr }}
+        gateway {{ vnet.gw }}
+{%     if vnet.snat is defined %}
+        snat {{ '1' if vnet.snat else '0' }}
+{%     endif %}
+{%     if vnet.dhcp_range is defined %}
+        dhcp-range {{ vnet.dhcp_range }}
+{%     endif %}
+    }
+
+{%   endif %}
+{% endfor %}
+
+{% if sdn_extra_config is defined and sdn_extra_config %}
+{{ sdn_extra_config | indent(4, True) }}
+
+{% endif %}
+}

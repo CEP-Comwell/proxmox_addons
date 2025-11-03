@@ -1,0 +1,114 @@
+
+
+# Jinja2 template for VNET creation tasks
+# Loops over sdn_vni_plan and creates VNETs, subnets, and ports, skipping vmbr0 and the protected management interface
+
+- name: Skip VNETs/subnets for protected management bridge
+  debug:
+    msg: "Skipping VNET/subnet for protected management bridge: {{ item.bridge }}"
+  loop: "{{ sdn_vni_plan }}"
+  when: item.bridge == 'vmbr0' or (protected_mgmt_iface is defined and item.bridge == protected_mgmt_iface)
+  loop_control:
+    label: "VNET {{ item.name }}"
+
+- name: Ensure VNETs exist (excluding vmbr0 and protected management interface)
+  ansible.builtin.command: >
+    pvesh get /cluster/sdn/vnets/{{ item.name }}
+  register: vnet_check
+  failed_when: false
+  changed_when: false
+  loop: "{{ sdn_vni_plan }}"
+  when: item.bridge != 'vmbr0' and (protected_mgmt_iface is not defined or item.bridge != protected_mgmt_iface)
+  loop_control:
+    label: "VNET {{ item.name }}"
+
+
+# VNET creation (dry_run and real) using zipped lists for item/check pairing
+- name: Print VNET create command (dry_run)
+  debug:
+    msg: "[DRY_RUN] Would run: pvesh create /cluster/sdn/vnets -vnet {{ item.0.name }} -type vnet -zone {{ sdn_zone_name | default('evpn-core') }} -tag {{ item.0.vni }}"
+  loop: "{{ sdn_vni_plan | zip(vnet_check.results) | list }}"
+  loop_control:
+    label: "VNET {{ item.0.name }}"
+  when:
+    - dry_run | default(false)
+    - item.0.bridge != 'vmbr0'
+    - (protected_mgmt_iface is not defined or item.0.bridge != protected_mgmt_iface)
+    - item.1.rc != 0
+
+- name: Actually create VNET
+  ansible.builtin.command: >
+    pvesh create /cluster/sdn/vnets \
+      -vnet {{ item.0.name }} \
+      -type vnet \
+      -zone {{ sdn_zone_name | default('evpn-core') }} \
+      -tag {{ item.0.vni }}
+  loop: "{{ sdn_vni_plan | zip(vnet_check.results) | list }}"
+  loop_control:
+    label: "VNET {{ item.0.name }}"
+  when:
+    - not (dry_run | default(false))
+    - item.0.bridge != 'vmbr0'
+    - (protected_mgmt_iface is not defined or item.0.bridge != protected_mgmt_iface)
+    - item.1.rc != 0
+
+- name: Fail if VNET name exceeds 8 characters
+  ansible.builtin.fail:
+    msg: "VNET ID '{{ item.name }}' exceeds 8 characters (Proxmox limit). Update sdn_vni_plan."
+  loop: "{{ sdn_vni_plan }}"
+  when:
+    - item.name | length > 8
+    - item.bridge != 'vmbr0'
+    - (protected_mgmt_iface is not defined or item.bridge != protected_mgmt_iface)
+
+- name: Warn that subnet provisioning must be manual (API lacks create handler)
+  ansible.builtin.debug:
+    msg: |
+      Skipping subnet provisioning for VNETs because this Proxmox VE release does not expose create/get handlers for /cluster/sdn/subnets.
+      Please define subnets manually in the Proxmox GUI (Datacenter → SDN → Zones → Subnets) or via /etc/pve/sdn/sdn.cfg, then re-run this play for VNET validation.
+  when:
+    - not (sdn_subnet_api_supported | default(false))
+  run_once: true
+
+- block:
+    - name: Ensure subnet exists for each VNET (excluding vmbr0 and protected management interface)
+      ansible.builtin.command: >
+        pvesh get /cluster/sdn/subnets/{{ item.name }}
+      register: subnet_check
+      failed_when: false
+      changed_when: false
+      loop: "{{ sdn_vni_plan }}"
+      when: item.bridge != 'vmbr0' and (protected_mgmt_iface is not defined or item.bridge != protected_mgmt_iface)
+      loop_control:
+        label: "Subnet {{ item.name }}"
+
+    - name: Print subnet create command (dry_run)
+      debug:
+        msg: "[DRY_RUN] Would run: pvesh create /cluster/sdn/subnets -subnet {{ item.0.cidr }} -gateway {{ item.0.gw }} -vnet {{ item.0.name }}"
+      loop: "{{ sdn_vni_plan | zip(subnet_check.results) | list }}"
+      loop_control:
+        label: "Subnet {{ item.0.name }}"
+      when:
+        - dry_run | default(false)
+        - item.0.bridge != 'vmbr0'
+        - (protected_mgmt_iface is not defined or item.0.bridge != protected_mgmt_iface)
+        - item.1.rc != 0
+
+    - name: Actually create subnet
+      ansible.builtin.command: >
+        pvesh create /cluster/sdn/subnets \
+          -subnet {{ item.0.cidr }} \
+          -gateway {{ item.0.gw }} \
+          -vnet {{ item.0.name }}
+      loop: "{{ sdn_vni_plan | zip(subnet_check.results) | list }}"
+      loop_control:
+        label: "Subnet {{ item.0.name }}"
+      when:
+        - not (dry_run | default(false))
+        - item.0.bridge != 'vmbr0'
+        - (protected_mgmt_iface is not defined or item.0.bridge != protected_mgmt_iface)
+        - item.1.rc != 0
+  when:
+    - sdn_subnet_api_supported | default(false)
+
+# Add port creation as needed (typically handled by SDN, but can be added here)

@@ -1,0 +1,5 @@
+---
+
+- name: Reload SDN configuration
+  ansible.builtin.command: pvesh set /cluster/sdn
+  become: true

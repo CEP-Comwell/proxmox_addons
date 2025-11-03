@@ -89,6 +89,11 @@
     fail_msg: "Interface conflict detected: {{ all_assigned_interfaces | difference(all_assigned_interfaces | unique) | join(', ') }} are assigned to multiple bridges. Each interface must be assigned to exactly 1 bridge."
   when: all_assigned_interfaces is defined
 
+# Debug bridge assignments before assertion
+- name: Debug bridge assignments before assertion
+  debug:
+    msg: "Bridge assignments: {{ bridge_assignments }}"
+
 # Pause for confirmation before applying assignments (if requested)
 - name: Pause for confirmation before applying assignments
   pause:

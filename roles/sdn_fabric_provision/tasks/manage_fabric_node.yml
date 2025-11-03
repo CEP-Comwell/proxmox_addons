@@ -1,0 +1,44 @@
+---
+- name: Track desired fabric node ID
+  ansible.builtin.set_fact:
+    desired_fabric_node_ids: "{{ (desired_fabric_node_ids + [desired_node_id]) | unique }}"
+
+- name: Print fabric node create command (dry_run)
+  ansible.builtin.debug:
+    msg: >-
+      [DRY_RUN] Would run: pvesh create /cluster/sdn/fabrics/node/{{ sdn_fabric_name | default('fab-core') }} --node_id {{ desired_node_id }} --protocol {{ desired_node_protocol }}{% if desired_node_ip is not none %} --ip {{ desired_node_ip }}{% endif %}{% if desired_node_ip6 is not none %} --ip6 {{ desired_node_ip6 }}{% endif %}
+  when:
+    - dry_run | default(false)
+    - existing_node is none
+
+- name: Create SDN fabric node
+  ansible.builtin.command: >-
+    pvesh create /cluster/sdn/fabrics/node/{{ sdn_fabric_name | default('fab-core') }}
+    --node_id {{ desired_node_id }}
+    --protocol {{ desired_node_protocol }}
+    {% if desired_node_ip is not none %} --ip {{ desired_node_ip }}{% endif %}
+    {% if desired_node_ip6 is not none %} --ip6 {{ desired_node_ip6 }}{% endif %}
+  when:
+    - existing_node is none
+    - not (dry_run | default(false))
+  notify: Reload SDN configuration
+
+- name: Print fabric node update command (dry_run)
+  ansible.builtin.debug:
+    msg: >-
+      [DRY_RUN] Would run: pvesh set /cluster/sdn/fabrics/node/{{ sdn_fabric_name | default('fab-core') }}/{{ desired_node_id }}{% if existing_node.digest is defined %} --digest {{ existing_node.digest }}{% endif %} --protocol {{ desired_node_protocol }}{% if desired_node_ip is not none %} --ip {{ desired_node_ip }}{% endif %}{% if desired_node_ip6 is not none %} --ip6 {{ desired_node_ip6 }}{% endif %}
+  when:
+    - dry_run | default(false)
+    - node_needs_update
+
+- name: Update SDN fabric node
+  ansible.builtin.command: >-
+    pvesh set /cluster/sdn/fabrics/node/{{ sdn_fabric_name | default('fab-core') }}/{{ desired_node_id }}
+    {% if existing_node.digest is defined %} --digest {{ existing_node.digest }}{% endif %}
+    --protocol {{ desired_node_protocol }}
+    {% if desired_node_ip is not none %} --ip {{ desired_node_ip }}{% endif %}
+    {% if desired_node_ip6 is not none %} --ip6 {{ desired_node_ip6 }}{% endif %}
+  when:
+    - node_needs_update
+    - not (dry_run | default(false))
+  notify: Reload SDN configuration

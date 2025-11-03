@@ -1,0 +1,21 @@
+# Example SDN/EVPN variables for sdn_fabric_provision role
+# Place this file in group_vars/all.yml, host_vars, or pass with -e @vars/sdn_fabric.yml
+
+sdn_asn: 65010
+sdn_peers: "10.0.0.1,10.0.0.2"
+sdn_zone_name: evpn-core
+sdn_fabric_name: fab-core
+sdn_l3vni: 65001
+sdn_anycast_mac: "02:99:99:99:99:01"
+sdn_vni_plan:
+  - name: vxlan10110
+    vni: 10110
+    cidr: 10.110.10.0/24
+    gw: 10.110.10.1
+    bridge: vmbr1
+  - name: vxlan10120
+    vni: 10120
+    cidr: 10.120.10.0/24
+    gw: 10.120.10.1
+    bridge: vmbr2
+  # Add more VNETs as needed
