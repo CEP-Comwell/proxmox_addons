@@ -10,8 +10,8 @@
         group: ansible
         mode: '0644'
 
-    - name: Run docker-compose up
+    - name: Run docker compose up
       shell: |
-        docker-compose -f /home/ansible/docker-compose.yml up -d
+        docker compose -f /home/ansible/docker-compose.yml up -d
       args:
         chdir: /home/ansible
