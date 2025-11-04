@@ -1,0 +1,10 @@
+- name: Deploy Vault using Docker Compose
+  hosts: docker-hosts
+  become: true
+  tasks:
+    - name: Run docker-compose up
+      become_user: cpadmin
+      shell: |
+        docker-compose -f edgesec-vault/docker-compose.yml up -d
+      args:
+        chdir: "{{ ansible_env.HOME }}"
