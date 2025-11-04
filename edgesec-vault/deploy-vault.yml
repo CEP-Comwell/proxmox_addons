@@ -3,8 +3,9 @@
   become: true
   tasks:
     - name: Run docker-compose up
-      become_user: ansible
       shell: |
         docker-compose -f edgesec-vault/docker-compose.yml up -d
       args:
-        chdir: "{{ ansible_env.HOME }}"
+        chdir: /tmp/semaphore/project_1/repository_3_template_11
+    - name: Print working directory
+      command: pwd    
