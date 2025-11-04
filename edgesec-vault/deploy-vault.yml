@@ -4,7 +4,7 @@
   tasks:
     - name: Copy docker-compose.yml to remote host
       copy:
-        src: edgesec-vault/docker-compose.yml
+        src: docker-compose.yml
         dest: /home/ansible/docker-compose.yml
         owner: ansible
         group: ansible
