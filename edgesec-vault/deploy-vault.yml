@@ -2,10 +2,16 @@
   hosts: docker-hosts
   become: true
   tasks:
+    - name: Copy docker-compose.yml to remote host
+      copy:
+        src: edgesec-vault/docker-compose.yml
+        dest: /home/ansible/docker-compose.yml
+        owner: ansible
+        group: ansible
+        mode: '0644'
+
     - name: Run docker-compose up
       shell: |
-        docker-compose -f edgesec-vault/docker-compose.yml up -d
+        docker-compose -f /home/ansible/docker-compose.yml up -d
       args:
-        chdir: /tmp/semaphore/project_1/repository_3_template_11
-    - name: Print working directory
-      command: pwd    
+        chdir: /home/ansible
