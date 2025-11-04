@@ -1,0 +1,17 @@
+- name: Deploy Technitium using Docker Compose
+  hosts: docker-hosts
+  become: true
+  tasks:
+    - name: Copy technitium.yml to remote host
+      copy:
+        src: technitium.yml
+        dest: /home/ansible/technitium.yml
+        owner: ansible
+        group: ansible
+        mode: '0644'
+
+    - name: Run docker compose up
+      shell: |
+        docker compose -f /home/ansible/technitium.yml up -d
+      args:
+        chdir: /home/ansible

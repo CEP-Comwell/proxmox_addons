@@ -104,3 +104,48 @@ ansible-playbook -i inventory edgesec-deploy/edgesec-deploy-docker.yml \
 
 ---
 For advanced Compose features (multiple services, networks, etc.), extend the role and template as needed.
+
+---
+
+## Firewalld Baseline Deployment
+
+`edgesec-deploy/playbooks/firewalld.yml` hardens a host firewall by enforcing a locked-down `ztna_drop` zone, enabling only SSH access plus ICMP echo replies, and layering a default Fail2Ban configuration. Use it to bootstrap freshly provisioned hosts before exposing them to the fabric.
+
+### Prerequisites
+- Target hosts reachable over SSH; defaults assume the `ssh` service is required.
+- Privileged connection (the play escalates with `become: true`).
+- Python 3.x on the remote host for Ansible modules.
+
+### Quick Start
+Run the play against a single host using an inline inventory string:
+
+```bash
+ansible-playbook \
+  -i '172.16.10.53,' \
+  -u cpadmin \
+  -b \
+  edgesec-deploy/playbooks/firewalld.yml
+```
+
+Replace the inventory string and SSH username as needed. Use your project inventory file instead of an inline string for multi-host runs.
+
+### Customisation
+- `allowed_services`: list of firewalld services to keep reachable in the `ztna_drop` zone (default: `ssh`).
+- `allowed_rich_rules`: list of rich rules applied permanently; includes an ICMP echo-request rule so the host answers pings.
+
+Override either variable at runtime with `-e` or via `group_vars` / `host_vars` if a host needs additional exposure, e.g.:
+
+```bash
+ansible-playbook -i inventory edgesec-deploy/playbooks/firewalld.yml \
+  -e '{"allowed_services":["ssh","https"]}'
+```
+
+### Verification
+From another node on the same network, confirm that only the expected endpoints respond:
+
+- `nmap -Pn -sS 172.16.10.53` — TCP SYN scan across Nmap's top ports; should report only `ssh` as open.
+- `nmap -Pn -sU --top-ports 50 172.16.10.53` — quick UDP sweep; expect the ports to be filtered.
+- `nmap -Pn --top-ports 100 --reason 172.16.10.53` — shows whether closed ports are dropped or rejected.
+- `ping 172.16.10.53` — succeeds because the play enables ICMP echo replies.
+
+Investigate any additional open or `open|filtered` ports that appear; add them to `allowed_services` only when intentionally exposing a service.

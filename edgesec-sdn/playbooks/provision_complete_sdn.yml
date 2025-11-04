@@ -7,10 +7,6 @@
   hosts: proxmox-hosts
   become: true
 
-  vars:
-    # NFTables configuration - set to true to enable bridge access control
-    nftables_configure_bridges: true
-
   pre_tasks:
     - name: Display provisioning start
       ansible.builtin.debug:
@@ -31,12 +27,12 @@
           🔗 Network interfaces discovered and pinned
           🌉 SDN bridges created (vmbr99, vmbr1, vmbr2)
           🎛️  SDN controllers, zones, and VNets established
-          🔒 NFTables bridge access control rules applied
+          🔒 NFTables firewall & NAT rules applied
 
           🧪 Test the setup:
-          - Management (vmbr99) can access all bridges
-          - Tenant (vmbr1) and Gateway (vmbr2) are isolated
-          - Run: ping -I vmbr1 <gateway_ip> (should fail)
+          - VNets on vmbr1, vmbr2, and vmbr99 reach the internet via vmbr0
+          - Bridges can talk to each other (ping between vmbr1 ↔ vmbr2)
+          - Validate masquerading: curl https://example.com from each segment
 
           📖 See roles documentation for details:
           - network_provision: Interface management

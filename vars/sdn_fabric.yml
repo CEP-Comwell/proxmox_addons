@@ -8,14 +8,53 @@ sdn_fabric_name: fab-core
 sdn_l3vni: 65001
 sdn_anycast_mac: "02:99:99:99:99:01"
 sdn_vni_plan:
-  - name: vxlan10110
+  - name: vx10100
+    vni: 10100
+    cidr: 10.101.0.0/24
+    gw: 10.101.0.1
+    bridge: vmbr99
+  - name: vx10101
+    vni: 10101
+    cidr: 10.101.1.0/24
+    gw: 10.101.1.1
+    bridge: vmbr99
+  - name: vx10102
+    vni: 10102
+    cidr: 10.101.2.0/24
+    gw: 10.101.2.1
+    bridge: vmbr99
+  - name: vx10031
+    vni: 10031
+    cidr: 10.10.31.0/24
+    gw: 10.10.31.1
+    bridge: vmbr99
+  - name: vx10032
+    vni: 10032
+    cidr: 10.10.32.0/24
+    gw: 10.10.32.1
+    bridge: vmbr99
+  - name: vx10110
     vni: 10110
     cidr: 10.110.10.0/24
     gw: 10.110.10.1
     bridge: vmbr1
-  - name: vxlan10120
+  - name: vx9000
+    vni: 9000
+    cidr: 10.90.0.0/24
+    gw: 10.90.0.1
+    bridge: vmbr1
+  - name: vx9006
+    vni: 9006
+    cidr: 10.90.6.0/24
+    gw: 10.90.6.1
+    bridge: vmbr1
+  - name: vx9003
+    vni: 9003
+    cidr: 10.90.3.0/24
+    gw: 10.90.3.1
+    bridge: vmbr2
+  - name: vx10120
     vni: 10120
     cidr: 10.120.10.0/24
     gw: 10.120.10.1
     bridge: vmbr2
-  # Add more VNETs as needed

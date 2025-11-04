@@ -6,6 +6,19 @@ bridges:
     bridge_ports: ens1f1
   - name: vmbr2
     bridge_ports: eno2
+
+# nftables configuration for SDN bridges
+nftables_configure_bridges: false
+nftables_nat_enabled: true
+nftables_nat_external_iface: vmbr0
+nftables_nat_source_networks: "{{ sdn_vni_plan | map(attribute='cidr') | list }}"
+nftables_explicit_rules:
+  - 'iifname { "vmbr1", "vmbr2", "vmbr99" } oifname "vmbr0" accept'
+  - 'iifname "vmbr0" oifname { "vmbr1", "vmbr2", "vmbr99" } ct state established,related accept'
+  - 'iifname "vmbr1" oifname { "vmbr2", "vmbr99" } accept'
+  - 'iifname "vmbr2" oifname { "vmbr1", "vmbr99" } accept'
+  - 'iifname "vmbr99" oifname { "vmbr1", "vmbr2" } accept'
+  - 'iifname { "vmbr1", "vmbr2", "vmbr99" } oifname { "vmbr1", "vmbr2", "vmbr99" } ct state established,related accept'
 # Global variables for all roles and hosts
 
 # Underlay physical interface (used for routed underlay)
@@ -56,17 +69,56 @@ sdn_zone_mtu: 1400
 sdn_anycast_mac: "BC:24:11:D0:C7:8E"
 sdn_zone_nodes: []
 sdn_vni_plan:
+  - name: vx10100
+    vni: 10100
+    cidr: 10.101.0.0/24
+    gw: 10.101.0.1
+    bridge: vmbr99
+  - name: vx10101
+    vni: 10101
+    cidr: 10.101.1.0/24
+    gw: 10.101.1.1
+    bridge: vmbr99
+  - name: vx10102
+    vni: 10102
+    cidr: 10.101.2.0/24
+    gw: 10.101.2.1
+    bridge: vmbr99
+  - name: vx10031
+    vni: 10031
+    cidr: 10.10.31.0/24
+    gw: 10.10.31.1
+    bridge: vmbr99
+  - name: vx10032
+    vni: 10032
+    cidr: 10.10.32.0/24
+    gw: 10.10.32.1
+    bridge: vmbr99
   - name: vx10110
     vni: 10110
     cidr: 10.110.10.0/24
     gw: 10.110.10.1
     bridge: vmbr1
+  - name: vx9000
+    vni: 9000
+    cidr: 10.90.0.0/24
+    gw: 10.90.0.1
+    bridge: vmbr1
+  - name: vx9006
+    vni: 9006
+    cidr: 10.90.6.0/24
+    gw: 10.90.6.1
+    bridge: vmbr1
+  - name: vx9003
+    vni: 9003
+    cidr: 10.90.3.0/24
+    gw: 10.90.3.1
+    bridge: vmbr2
   - name: vx10120
     vni: 10120
     cidr: 10.120.10.0/24
     gw: 10.120.10.1
     bridge: vmbr2
-  # Add more VNETs as needed
 
 # Proxmox VE 9.0.11 lacks a create/get handler for /cluster/sdn/subnets.
 # Set this to true once a future release exposes the API so automation can manage subnets.

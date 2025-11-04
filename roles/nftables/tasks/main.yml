@@ -61,11 +61,11 @@
   ansible.builtin.command: nft list ruleset
   register: nftables_ruleset
   changed_when: false
-  when: nftables_configure_bridges
+  when: nftables_configure_bridges or nftables_nat_enabled or (nftables_explicit_rules | length > 0)
 
 - name: Display loaded nftables rules
   ansible.builtin.debug:
     msg: |
       📋 Current NFTables Ruleset:
       {{ nftables_ruleset.stdout }}
-  when: nftables_configure_bridges and nftables_ruleset.stdout is defined
+  when: (nftables_configure_bridges or nftables_nat_enabled or (nftables_explicit_rules | length > 0)) and nftables_ruleset.stdout is defined

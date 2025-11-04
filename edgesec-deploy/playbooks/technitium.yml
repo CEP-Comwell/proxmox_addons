@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  technitium:
+    image: technitium/dns-server:latest
+    container_name: technitium
+    hostname: technitium
+    restart: unless-stopped
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+      - "5380:5380/tcp"
+    environment:
+      DNS_SERVER_DOMAIN: technitium.lan
+      DNS_SERVER_ADMIN_PASSWORD: change-me
+      DNS_SERVER_FORWARDERS: 1.1.1.1, 8.8.8.8
+      DNS_SERVER_RECURSION: AllowOnlyForPrivateNetworks
+      DNS_SERVER_WEB_SERVICE_ENABLE_HTTPS: "false"
+      TZ: UTC
+    volumes:
+      - technitium-config:/etc/dns
+      - technitium-data:/var/lib/dns
+
+volumes:
+  technitium-config:
+  technitium-data:

@@ -1,0 +1,9 @@
+---
+# Apply nftables firewall and NAT configuration for SDN bridges
+# Usage: ansible-playbook -i ../../inventory apply_nftables.yml [--limit pve2.comwell.edgesec.ca]
+
+- name: Configure nftables for Proxmox SDN nodes
+  hosts: proxmox-hosts
+  become: true
+  roles:
+    - nftables

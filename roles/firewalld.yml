@@ -1,0 +1,146 @@
+---
+# tasks/firewalld.yml
+
+# Uninstall UFW if the system is Debian-based
+- name: Uninstall UFW
+  apt:
+    name: ufw
+    state: absent
+  when: ansible_os_family == "Debian"
+
+# Install firewalld on Debian-based systems
+- name: Install firewalld (Debian)
+  apt:
+    name: firewalld
+    state: present
+  when: ansible_os_family == "Debian"
+
+# Install firewalld on RedHat/CentOS-based systems
+- name: Install firewalld (RedHat/CentOS)
+  yum:
+    name: firewalld
+    state: present
+  when: ansible_os_family == "RedHat"
+
+# Ensure firewalld is running and enabled on boot
+- name: Ensure firewalld is running and enabled
+  service:
+    name: firewalld
+    state: started
+    enabled: yes
+
+# Check if ztna_drop zone exists
+- name: Check if ztna_drop zone exists
+  command: firewall-cmd --get-zones
+  register: firewalld_zones
+  failed_when: false
+  changed_when: false
+
+# Create ztna_drop zone if it does not exist
+- name: Create ztna_drop zone
+  firewalld:
+    zone: ztna_drop
+    state: present
+    permanent: yes
+  when: "'ztna_drop' not in firewalld_zones.stdout"
+
+# Reload firewalld after creating ztna_drop zone
+- name: Reload firewalld after creating ztna_drop zone
+  command: firewall-cmd --reload
+  when: "'ztna_drop' not in firewalld_zones.stdout"
+
+# Set the default zone to ztna_drop
+- name: Set default zone to ztna_drop
+  command: firewall-cmd --set-default-zone=ztna_drop
+  when: "'ztna_drop' in firewalld_zones.stdout"
+
+# Allow specified services in the ztna_drop zone
+- name: Allow specified services in ztna_drop zone
+  firewalld:
+    service: "{{ item }}"
+    zone: ztna_drop
+    state: enabled
+    permanent: yes
+  loop: "{{ allowed_services }}"
+
+# Set default target to DROP in ztna_drop zone
+- name: Set default target to DROP in ztna_drop zone
+  firewalld:
+    zone: ztna_drop
+    target: DROP
+    state: enabled
+    permanent: yes
+
+# Get list of all services in ztna_drop zone
+- name: Get list of all services in ztna_drop zone
+  command: firewall-cmd --zone=ztna_drop --list-services
+  register: ztna_drop_services
+  when: "'ztna_drop' in firewalld_zones.stdout"
+
+# Remove all other services from ztna_drop zone
+- name: Remove all other services from ztna_drop zone
+  firewalld:
+    zone: ztna_drop
+    service: "{{ item }}"
+    state: disabled
+    permanent: yes
+  loop: "{{ ztna_drop_services.stdout.split() | difference(allowed_services) }}"
+  when: "'ztna_drop' in firewalld_zones.stdout"
+
+# Restart firewalld to apply permanent rules to runtime
+- name: Restart firewalld
+  service:
+    name: firewalld
+    state: restarted
+
+# Install Fail2Ban
+- name: Install Fail2Ban
+  package:
+    name: fail2ban
+    state: present
+
+# Ensure /etc/fail2ban directory exists
+- name: Ensure /etc/fail2ban directory exists
+  file:
+    path: /etc/fail2ban
+    state: directory
+    mode: '0755'
+
+# Check if Fail2Ban jail.local exists
+- name: Check if Fail2Ban jail.local exists
+  stat:
+    path: /etc/fail2ban/jail.local
+  register: jail_local_stat
+
+# Read current Fail2Ban configuration if it exists
+- name: Read current Fail2Ban configuration if it exists
+  command: cat /etc/fail2ban/jail.local
+  register: current_fail2ban_config
+  changed_when: false
+  when: jail_local_stat.stat.exists
+
+# Configure Fail2Ban jail for SSH
+- name: Configure Fail2Ban jail for SSH
+  copy:
+    dest: /etc/fail2ban/jail.local
+    content: |
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = 3
+      bantime = 900
+  when: jail_local_stat.stat.exists == false or
+        current_fail2ban_config.stdout != "[sshd]\nenabled = true\nport = ssh\nfilter = sshd\nlogpath = /var/log/auth.log\nmaxretry = 3\nbantime = 900"
+  notify:
+    - Restart Fail2Ban
+
+# Ensure Fail2Ban is running and enabled on boot
+- name: Ensure Fail2Ban is running and enabled
+  service:
+    name: fail2ban
+    state: started
+    enabled: yes
+  retries: 3
+  delay: 5

@@ -6,6 +6,7 @@
     ls -1 /sys/class/net | grep -vE '^(lo|vmbr|tap|fw|bonding_masters|veth|br|docker|virbr|wg|tun|bond|bridge)'
   register: interfaces_raw
   changed_when: false
+  check_mode: no
 
 # Store interface list for later use
 - name: Set interface list
@@ -30,10 +31,31 @@
     done
   register: protected_mgmt_iface_raw
   changed_when: false
+  check_mode: no
 
 - name: Set protected management interface fact
   set_fact:
     protected_mgmt_iface: "{{ protected_mgmt_iface_raw.stdout | default('') }}"
+
+# When Proxmox firewall creates a virtual front-end (fwpr*), fall back to the
+# physical bridge port defined on vmbr0 so we do not reuse that NIC elsewhere.
+- name: Fetch vmbr0 configuration when protected interface looks virtual
+  become: true
+  command: pvesh get /nodes/localhost/network/vmbr0 --output-format json
+  register: vmbr0_config
+  changed_when: false
+  when: protected_mgmt_iface is defined and (protected_mgmt_iface | regex_search('^fw'))
+  check_mode: no
+
+- name: Override protected management interface with vmbr0 bridge port
+  set_fact:
+    protected_mgmt_iface: "{{ (vmbr0_config.stdout | from_json).bridge_ports.split()[0] }}"
+  when:
+    - vmbr0_config is defined
+    - vmbr0_config.stdout is defined
+    - vmbr0_config.stdout | length > 0
+    - (vmbr0_config.stdout | from_json).bridge_ports is defined
+    - (vmbr0_config.stdout | from_json).bridge_ports | trim != ''
 
 # MAC detection removed - enslavement detection is sufficient
 
@@ -49,6 +71,7 @@
   loop: "{{ all_interfaces }}"
   register: link_modes
   changed_when: false
+  check_mode: no
 
 # Build a map interface -> ethtool output for robust lookup
 - name: Build link_modes_map (interface -> ethtool stdout)
@@ -61,6 +84,7 @@
   loop: "{{ all_interfaces }}"
   register: mac_results
   changed_when: false
+  check_mode: no
 
 # Build macs map (interface -> MAC address)
 - name: Build macs map

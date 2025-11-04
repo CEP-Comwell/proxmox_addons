@@ -8,6 +8,7 @@ Manages nftables firewall rules for Proxmox environments with support for SDN br
 - **Bridge Access Control**: Optional SDN bridge isolation with tenant separation
 - **IPv4/IPv6 Forwarding**: Automatic configuration for routing
 - **Service Management**: Automatic nftables service management and reloading
+- **NAT Gateway**: Optional IPv4 masquerading for SDN/VXLAN networks
 
 ## Usage
 
@@ -42,6 +43,10 @@ Enable SDN bridge isolation by setting variables:
 | `nftables_allow_icmp` | `true` | Allow ICMP and ICMPv6 traffic |
 | `nftables_allow_management_to_all` | `true` | Allow management subnet to all destinations |
 | `nftables_explicit_rules` | `[]` | List of additional rules to add |
+| `nftables_nat_enabled` | `false` | Enable IPv4 NAT table rendering |
+| `nftables_nat_external_iface` | `""` | Interface used for outbound NAT (e.g. `vmbr0`) |
+| `nftables_nat_source_networks` | `[]` | CIDR list to masquerade towards the external interface |
+| `nftables_nat_postrouting_rules` | `[]` | Additional custom rules appended to NAT postrouting chain |
 
 ### Bridge Access Control
 

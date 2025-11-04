@@ -6,6 +6,12 @@ nftables_allow_management_to_all: true
 # Placeholder for future dynamic rules
 nftables_explicit_rules: []
 
+# NAT configuration
+nftables_nat_enabled: false
+nftables_nat_external_iface: ""
+nftables_nat_source_networks: []
+nftables_nat_postrouting_rules: []
+
 # Bridge Access Control Variables
 nftables_configure_bridges: false
 nftables_bridge_rules_dir: "/etc/nftables.d"

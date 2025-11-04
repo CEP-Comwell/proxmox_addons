@@ -107,12 +107,14 @@
   register: proxmox_network_config
   changed_when: false
   when: not (provision_generate_only | default(false))
+  check_mode: no
 
 # Parse existing network interfaces
 - name: Parse existing network interfaces
   set_fact:
     existing_interfaces: "{{ proxmox_network_config.stdout | from_json | map(attribute='iface') | list }}"
   when: not (provision_generate_only | default(false)) and proxmox_network_config.stdout is defined
+  check_mode: no
 
 # Create or update bridges using Proxmox API
 - name: Create or update bridges using Proxmox API
