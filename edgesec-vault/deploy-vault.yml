@@ -3,7 +3,7 @@
   become: true
   tasks:
     - name: Run docker-compose up
-      become_user: cpadmin
+      become_user: ansible
       shell: |
         docker-compose -f edgesec-vault/docker-compose.yml up -d
       args:
