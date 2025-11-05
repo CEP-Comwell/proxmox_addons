@@ -132,6 +132,8 @@ Replace the inventory string and SSH username as needed. Use your project invent
 ### Customisation
 - `allowed_services`: list of firewalld services to keep reachable in the `ztna_drop` zone (default: `ssh`).
 - `allowed_rich_rules`: list of rich rules applied permanently; includes an ICMP echo-request rule so the host answers pings.
+- `firewalld_masquerade_enabled`: set to `false` to skip enabling NAT masquerade (default: `true`).
+- `firewalld_masquerade_zone`: zone where masquerade should be enabled (default: `ztna_drop`; set to `public` if you prefer the stock zone).
 
 Override either variable at runtime with `-e` or via `group_vars` / `host_vars` if a host needs additional exposure, e.g.:
 
@@ -149,3 +151,29 @@ From another node on the same network, confirm that only the expected endpoints 
 - `ping 172.16.10.53` — succeeds because the play enables ICMP echo replies.
 
 Investigate any additional open or `open|filtered` ports that appear; add them to `allowed_services` only when intentionally exposing a service.
+
+### Docker Host Considerations
+If the host will also run Docker or Portainer, keep enforcement in firewalld so the firewall baseline stays authoritative:
+
+- Bind Docker's bridge into a dedicated zone once the engine is installed, for example:
+  - `firewall-cmd --permanent --zone=docker --change-interface=docker0`
+  - Persist this via Ansible using a `command`/`firewalld` task guarded by `when: docker_installed`.
+- Update the playbook variables to NAT traffic for that zone by setting `firewalld_masquerade_zone: docker` (and leaving `firewalld_masquerade_enabled: true`).
+- Expose container services intentionally either by name (for well-known services) or by port. Examples using `-e` overrides:
+
+```bash
+# Allow HTTPS (port 443) in addition to SSH
+ansible-playbook -i inventory edgesec-deploy/playbooks/firewalld.yml \
+  -e '{"allowed_services":["ssh","https"],"firewalld_masquerade_zone":"docker"}'
+
+# Allow Portainer UI on TCP 9443 via a rich rule
+ansible-playbook -i inventory edgesec-deploy/playbooks/firewalld.yml \
+  -e '{"firewalld_masquerade_zone":"docker",
+        "allowed_services":["ssh"],
+        "allowed_rich_rules":["rule icmp-type name=\"echo-request\" accept",
+                               "rule family=\"ipv4\" port protocol=\"tcp\" port=\"9443\" accept"]}'
+```
+
+For recurring custom ports, add them to `group_vars` / `host_vars` so the rich rules are version-controlled. Keep the zone target at `DROP` so only these explicit exceptions pass through.
+
+When Docker's own iptables management is disabled (`"iptables": false` in `/etc/docker/daemon.json`), firewalld remains the single source of truth. If you retain Docker's default iptables behavior, monitor `iptables-save` outputs to ensure additional ACCEPT rules do not conflict with the locked-down zones.

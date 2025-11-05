@@ -1,0 +1,452 @@
+---
+# Upgrade Proxmox VE 8.4.1 -> 9.0.11 with staged checkpoints and reboots
+# Tested flow: 1) update 8.4 -> reboot, 2-5) precheck + repo switch + refresh -> reboot,
+# verify no Bookworm repos remain, 6) dry-run, 7) full upgrade -> reboot, verify.
+#
+# Variables you may want to tweak:
+#   proxmox_repo_channel: "no-subscription" | "enterprise"
+#   expect_manager_version_major: "9"
+#   expect_manager_version_exact: "9.0.11"
+#
+# Reference (followed closely):
+#   Proxmox VE Wiki: "Upgrade from 8 to 9" – https://pve.proxmox.com/wiki/Upgrade_from_8_to_9
+
+- name: "Play 1: STEP 1 - Ensure PVE 8.4.x is fully up-to-date, then reboot"
+  hosts: all
+  become: true
+  gather_facts: true
+  tags:
+    - step1
+  vars:
+    # Default to no-subscription channel; set to "enterprise" if you have a subscription.
+    proxmox_repo_channel: "no-subscription"
+    expect_manager_version_major: "9"
+    expect_manager_version_exact: "9.0.11"
+
+  tasks:
+    - name: "STEP 1.0 | Record current PVE version"
+      ansible.builtin.command: pveversion
+      register: pveversion_before
+      changed_when: false
+
+    - name: "STEP 1.1 | Ensure tmux is available for safe remote sessions (optional)"
+      ansible.builtin.package:
+        name: tmux
+        state: present
+
+    - name: "STEP 1.1a | Detect if host already runs Debian 13 (Trixie)"
+      ansible.builtin.set_fact:
+        host_is_trixie_by_version: >-
+          {{
+            (ansible_facts['distribution_release'] | default('') | lower == 'trixie')
+            or (ansible_facts['distribution_major_version'] | default('0') | int >= 13)
+          }}
+
+    - name: "STEP 1.1b | Detect existing Trixie repository entries"
+      ansible.builtin.shell: "grep -R 'trixie' -n /etc/apt 2>/dev/null || true"
+      register: trixie_repo_check
+      changed_when: false
+
+    - name: "STEP 1.1c | Determine if host already on Trixie path"
+      ansible.builtin.set_fact:
+        host_has_trixie_state: "{{ host_is_trixie_by_version | bool or (trixie_repo_check.stdout | default('') | length > 0) }}"
+
+    - name: "STEP 1.1d | Revert main sources to Bookworm when still on Debian 12"
+      ansible.builtin.replace:
+        path: /etc/apt/sources.list
+        regexp: '\btrixie\b'
+        replace: 'bookworm'
+      when:
+        - not host_is_trixie_by_version | default(false)
+        - trixie_repo_check.stdout | default('') | length > 0
+
+    - name: "STEP 1.1e | Remove Trixie-specific firmware repo file during Bookworm stage"
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/debian-non-free-firmware.list
+        state: absent
+      when:
+        - not host_is_trixie_by_version | default(false)
+        - trixie_repo_check.stdout | default('') | length > 0
+
+    - name: "STEP 1.1f | Remove PVE 9 .sources files when reverting to Bookworm"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/sources.list.d/proxmox.sources
+        - /etc/apt/sources.list.d/pve-enterprise.sources
+      when:
+        - not host_is_trixie_by_version | default(false)
+        - trixie_repo_check.stdout | default('') | length > 0
+
+    - name: "STEP 1.1g | Restore legacy PVE 8 repo list if previously disabled"
+      ansible.builtin.command: mv /etc/apt/sources.list.d/pve-no-subscription.list.disabled /etc/apt/sources.list.d/pve-no-subscription.list
+      args:
+        removes: /etc/apt/sources.list.d/pve-no-subscription.list.disabled
+      when: not host_is_trixie_by_version | default(false)
+      changed_when: true
+
+    - name: "STEP 1.2 | Ensure Debian 12 non-free repository is present (Bookworm)"
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/bookworm-non-free-firmware.list
+        content: |
+          # Managed by Ansible - enables Debian 12 (Bookworm) non-free and non-free-firmware components
+          deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+          deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+          deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+        owner: root
+        group: root
+        mode: '0644'
+      when: not host_is_trixie_by_version | default(false)
+
+    - name: "STEP 1.3 | Update apt cache on 8.4.x"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: not host_is_trixie_by_version | default(false)
+
+    - name: "STEP 1.4 | Perform dist-upgrade on 8.4.x"
+      ansible.builtin.apt:
+        upgrade: dist
+      register: apt_upgrade_84
+      when: not host_is_trixie_by_version | default(false)
+
+    - name: "STEP 1.5 | Check if reboot already completed"
+      ansible.builtin.stat:
+        path: /root/.pve_upgrade_step1_reboot_done
+      register: step1_reboot_marker
+
+    - name: "STEP 1.6 | Normalize reboot marker state"
+      ansible.builtin.set_fact:
+        step1_marker_exists: "{{ step1_reboot_marker.stat.exists | default(false) | bool }}"
+
+    - name: "STEP 1.7 | Reboot into latest 8.4 kernel (checkpoint)"
+      ansible.builtin.reboot:
+        msg: "Reboot after STEP 1 (pre-upgrade on 8.4.x)"
+        reboot_timeout: 1800
+        test_command: "pveversion"
+      when:
+        - not host_is_trixie_by_version | default(false)
+        - ((apt_upgrade_84 is defined) and (apt_upgrade_84.changed | default(false) | bool)) or (not step1_marker_exists)
+      tags:
+        - reboot
+      register: step1_reboot_action
+
+    - name: "STEP 1.8 | Verify node is reachable after reboot"
+      ansible.builtin.command: pveversion
+      register: pveversion_after_step1
+      changed_when: false
+
+    - name: "STEP 1.9 | Mark STEP 1 reboot complete"
+      ansible.builtin.file:
+        path: /root/.pve_upgrade_step1_reboot_done
+        state: touch
+      when: step1_reboot_action is defined and step1_reboot_action.changed
+
+- name: "Play 2: STEPS 2-5 - Preflight, repo switch Bookworm->Trixie, add PVE9 repo, refresh, reboot, then assert no Bookworm repos"
+  hosts: all
+  become: true
+  gather_facts: false
+  tags:
+    - steps_2_to_5
+  vars:
+    proxmox_repo_channel: "no-subscription"
+
+  tasks:
+    # --- STEP 2: Preflight check ---
+    - name: "STEP 2.0 | Run Proxmox upgrade checklist (pve8to9 --full)"
+      ansible.builtin.command: pve8to9 --full
+      register: pve8to9_check
+      changed_when: false
+
+    - name: "STEP 2.0 | Parse checklist warning and failure lines"
+      ansible.builtin.set_fact:
+        checklist_warn_lines: "{{ (pve8to9_check.stdout_lines | default([])) | select('search', 'WARN:') | map('regex_replace', ansi_re, '') | list }}"
+        checklist_fail_lines: "{{ (pve8to9_check.stdout_lines | default([])) | select('search', 'FAIL:') | map('regex_replace', ansi_re, '') | list }}"
+      vars:
+        ansi_re: "\\x1b\\[[0-9;]*[mK]"
+
+    - name: "STEP 2.0 | Format checklist summary text"
+      ansible.builtin.set_fact:
+        checklist_warn_text: "{{ (checklist_warn_lines | length > 0) | ternary(checklist_warn_lines | join('\\n    '), 'none') }}"
+        checklist_fail_text: "{{ (checklist_fail_lines | length > 0) | ternary(checklist_fail_lines | join('\\n    '), 'none') }}"
+
+    - name: "STEP 2.0 | Determine if operator input is required"
+      ansible.builtin.set_fact:
+        checklist_requires_ack: "{{ (checklist_warn_lines | length > 0) or (checklist_fail_lines | length > 0) }}"
+
+    - name: "STEP 2.0 | Review checklist outcome"
+      ansible.builtin.pause:
+        prompt: |
+          Checklist WARN:
+            {{ checklist_warn_text }}
+          Checklist FAIL:
+            {{ checklist_fail_text }}
+          Type:
+            c  -> continue anyway
+            r  -> return after resolving issues (ends play)
+            f  -> fail play immediately
+      register: checklist_choice
+      failed_when: checklist_choice.user_input not in ['c', 'r', 'f']
+      when: checklist_requires_ack | bool
+
+    - name: "STEP 2.0 | Auto-continue when checklist is clean"
+      ansible.builtin.set_fact:
+        checklist_choice:
+          user_input: 'c'
+      when: not checklist_requires_ack | bool
+
+    - name: "STEP 2.0 | Defer remaining steps after checklist review"
+      ansible.builtin.debug:
+        msg: "Checklist flagged items; deferring remaining plays for this host by operator request."
+      when: checklist_choice.user_input == 'r'
+
+    - name: "STEP 2.0 | End host run after deferral"
+      ansible.builtin.meta: end_host
+      when: checklist_choice.user_input == 'r'
+
+    - name: "STEP 2.0 | Abort due to checklist results"
+      ansible.builtin.fail:
+        msg: |
+          Operator chose to abort after reviewing checklist output.
+          WARN entries: {{ checklist_warn_lines | default([]) }}
+          FAIL entries: {{ checklist_fail_lines | default([]) }}
+      when: checklist_choice.user_input == 'f'
+
+    - name: "STEP 2.0 | Record chosen checklist outcome"
+      ansible.builtin.debug:
+        msg: "Checklist continue acknowledged despite WARN/FAIL entries."
+        verbosity: 1
+      when: checklist_choice.user_input == 'c'
+
+    - name: "STEP 2.1 | Save checklist output to /root for auditing"
+      ansible.builtin.copy:
+        dest: /root/pve8to9-precheck.log
+        content: "{{ pve8to9_check.stdout }}"
+
+    # --- STEP 3: Switch Debian repos Bookworm -> Trixie ---
+    - name: "STEP 3.0 | Replace 'bookworm' with 'trixie' in /etc/apt/sources.list (idempotent)"
+      ansible.builtin.replace:
+        path: /etc/apt/sources.list
+        regexp: '\bbookworm\b'
+        replace: 'trixie'
+      register: sw_main_sources
+      ignore_errors: false
+
+    - name: "STEP 3.1 | If present, replace 'bookworm' with 'trixie' in pve-enterprise.list"
+      ansible.builtin.replace:
+        path: /etc/apt/sources.list.d/pve-enterprise.list
+        regexp: '\bbookworm\b'
+        replace: 'trixie'
+      register: sw_ent_list
+      failed_when: false
+      changed_when: sw_ent_list is defined and sw_ent_list.matched is defined and sw_ent_list.matched|int > 0
+
+    - name: "STEP 3.2 | Ensure Debian non-free(-firmware) repositories are available"
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/debian-non-free-firmware.list
+        content: |
+          # Managed by Ansible - enables Debian non-free and non-free-firmware components for Trixie
+          deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware
+          deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware
+          deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: "STEP 3.2a | Remove Bookworm non-free repository file"
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/bookworm-non-free-firmware.list
+        state: absent
+
+    # --- STEP 4: Add Proxmox VE 9 repo (deb822 .sources) & disable old lists ---
+    - name: "STEP 4.0 | Ensure Proxmox archive keyring is present"
+      ansible.builtin.package:
+        name: proxmox-archive-keyring
+        state: present
+
+    - name: "STEP 4.1 | Disable legacy pve-no-subscription.list if it exists (avoid duplicate repos)"
+      ansible.builtin.command: mv /etc/apt/sources.list.d/pve-no-subscription.list /etc/apt/sources.list.d/pve-no-subscription.list.disabled
+      args:
+        creates: /etc/apt/sources.list.d/pve-no-subscription.list.disabled
+      register: disabled_old_pve_list
+      failed_when: false
+      changed_when: disabled_old_pve_list.rc == 0
+
+    - name: "STEP 4.2 | Install PVE 9 enterprise repo (if proxmox_repo_channel=enterprise)"
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/pve-enterprise.sources
+        content: |
+          Types: deb
+          URIs: https://enterprise.proxmox.com/debian/pve
+          Suites: trixie
+          Components: pve-enterprise
+          Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
+        owner: root
+        group: root
+        mode: '0644'
+      when: proxmox_repo_channel == "enterprise"
+
+    - name: "STEP 4.3 | Install PVE 9 no-subscription repo (if proxmox_repo_channel=no-subscription)"
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/proxmox.sources
+        content: |
+          Types: deb
+          URIs: http://download.proxmox.com/debian/pve
+          Suites: trixie
+          Components: pve-no-subscription
+          Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
+        owner: root
+        group: root
+        mode: '0644'
+      when: proxmox_repo_channel == "no-subscription"
+
+    # --- STEP 5: Refresh APT indexes (now on Trixie + PVE9 repos) ---
+    - name: "STEP 5.0 | apt update"
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: "STEP 5.1 | Check if repo-switch reboot already completed"
+      ansible.builtin.stat:
+        path: /root/.pve_upgrade_step2_reboot_done
+      register: step2_reboot_marker
+
+    - name: "STEP 5.1 | Reboot after switching repos (checkpoint)"
+      ansible.builtin.reboot:
+        msg: "Reboot after STEPS 2-5 (preflight + repo switch + refresh)"
+        reboot_timeout: 1800
+        test_command: "pveversion"
+      when: not step2_reboot_marker.stat.exists
+      tags:
+        - reboot
+
+    # --- Guard: ensure no Bookworm repos remain before continuing to steps 6-7 ---
+    - name: "POST-STEPS 2-5 CHECK | Fail if any Bookworm repos are still active"
+      ansible.builtin.shell: |
+        grep -R "bookworm" -n /etc/apt \
+          | grep -vE '^[^:]+:[^:]+:[[:space:]]*#' \
+          || true
+      register: bookworm_refs
+      changed_when: false
+
+    - name: "Assert | No Bookworm references found under /etc/apt"
+      ansible.builtin.assert:
+        that:
+          - bookworm_refs.stdout | length == 0
+        fail_msg: >
+          Detected 'bookworm' in APT sources after repo switch:
+          {{ bookworm_refs.stdout }}
+          Please fix/disable the listed entries, then re-run the playbook.
+
+    - name: "STEP 5.2 | Mark repo-switch reboot complete"
+      ansible.builtin.file:
+        path: /root/.pve_upgrade_step2_reboot_done
+        state: touch
+      when: not step2_reboot_marker.stat.exists
+
+- name: "Play 3: STEPS 6-7 - Dry-run and full upgrade to PVE 9.0.11, then reboot and verify"
+  hosts: all
+  become: true
+  gather_facts: false
+  tags:
+    - steps_6_to_7
+  vars:
+    expect_manager_version_major: "9"
+    expect_manager_version_exact: "9.0.11"
+
+  tasks:
+    # --- STEP 6: Dry-run upgrade ---
+    - name: "STEP 6.0 | apt -s full-upgrade (dry-run)"
+      ansible.builtin.command: apt -s full-upgrade
+      register: apt_dryrun
+      changed_when: false
+
+    - name: "STEP 6.1 | Save dry-run output"
+      ansible.builtin.copy:
+        dest: /root/pve8to9-apt-dryrun.log
+        content: "{{ apt_dryrun.stdout }}"
+
+    - name: "STEP 6.2 | Fail if APT dry-run would remove 'proxmox-ve' meta-package"
+      ansible.builtin.assert:
+        that:
+          - "'Remv proxmox-ve' not in apt_dryrun.stdout"
+        fail_msg: >
+          Dry-run indicates 'proxmox-ve' would be removed. This is a known stopper.
+          Review repositories/held packages and the Proxmox upgrade guidance, then re-run.
+          See: https://pve.proxmox.com/wiki/Upgrade_from_8_to_9
+
+    # --- STEP 7: Actual upgrade ---
+    - name: "STEP 7.0 | apt full-upgrade (this performs Debian 13 + PVE 9 upgrade)"
+      ansible.builtin.apt:
+        upgrade: dist
+      register: apt_full_upgrade
+
+    - name: "STEP 7.1 | Check if post-upgrade reboot already completed"
+      ansible.builtin.stat:
+        path: /root/.pve_upgrade_step3_reboot_done
+      register: step3_reboot_marker
+
+    - name: "STEP 7.1 | Reboot into new kernel (checkpoint)"
+      ansible.builtin.reboot:
+        msg: "Reboot after STEP 7 (full upgrade to PVE 9)"
+        reboot_timeout: 2400
+        test_command: "pveversion"
+      when: not step3_reboot_marker.stat.exists
+      tags:
+        - reboot
+
+    # --- Post-upgrade verifications ---
+    - name: "VERIFY | pveversion shows major {{ expect_manager_version_major }}"
+      ansible.builtin.command: pveversion
+      register: pveversion_after
+      changed_when: false
+
+    - name: "VERIFY | Save final pveversion to /root"
+      ansible.builtin.copy:
+        dest: /root/pveversion-final.log
+        content: "{{ pveversion_after.stdout }}"
+
+    - name: "VERIFY | Warn if not exactly {{ expect_manager_version_exact }} (but still 9.x)"
+      ansible.builtin.debug:
+        msg: >
+          Detected {{ pveversion_after.stdout }}.
+          Expected exact {{ expect_manager_version_exact }}.
+          If version is 9.x but not .11, you likely received a newer 9.0 build from the repo.
+      when:
+        - "expect_manager_version_exact not in pveversion_after.stdout"
+        - "'/9.' in pveversion_after.stdout"
+
+    - name: "VERIFY | Fail if not on PVE 9.x"
+      ansible.builtin.assert:
+        that:
+          - "'/9.' in pveversion_after.stdout"
+        fail_msg: "Upgrade did not land on PVE 9.x. Current: {{ pveversion_after.stdout }}"
+
+    - name: "VERIFY | Core services are active (pvedaemon, pveproxy, pvestatd)"
+      ansible.builtin.shell: |
+        systemctl is-active pvedaemon && \
+        systemctl is-active pveproxy && \
+        systemctl is-active pvestatd
+      register: svc_status
+      changed_when: false
+      failed_when: svc_status.rc != 0
+
+    - name: "VERIFY | Show running kernel"
+      ansible.builtin.command: uname -r
+      register: kernel_after
+      changed_when: false
+
+    - name: "SUMMARY | Post-upgrade summary"
+      ansible.builtin.debug:
+        msg:
+          - "PVE version: {{ pveversion_after.stdout }}"
+          - "Kernel: {{ kernel_after.stdout }}"
+          - "APT dry-run saved to: /root/pve8to9-apt-dryrun.log"
+          - "Precheck saved to: /root/pve8to9-precheck.log"
+          - "Final pveversion saved to: /root/pveversion-final.log"
+
+    - name: "STEP 7.2 | Mark post-upgrade reboot complete"
+      ansible.builtin.file:
+        path: /root/.pve_upgrade_step3_reboot_done
+        state: touch
+      when: not step3_reboot_marker.stat.exists

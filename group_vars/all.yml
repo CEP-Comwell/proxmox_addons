@@ -1,11 +1,11 @@
 # Default bridge_ports mapping (can be overridden in host_vars)
-bridges:
-  - name: vmbr0
-    bridge_ports: ens1f0
-  - name: vmbr1
-    bridge_ports: ens1f1
-  - name: vmbr2
-    bridge_ports: eno2
+# bridges:
+#   - name: vmbr0
+#     bridge_ports: ens1f0
+#   - name: vmbr1
+#     bridge_ports: ens1f1
+#   - name: vmbr2
+#     bridge_ports: eno2
 
 # nftables configuration for SDN bridges
 nftables_configure_bridges: false

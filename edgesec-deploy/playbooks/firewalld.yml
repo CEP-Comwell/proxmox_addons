@@ -7,6 +7,8 @@
       - ssh
     allowed_rich_rules:
       - rule icmp-type name="echo-request" accept
+    firewalld_masquerade_enabled: true
+    firewalld_masquerade_zone: ztna_drop
   tasks:
     - name: Uninstall UFW
       apt:
@@ -85,6 +87,15 @@
         target: DROP
         state: enabled
         permanent: yes
+
+    - name: Ensure masquerade is enabled in desired zone
+      firewalld:
+        zone: "{{ firewalld_masquerade_zone }}"
+        masquerade: yes
+        state: enabled
+        permanent: yes
+        immediate: yes
+      when: firewalld_masquerade_enabled
 
     - name: Get list of all services in ztna_drop zone
       command: firewall-cmd --zone=ztna_drop --list-services
