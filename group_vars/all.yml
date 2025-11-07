@@ -53,13 +53,19 @@ sdn_fabric_name: fab-core
 sdn_fabric:
   type: evpn
   controller: controller1
-  nodes: []
+  nodes:
+    - pve1
+    - pve2
   extra: {}
 sdn_fabric_api:
   protocol: openfabric
   ip_prefix: 10.255.0.0/16
   ip6_prefix: fd00::/48
 sdn_fabric_nodes:
+  - node_id: pve1
+    protocol: openfabric
+    ip: 10.255.0.1
+    ip6: fd00::1
   - node_id: pve2
     protocol: openfabric
     ip: 10.255.0.2
@@ -67,7 +73,9 @@ sdn_fabric_nodes:
 sdn_l3vni: 100
 sdn_zone_mtu: 1400
 sdn_anycast_mac: "BC:24:11:D0:C7:8E"
-sdn_zone_nodes: []
+sdn_zone_nodes:
+  - pve1
+  - pve2
 sdn_vni_plan:
   - name: vx10100
     vni: 10100

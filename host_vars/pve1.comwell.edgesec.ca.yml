@@ -1,0 +1,2 @@
+# Rely on network_provision role to derive bridge assignments dynamically.
+peer_active: false

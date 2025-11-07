@@ -30,6 +30,16 @@
   when:
     - dry_run | default(false)
     - node_needs_update
+    - sdn_fabric_node_update_supported | default(false)
+
+- name: Note fabric node update skipped due to API limitations (dry_run)
+  ansible.builtin.debug:
+    msg: >-
+      [DRY_RUN] Skipping fabric node update for {{ desired_node_id }} because the current Proxmox VE API does not support updating existing fabric nodes. Set sdn_fabric_node_update_supported=true once the API allows this.
+  when:
+    - dry_run | default(false)
+    - node_needs_update
+    - not (sdn_fabric_node_update_supported | default(false))
 
 - name: Update SDN fabric node
   ansible.builtin.command: >-
@@ -41,4 +51,14 @@
   when:
     - node_needs_update
     - not (dry_run | default(false))
+    - sdn_fabric_node_update_supported | default(false)
   notify: Reload SDN configuration
+
+- name: Note fabric node update skipped due to API limitations
+  ansible.builtin.debug:
+    msg: >-
+      Skipping fabric node update for {{ desired_node_id }} because the current Proxmox VE API does not support updating existing fabric nodes. Set sdn_fabric_node_update_supported=true once the API allows this.
+  when:
+    - node_needs_update
+    - not (dry_run | default(false))
+    - not (sdn_fabric_node_update_supported | default(false))

@@ -46,12 +46,12 @@ network_map:
       cidr: 172.16.20.0/24
       description: Static reservation via DHCP
 
-    pve-node1:
+    pve1.comwell.edgesec.ca:
       role: proxmox_node
-      ip: 172.16.30.11
-      description: Add to inventory as needed
+      ip: 172.16.10.20
+      description: Proxmox node in cluster
 
-    pve-node2:
+    pve2.comwell.edgesec.ca:
       role: proxmox_node
-      ip: 172.16.30.12
-      description: Add to inventory as needed
+      ip: 172.16.10.23
+      description: Proxmox node in cluster

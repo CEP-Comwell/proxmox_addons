@@ -1,0 +1,2 @@
+default via 172.16.10.1 dev vmbr0 proto kernel onlink 
+172.16.10.0/24 dev vmbr0 proto kernel scope link src 172.16.10.23 

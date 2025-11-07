@@ -1,0 +1,4 @@
+Nov 05 00:48:11 pve2.comwell.edgesec.ca systemd[1]: Started netbird.service - NetBird mesh network client.
+Nov 05 00:56:37 pve2.comwell.edgesec.ca systemd[1]: Stopping netbird.service - NetBird mesh network client...
+Nov 05 00:56:40 pve2.comwell.edgesec.ca systemd[1]: netbird.service: Deactivated successfully.
+Nov 05 00:56:40 pve2.comwell.edgesec.ca systemd[1]: Stopped netbird.service - NetBird mesh network client.

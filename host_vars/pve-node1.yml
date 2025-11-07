@@ -1,8 +1,8 @@
 bridges:
-	- name: vmbr0
-		bridge_ports: ens1f0
-	- name: vmbr1
-		bridge_ports: ens1f1
-	- name: vmbr2
-		bridge_ports: eno2
+  - name: vmbr0
+    bridge_ports: ens1f0
+  - name: vmbr1
+    bridge_ports: ens1f1
+  - name: vmbr2
+    bridge_ports: eno2
 peer_active: false

@@ -179,7 +179,8 @@
     existing_fabric_nodes: "{{ sdn_fabric_nodes_info.stdout | from_yaml }}"
   when:
     - sdn_fabric_nodes_info is defined
-    - sdn_fabric_nodes_info.rc == 0
+    - (sdn_fabric_nodes_info.rc | default(1)) == 0
+    - sdn_fabric_nodes_info.stdout is defined
     - sdn_fabric_nodes_info.stdout | length > 0
 
 - name: Validate SDN fabric node definitions
@@ -265,6 +266,7 @@
   notify: Reload SDN configuration
   run_once: true
   become: true
+  ignore_errors: true
 
 # Add more tasks for vnets, subnets, ports as needed
 # Never touch vmbr0 (management bridge)

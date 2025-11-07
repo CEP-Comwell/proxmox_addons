@@ -34,25 +34,6 @@ bridges:
       - name: vxlan9000
         vni: 9000
         description: DNS/Monitoring/edgesec-rest/edgesec-radius
-
-  - name: vmbr99
-    description: Management Bridge
-    vxlan_overlays:
-      - name: vxlan10100
-        vni: 10100
-        description: Management
-      - name: vxlan10101
-        vni: 10101
-        description: Engineering
-      - name: vxlan10102
-        vni: 10102
-        description: Support
-      - name: vxlan10032
-        vni: 10032
-        description: Core Services
-      - name: vxlan10031
-        vni: 10031
-        description: Ceph Cluster
       - name: vxlan9006
         vni: 9006
         description: edgesec-vault

@@ -1,75 +1,120 @@
-# Phase 3: Fabric Finalization - Establish VNI mappings and finalize EVPN overlays
+# Phase 3: Fabric Finalization - Validate EVPN objects and optionally add missing fabric nodes
 
-- name: Add node interfaces to SDN fabric
-  ansible.builtin.command: >
-    pvesh create /cluster/sdn/fabrics/edgefabric/nodes
-    -node {{ inventory_hostname }}
-    -interfaces eth0,eth1,eth2
-  register: fabric_node_addition
-  changed_when: fabric_node_addition.rc == 0
+- name: Collect desired fabric node definitions
+  ansible.builtin.set_fact:
+    establish_fabric_desired_nodes: "{{ sdn_fabric_nodes | default([]) }}"
 
-- name: Apply SDN fabric configuration
-  ansible.builtin.command: pvesh set /cluster/sdn
-  when: fabric_node_addition.changed
-
-- name: Create SDN subnets (optional)
-  ansible.builtin.command: >
-    pvesh create /cluster/sdn/subnets
-    -subnet {{ item.subnet }}
-    -vnet {{ item.vnet }}
-    -gateway {{ item.gateway }}
-    -snat 1
-  loop:
-    - { subnet: '192.168.10.0/24', vnet: 'tenant-vnet', gateway: '192.168.10.1' }
-    - { subnet: '192.168.20.0/24', vnet: 'gateway-vnet', gateway: '192.168.20.1' }
-  register: subnet_creation
-  changed_when: subnet_creation.rc == 0
-
-- name: Apply subnet configuration changes
-  ansible.builtin.command: pvesh set /cluster/sdn
-  when: subnet_creation.changed
-
-- name: Verify fabric node configuration
-  ansible.builtin.command: pvesh get /cluster/sdn/fabrics/edgefabric/nodes
-  register: fabric_nodes
+- name: Gather existing fabric nodes from Proxmox
+  ansible.builtin.command: >-
+    pvesh get /cluster/sdn/fabrics/node/{{ sdn_fabric_name | default('fab-core') }} --output-format json
+  register: establish_fabric_existing_nodes_raw
+  failed_when: false
   changed_when: false
 
-- name: Display fabric node configuration
+- name: Parse current fabric node list
+  ansible.builtin.set_fact:
+    establish_fabric_existing_nodes: >-
+      {{ (establish_fabric_existing_nodes_raw.stdout | default('')) | trim | length
+         | ternary(establish_fabric_existing_nodes_raw.stdout | from_yaml, []) }}
+
+- name: Capture existing fabric node IDs
+  ansible.builtin.set_fact:
+    establish_fabric_existing_node_ids: "{{ establish_fabric_existing_nodes | map(attribute='node_id') | list }}"
+
+- name: Determine missing fabric nodes
+  ansible.builtin.set_fact:
+    establish_fabric_missing_nodes: >-
+      {{ establish_fabric_desired_nodes
+         | selectattr('node_id', 'defined')
+         | selectattr('node_id', 'ne', None)
+         | selectattr('node_id', 'ne', '')
+         | rejectattr('node_id', 'in', establish_fabric_existing_node_ids | default([]))
+         | list }}
+
+- name: Summarise fabric node state
   ansible.builtin.debug:
     msg: |
-      Fabric nodes in edgefabric:
-      {{ fabric_nodes.stdout }}
+      Fabric '{{ sdn_fabric_name | default('fab-core') }}' current nodes: {{ establish_fabric_existing_nodes | map(attribute='node_id') | list }}
+      Desired nodes: {{ establish_fabric_desired_nodes | map(attribute='node_id') | list }}
+      Missing nodes: {{ establish_fabric_missing_nodes | map(attribute='node_id') | list }}
 
-- name: Verify SDN zones and VNets
-  ansible.builtin.command: pvesh get /cluster/sdn
-  register: sdn_final_config
+- name: Abort when fabric nodes are missing and auto-create is disabled
+  ansible.builtin.fail:
+    msg: >-
+      Fabric nodes {{ establish_fabric_missing_nodes | map(attribute='node_id') | list }} are not present in fabric '{{ sdn_fabric_name | default('fab-core') }}'.
+      Set 'sdn_fabric_node_autocreate=true' or create them manually.
+  when:
+    - establish_fabric_missing_nodes | length > 0
+    - not (sdn_fabric_node_autocreate | default(false))
+
+- name: Create missing fabric nodes (Proxmox VE 9 lacks update handlers)
+  ansible.builtin.command: >-
+    pvesh create /cluster/sdn/fabrics/node/{{ sdn_fabric_name | default('fab-core') }}
+      --node_id {{ item.node_id }}
+      --protocol {{ item.protocol | default('openfabric') }}
+      {% if item.ip is defined %}--ip {{ item.ip }}{% endif %}
+      {% if item.ip6 is defined %} --ip6 {{ item.ip6 }}{% endif %}
+  loop: "{{ establish_fabric_missing_nodes }}"
+  loop_control:
+    label: "{{ item.node_id }}"
+  when:
+    - establish_fabric_missing_nodes | length > 0
+    - sdn_fabric_node_autocreate | default(false)
+  register: establish_fabric_create_results
+
+- name: Display results of node creation
+  ansible.builtin.debug:
+    var: establish_fabric_create_results.results
+  when:
+    - establish_fabric_create_results is defined
+
+- name: Show SDN zone summary
+  ansible.builtin.command: >-
+    pvesh get /cluster/sdn/zones/{{ sdn_zone_name | default('zone1') }}
+  register: establish_fabric_zone_info
+  failed_when: false
   changed_when: false
 
-- name: Display final SDN configuration
+- name: Display zone summary
   ansible.builtin.debug:
     msg: |
-      Final SDN configuration:
-      {{ sdn_final_config.stdout }}
+      SDN zone '{{ sdn_zone_name | default('zone1') }}' details:
+      {{ establish_fabric_zone_info.stdout | default('Zone not found') }}
 
-- name: Verify bridge and VNet associations
-  ansible.builtin.command: >
-    pvesh get /nodes/localhost/network | jq '.[] | select(.type == "bridge") | {iface: .iface, bridge_ports: .bridge_ports}'
-  register: bridge_vnet_check
+- name: Show VNET catalogue
+  ansible.builtin.command: >-
+    pvesh get /cluster/sdn/vnets --output-format json
+  register: establish_fabric_vnets
+  failed_when: false
   changed_when: false
-  ignore_errors: true
 
-- name: Display bridge configuration
+- name: Display managed VNets
   ansible.builtin.debug:
     msg: |
-      Bridge configuration on {{ inventory_hostname }}:
-      {{ bridge_vnet_check.stdout | default('jq not available or no bridges found') }}
+      VNET objects present in cluster:
+      {{ establish_fabric_vnets.stdout | default('No VNET definitions detected') }}
 
-- name: Test VNet connectivity (if subnets created)
-  ansible.builtin.command: ping -c 3 {{ item.gateway }}
-  loop:
-    - { gateway: '192.168.10.1' }
-    - { gateway: '192.168.20.1' }
-  register: vnet_ping_test
+- name: Show bridge inventory on node
+  ansible.builtin.command: ip -br link show type bridge
+  register: establish_fabric_bridge_status
   changed_when: false
-  ignore_errors: true
-  when: subnet_creation.changed
+
+- name: Display bridge inventory
+  ansible.builtin.debug:
+    msg: |
+      Bridges on {{ inventory_hostname }}:
+      {{ establish_fabric_bridge_status.stdout }}
+
+- name: Optionally show BGP status when FRR is present
+  ansible.builtin.command: vtysh -c "show bgp summary"
+  register: establish_fabric_bgp_status
+  changed_when: false
+  failed_when: false
+  when: "'frr' in group_names or 'bgp' in group_names"
+
+- name: Display BGP status (if collected)
+  ansible.builtin.debug:
+    msg: |
+      BGP status on {{ inventory_hostname }}:
+      {{ establish_fabric_bgp_status.stdout | default('FRR/BGP not configured or command unavailable') }}
+  when: establish_fabric_bgp_status is defined
