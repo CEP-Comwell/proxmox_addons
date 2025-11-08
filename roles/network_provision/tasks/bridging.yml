@@ -95,6 +95,12 @@
   loop_control:
     label: "{{ item.name }}"
 
+- name: Partition bridges by implementation path
+  set_fact:
+    linux_bridges: "{{ normalized_bridges | selectattr('bridge_type', 'equalto', 'bridge') | list }}"
+    ovs_bridges: "{{ normalized_bridges | selectattr('bridge_type', 'equalto', 'OVSBridge') | list }}"
+    ovs_bridge_names: "{{ (normalized_bridges | selectattr('bridge_type', 'equalto', 'OVSBridge') | map(attribute='name') | list) }}"
+
 - name: Normalize declared subinterfaces
   set_fact:
     normalized_subinterfaces: "{{ normalized_subinterfaces + [ {
@@ -119,11 +125,33 @@
   loop_control:
     label: "{{ item.1.name | default('undefined') }}"
 
+- name: Build bridge type lookup
+  set_fact:
+    bridge_type_map: "{{ dict(normalized_bridges | map(attribute='name') | zip(normalized_bridges | map(attribute='bridge_type'))) }}"
+
+- name: Identify subinterfaces attached to OVS bridges
+  set_fact:
+    ovs_subinterfaces: "{{ normalized_subinterfaces | selectattr('parent_bridge', 'in', ovs_bridge_names | default([])) | list }}"
+
+- name: Partition subinterfaces by automation capability
+  vars:
+    manual_subinterface_types: ['vlan', 'vxlan']
+  set_fact:
+    manual_subinterfaces: "{{ normalized_subinterfaces | selectattr('type', 'in', manual_subinterface_types) | list }}"
+    api_managed_subinterfaces: []
+
 - name: Build list of known interface identifiers
   set_fact:
     known_interfaces: "{{ ((all_interfaces | default([]))
       + (nic_names | default({}) | dict2items | map(attribute='value') | list)
       + (normalized_subinterfaces | map(attribute='name') | list)) | unique }}"
+
+- name: Highlight subinterfaces attached to OVS bridges
+  debug:
+    msg: >-
+      The following subinterfaces belong to OVS bridges and must be configured manually: {{ ovs_subinterfaces | map(attribute='name') | list | join(', ') }}.
+  when:
+    - ovs_subinterfaces | default([]) | length > 0
 
 - name: Validate bridge types are supported
   assert:
@@ -153,7 +181,87 @@
 - name: Pause for confirmation before applying bridge configuration
   pause:
     prompt: "Proceed to apply bridge configuration? (press Enter to continue or CTRL-C to abort)"
-  when: provision_confirm_before_apply | default(false) and not (provision_generate_only | default(false))
+  when: (
+        (provision_confirm_before_apply | default(false))
+        or (manual_subinterfaces | default([]) | length > 0)
+        or (ovs_bridges | default([]) | length > 0)
+      )
+      and not (provision_generate_only | default(false))
+
+- name: Initialize manual configuration bundle
+  set_fact:
+    manual_snippets: []
+    manual_cleanup_targets: []
+    manual_cleanup_file_paths: []
+    manual_cleanup_template: "sudo sed -i '/^auto \\1$/,/^$/d' /etc/network/interfaces"
+    manual_cleanup_file_template: "sudo rm -f '\\1'"
+  when: not (provision_generate_only | default(false))
+
+- name: Collect manual snippets for OVS bridges
+  set_fact:
+    manual_snippets: "{{ manual_snippets + [ lookup('template', 'ovs_bridge_manual_snippet.j2', item=item) | trim ] }}"
+    manual_cleanup_targets: "{{ manual_cleanup_targets + [ item.name ] }}"
+    manual_cleanup_file_paths: "{{ manual_cleanup_file_paths + ['/etc/network/interfaces.d/' + item.name + '.cfg'] }}"
+  loop: "{{ ovs_bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not (provision_generate_only | default(false))
+    - ovs_bridges | length > 0
+
+- name: Collect manual snippets for bridge subinterfaces
+  set_fact:
+    manual_snippets: "{{ manual_snippets + [ lookup('template', 'subinterface_manual_snippet.j2', item=item) | trim ] }}"
+    manual_cleanup_targets: "{{ manual_cleanup_targets + [ item.name ] }}"
+    manual_cleanup_file_paths: "{{ manual_cleanup_file_paths + ['/etc/network/interfaces.d/' + item.name + '.cfg'] }}"
+  loop: "{{ manual_subinterfaces | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not (provision_generate_only | default(false))
+    - manual_subinterfaces | default([]) | length > 0
+
+- name: Build combined manual configuration instructions
+  set_fact:
+    manual_config_text: "{{ manual_snippets | default([]) | select('string') | reject('equalto', '') | join('\\n\\n') }}"
+    manual_cleanup_commands: "{{ manual_cleanup_targets | default([]) | unique | map('regex_replace', '^(.*)$', manual_cleanup_template) | list }}"
+    manual_cleanup_file_commands: "{{ manual_cleanup_file_paths | default([]) | unique | map('regex_replace', '^(.*)$', manual_cleanup_file_template) | list }}"
+  when: not (provision_generate_only | default(false))
+
+- name: Display combined manual configuration instructions
+  debug:
+    msg: |
+      Manual configuration required for the following interfaces: {{ manual_cleanup_targets | unique | join(', ') }}.
+      # TODO(api-support): Remove this manual workflow once Proxmox exposes the necessary API options.
+      Copy/paste commands:
+
+      sudo cp /etc/network/interfaces /etc/network/interfaces.bak.$(date +%Y%m%d%H%M%S)
+{% for cmd in manual_cleanup_commands %}      {{ cmd }}
+{% endfor %}{% for cmd in manual_cleanup_file_commands %}      {{ cmd }}
+{% endfor %}      cat <<'EOF' | sudo tee /etc/network/interfaces.d/manual-sdn.cfg >/dev/null
+      {{ manual_config_text }}
+      EOF
+  when:
+    - not (provision_generate_only | default(false))
+    - manual_config_text | default('') | length > 0
+
+- name: Confirm manual configuration bundle applied
+  pause:
+    prompt: |
+      Execute the combined manual commands above, then press Enter to continue (type 'no' to abort).
+  when:
+    - not (provision_generate_only | default(false))
+    - manual_config_text | default('') | length > 0
+  register: manual_bundle_confirmation
+
+- name: Verify manual configuration confirmation
+  assert:
+    that:
+      - manual_bundle_confirmation.user_input | default('') | lower | trim not in ['no', 'n']
+    fail_msg: "Operator aborted during manual configuration bundle."
+  when:
+    - not (provision_generate_only | default(false))
+    - manual_config_text | default('') | length > 0
 
 - name: Get current Proxmox network configuration
   become: true
@@ -172,7 +280,7 @@
 - name: Create or update bridges using Proxmox API
   become: true
   when: not (provision_generate_only | default(false))
-  loop: "{{ normalized_bridges }}"
+  loop: "{{ linux_bridges }}"
   loop_control:
     label: "{{ item.name }}"
   vars:
@@ -189,33 +297,33 @@
     bridge_name="{{ item.name }}"
     declare -a set_args
     declare -a create_args
-    set_args=(-type "{{ item.bridge_type }}")
-    create_args=(-iface "{{ item.name }}" -type "{{ item.bridge_type }}")
-    set_args+=(-autostart "{{ autostart_flag }}")
-    create_args+=(-autostart "{{ autostart_flag }}")
+    set_args=(--type "{{ item.bridge_type }}")
+    create_args=(--iface "{{ item.name }}" --type "{{ item.bridge_type }}")
+    set_args+=(--autostart "{{ autostart_flag }}")
+    create_args+=(--autostart "{{ autostart_flag }}")
     {% if include_vlan | bool %}
-    set_args+=(-bridge_vlan_aware "{{ vlan_flag }}")
-    create_args+=(-bridge_vlan_aware "{{ vlan_flag }}")
+    set_args+=(--bridge_vlan_aware "{{ vlan_flag }}")
+    create_args+=(--bridge_vlan_aware "{{ vlan_flag }}")
     {% endif %}
     {% if has_ports | bool %}
-    set_args+=(-{{ item.ports_param }} "{{ item.ports_arg }}")
-    create_args+=(-{{ item.ports_param }} "{{ item.ports_arg }}")
+    set_args+=(--{{ item.ports_param }} "{{ item.ports_arg }}")
+    create_args+=(--{{ item.ports_param }} "{{ item.ports_arg }}")
     {% endif %}
     {% if mtu_arg %}
-    set_args+=(-mtu "{{ mtu_arg }}")
-    create_args+=(-mtu "{{ mtu_arg }}")
+    set_args+=(--mtu "{{ mtu_arg }}")
+    create_args+=(--mtu "{{ mtu_arg }}")
     {% endif %}
     {% if item.bridge_type == 'OVSBridge' and ovs_mtu_arg %}
-    set_args+=(-ovs_mtu "{{ ovs_mtu_arg }}")
-    create_args+=(-ovs_mtu "{{ ovs_mtu_arg }}")
+    set_args+=(--ovs_mtu "{{ ovs_mtu_arg }}")
+    create_args+=(--ovs_mtu "{{ ovs_mtu_arg }}")
     {% endif %}
     {% if comment_arg %}
-    set_args+=(-comments "{{ comment_arg }}")
-    create_args+=(-comments "{{ comment_arg }}")
+    set_args+=(--comments "{{ comment_arg }}")
+    create_args+=(--comments "{{ comment_arg }}")
     {% endif %}
     {% if item.bridge_type == 'OVSBridge' and ovs_opts_arg %}
-    set_args+=(-ovs_options "{{ ovs_opts_arg }}")
-    create_args+=(-ovs_options "{{ ovs_opts_arg }}")
+    set_args+=(--ovs_options "{{ ovs_opts_arg }}")
+    create_args+=(--ovs_options "{{ ovs_opts_arg }}")
     {% endif %}
     if /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q "^${bridge_name}$"; then
       pvesh set /nodes/localhost/network/${bridge_name} "${set_args[@]}"
@@ -228,7 +336,7 @@
 - name: Ensure interfaces referenced in bridges are declared
   become: true
   when: not (provision_generate_only | default(false))
-  loop: "{{ normalized_bridges | subelements('ports') }}"
+  loop: "{{ linux_bridges | subelements('ports') }}"
   loop_control:
     label: "{{ item.1 }}"
   vars:
@@ -244,34 +352,60 @@
   become: true
   when:
     - not (provision_generate_only | default(false))
-    - normalized_subinterfaces | length > 0
-  loop: "{{ normalized_subinterfaces }}"
+    - api_managed_subinterfaces | default([]) | length > 0
+    - bridge_type_map[item.parent_bridge] | default('bridge') != 'OVSBridge'
+  loop: "{{ api_managed_subinterfaces }}"
   loop_control:
     label: "{{ item.name }}"
   vars:
     autostart_flag: "{{ item.autostart | ternary('yes', 'no') }}"
     comment_arg: "{{ item.comment | string | trim }}"
+    iface_type_lower: "{{ item.type | default('') | lower }}"
   shell: |
     set -euo pipefail
     iface_name="{{ item.name }}"
     declare -a set_args
     declare -a create_args
-    set_args=(-type "{{ item.type }}")
-    create_args=(-iface "{{ item.name }}" -type "{{ item.type }}")
-    set_args+=(-autostart "{{ autostart_flag }}")
-    create_args+=(-autostart "{{ autostart_flag }}")
+    set_args=(--type "{{ item.type }}")
+    create_args=(--iface "{{ item.name }}" --type "{{ item.type }}")
+    set_args+=(--autostart "{{ autostart_flag }}")
+    create_args+=(--autostart "{{ autostart_flag }}")
     {% if comment_arg %}
-    set_args+=(-comments "{{ comment_arg }}")
-    create_args+=(-comments "{{ comment_arg }}")
+    set_args+=(--comments "{{ comment_arg }}")
+    create_args+=(--comments "{{ comment_arg }}")
     {% endif %}
-    {% for opt in (item.options | default({}) | dict2items) %}
+    {% set opts = item.options | default({}) %}
+    {% if iface_type_lower == 'vlan' %}
+    {% set vlan_id_opt = opts.get('vlan-id', opts.get('vlan_id', opts.get('tag'))) %}
+    {% set vlan_raw_opt = opts.get('vlan-raw-device', opts.get('vlan_raw_device', opts.get('raw-device', opts.get('raw_device', opts.get('link', item.parent_bridge))))) %}
+    {% if vlan_id_opt %}
+    set_args+=(--vlan-id "{{ vlan_id_opt }}")
+    create_args+=(--vlan-id "{{ vlan_id_opt }}")
+    {% endif %}
+    {% if vlan_raw_opt %}
+    set_args+=(--vlan-raw-device "{{ vlan_raw_opt }}")
+    create_args+=(--vlan-raw-device "{{ vlan_raw_opt }}")
+    {% endif %}
+    {% for opt in (opts | dict2items) %}
+    {% if opt.key not in ['tag', 'vlan-id', 'vlan_id', 'vlan-raw-device', 'vlan_raw_device', 'raw-device', 'raw_device', 'link'] %}
     {% set opt_value = opt.value %}
     {% if opt_value is iterable and opt_value is not string %}
     {% set opt_value = opt_value | join(',') %}
     {% endif %}
-    set_args+=(-{{ opt.key }} "{{ opt_value }}")
-    create_args+=(-{{ opt.key }} "{{ opt_value }}")
+    set_args+=(--{{ opt.key }} "{{ opt_value }}")
+    create_args+=(--{{ opt.key }} "{{ opt_value }}")
+    {% endif %}
     {% endfor %}
+    {% else %}
+    {% for opt in (opts | dict2items) %}
+    {% set opt_value = opt.value %}
+    {% if opt_value is iterable and opt_value is not string %}
+    {% set opt_value = opt_value | join(',') %}
+    {% endif %}
+    set_args+=(--{{ opt.key }} "{{ opt_value }}")
+    create_args+=(--{{ opt.key }} "{{ opt_value }}")
+    {% endfor %}
+    {% endif %}
     if /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q "^${iface_name}$"; then
       pvesh set /nodes/localhost/network/${iface_name} "${set_args[@]}"
     else

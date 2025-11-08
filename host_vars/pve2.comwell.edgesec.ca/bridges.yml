@@ -1,0 +1,47 @@
+# vmbr definitions for pve2.comwell.edgesec.ca
+bridges:
+  - name: vmbr99
+    type: OVSBridge
+    bridge_ports:
+      - ens2f0
+    mtu: 9000
+    vlan_aware: true
+  - name: vmbr1
+    type: OVSBridge
+    bridge_ports:
+      - eth1
+    mtu: 9000
+    vlan_aware: true
+  - name: vmbr2
+    type: bridge
+    bridge_ports:
+      - xg1
+    mtu: 1420
+    subinterfaces:
+      - name: gateway1
+        type: vlan
+        options:
+          tag: 100
+      - name: gateway2
+        type: vlan
+        options:
+          tag: 200
+      - name: legacy-vlan100
+        type: vlan
+        options:
+          tag: 100
+      - name: vxlan10031
+        type: vxlan
+        options:
+          vxlan-id: 10031
+          vxlan-local-tunnel-ip: 10.90.0.11
+      - name: vxlan9003
+        type: vxlan
+        options:
+          vxlan-id: 9003
+          vxlan-local-tunnel-ip: 10.90.0.11
+      - name: vxlan9006
+        type: vxlan
+        options:
+          vxlan-id: 9006
+          vxlan-local-tunnel-ip: 10.90.0.11

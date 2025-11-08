@@ -1,0 +1,16 @@
+{% if item.autostart | default(true) %}auto {{ item.name }}
+{% else %}# auto {{ item.name }} (autostart disabled)
+{% endif %}allow-ovs {{ item.name }}
+iface {{ item.name }} inet manual
+    ovs_type OVSBridge
+{% if item.ports | length > 0 %}    ovs_ports {{ item.ports | join(' ') }}
+{% endif %}{% if item.mtu | string | trim %}    mtu {{ item.mtu | string | trim }}
+{% endif %}{% if item.ovs_options | string | trim %}    ovs_options {{ item.ovs_options | string | trim }}
+{% endif %}{% if item.comment | string | trim %}    # comment: {{ item.comment | string | trim }}
+{% endif %}{% if item.vlan_aware %}    # vlan_aware: true (configure tagging/trunking via ovs-vsctl as required)
+{% endif %}{% for port in item.ports %}
+allow-ovs {{ port }}
+iface {{ port }} inet manual
+    ovs_type OVSPort
+    ovs_bridge {{ item.name }}
+{% endfor %}

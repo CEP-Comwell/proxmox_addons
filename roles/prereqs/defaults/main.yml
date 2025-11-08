@@ -6,6 +6,7 @@ prereq_packages:
   - lm-sensors
   - wget
   - jq
+  - openvswitch-switch
 
 # Optional: provide a URL to download the pve-network-interface-pinning script/binary
 # Example: https://example.com/pve-network-interface-pinning
