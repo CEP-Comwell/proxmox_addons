@@ -1,11 +1,56 @@
-# Default bridge_ports mapping (can be overridden in host_vars)
+# Default bridge configuration (override per-node as needed)
 # bridges:
-#   - name: vmbr0
-#     bridge_ports: ens1f0
+#   - name: vmbr99
+#     type: OVSBridge      # Open vSwitch bridge for management
+#     bridge_ports:
+#       - xg1
+#     mtu: 9000
+#     vlan_aware: true
 #   - name: vmbr1
-#     bridge_ports: ens1f1
+#     type: OVSBridge      # Open vSwitch bridge for tenant workloads
+#     bridge_ports:
+#       - xg2
+#     mtu: 9000
+#     vlan_aware: true
 #   - name: vmbr2
-#     bridge_ports: eno2
+#     type: bridge         # Linux bridge attached to VyOS / external
+#     bridge_ports:
+#       - eth1
+#     mtu: 1420
+#     subinterfaces:
+#       - name: gateway1
+#         type: vlan
+#         options:
+#           tag: 100
+#           bridge: vmbr2
+#       - name: gateway2
+#         type: vlan
+#         options:
+#           tag: 200
+#           bridge: vmbr2
+#       - name: legacy-vlan100
+#         type: vlan
+#         options:
+#           tag: 100
+#           bridge: vmbr2
+#       - name: vxlan10031
+#         type: vxlan
+#         options:
+#           bridge: vmbr2
+#           vxlan-id: 10031
+#           vxlan-local-tunnel-ip: 10.90.0.10
+#       - name: vxlan9003
+#         type: vxlan
+#         options:
+#           bridge: vmbr2
+#           vxlan-id: 9003
+#           vxlan-local-tunnel-ip: 10.90.0.10
+#       - name: vxlan9006
+#         type: vxlan
+#         options:
+#           bridge: vmbr2
+#           vxlan-id: 9006
+#           vxlan-local-tunnel-ip: 10.90.0.10
 
 # nftables configuration for SDN bridges
 nftables_configure_bridges: false

@@ -19,58 +19,85 @@ A modular Ansible role and playbook collection for deploying, managing, and moni
 ### edgesec-SDN: Bridges and Connected VXLANs
 ```mermaid
 graph LR
+
+%% Inventory-driven bridge definitions (bridges[] in group_vars/host_vars)
 subgraph Bridges
-		MgmtBridge[[vmbr99 - Management]]
-	VMBridge[[vmbr1 - VM/Services]]
-	ExtBridge[[vmbr2 - Hybrid-Leaf GW]]
+	MgmtBridge["vmbr99 (OVSBridge)<br><sub>ports: xg1 · mtu: 9000 · vlan_aware: true</sub>"]
+	VMBridge["vmbr1 (OVSBridge)<br><sub>ports: xg2 · mtu: 9000 · vlan_aware: true</sub>"]
+	ExtBridge["vmbr2 (Linux bridge)<br><sub>ports: eth1 · mtu: 1420 · VyOS uplink</sub>"]
 end
+
+%% VLAN/VXLAN attachments realized via subinterfaces on vmbr2
+subgraph vmbr2_subinterfaces[vmbr2 subinterfaces]
+	Gateway1["gateway1 (type: vlan, tag 100)"]
+	Gateway2["gateway2 (type: vlan, tag 200)"]
+	LegacyVLAN["legacy-vlan100 (type: vlan, tag 100)"]
+	VX10031Ifc["vxlan10031 (type: vxlan, id 10031)"]
+	VX9003Ifc["vxlan9003 (type: vxlan, id 9003)"]
+	VX9006Ifc["vxlan9006 (type: vxlan, id 9006)"]
+end
+
+%% Overlay VNIs consumed by SDN fabric (sdn_vni_plan)
 subgraph VXLANs
-	VX10100(vxlan10100 - tenant1_management)
-	VX10101(vxlan10101 - tenant1_engineering)
-	VX10102(vxlan10102 - tenant1_support)
-	VXCEPH2(vxlan10031 - ceph_cluster)
-	VX10032(vxlan10032 - core-services)
-	VX10110(vxlan10110 - tenant1_services)
-	VX9000(vxlan9000 - Common service overlay)
-	VX9006(vxlan9006 - edgesec-vault)
-	VX9003(vxlan9003 - proxy_ext)
-	VX10120(vxlan10120 - tenant1_ext)
-	Gateway1[Primary Gateway]
-	Gateway2[Backup Gateway]
-	LegacyVLAN[Legacy VLANs]
+	VX10100(vxlan10100 · tenant1_mgmt)
+	VX10101(vxlan10101 · tenant1_engineering)
+	VX10102(vxlan10102 · tenant1_support)
+	VX10031(vxlan10031 · ceph_cluster)
+	VX10032(vxlan10032 · core_services)
+	VX10110(vxlan10110 · tenant1_services)
+	VX9000(vxlan9000 · shared_services)
+	VX9006(vxlan9006 · edgesec_vault)
+	VX9003(vxlan9003 · proxy_ext)
+	VX10120(vxlan10120 · tenant1_ext)
+	VyOSGW[VyOS EVPN Gateway]
 end
-VXLANGW{VXLAN-Gateway}
+
+%% Bridge to VNI relationships
 MgmtBridge --> VX10100
 MgmtBridge --> VX10101
 MgmtBridge --> VX10102
-MgmtBridge --> VXCEPH2
+MgmtBridge --> VX10031
 MgmtBridge --> VX10032
+
 VMBridge --> VX10110
 VMBridge --> VX9000
 VMBridge --> VX9006
-ExtBridge --> VX9003
+
 ExtBridge --> VX10120
+ExtBridge --> VX9003Ifc
+ExtBridge --> VX9006Ifc
+ExtBridge --> VX10031Ifc
 ExtBridge --> Gateway1
 ExtBridge --> Gateway2
 ExtBridge --> LegacyVLAN
-VX10100 <--> VXLANGW
-VX10101 <--> VXLANGW
-VX10102 <--> VXLANGW
-VX10110 <--> VXLANGW
-VX9000 <--> VXLANGW
-VX9006 <--> VXLANGW
-VX9003 <--> VXLANGW
-VX10120 <--> VXLANGW
-VXCEPH2 <--> VXLANGW
-VX10032 <--> VXLANGW
+
+%% vmbr2 subinterfaces feeding VyOS / SDN fabric
+Gateway1 --> VyOSGW
+Gateway2 --> VyOSGW
+LegacyVLAN --> VyOSGW
+VX10031Ifc --> VyOSGW
+VX9003Ifc --> VyOSGW
+VX9006Ifc --> VyOSGW
+
+%% SDN fabric VNIs terminate on VyOS as the EVPN gateway
+VX10100 --> VyOSGW
+VX10101 --> VyOSGW
+VX10102 --> VyOSGW
+VX10110 --> VyOSGW
+VX9000 --> VyOSGW
+VX9006 --> VyOSGW
+VX9003 --> VyOSGW
+VX10120 --> VyOSGW
+VX10031 --> VyOSGW
+VX10032 --> VyOSGW
 
 %% Color coding
 classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
 classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
 classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
-class MgmtBridge,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
+class MgmtBridge,VX10100,VX10101,VX10102,VX10031,VX10032 mgmt;
 class VMBridge,VX10110,VX9000,VX9006 vm;
-class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
+class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX10031Ifc,VX9003Ifc,VX9006Ifc,VX9003,VX10120,VyOSGW ext;
 ```
 </details>
 

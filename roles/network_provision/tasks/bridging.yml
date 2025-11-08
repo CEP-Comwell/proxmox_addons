@@ -1,106 +1,160 @@
 ---
-# PVE 9 SDN Bridge Configuration using Proxmox API
-# Fixed bridge assignments for hybrid spine-leaf architecture (1 interface per bridge)
-# - vmbr99: Management Bridge (first available 10Gb interface)
-# - vmbr2: External Bridge (second 10Gb interface if available, otherwise first 1Gb interface)
-# - vmbr1: VM Bridge (third 10Gb interface if available, otherwise next available 1Gb interface)
+# Inventory-driven bridge configuration for Proxmox VE
+# Engineers describe bridge topology in group_vars/host_vars using the
+# `bridges` list. Each item should at minimum define a bridge `name` and
+# `bridge_ports` (use an empty list when the bridge has no physical uplinks).
 #
-# Optional reboot and verification:
-# Set provision_reboot_after_config=true to automatically reboot and verify network status
-# Example: ansible-playbook ... -e provision_reboot_after_config=true
+# Example:
+# bridges:
+#   - name: vmbr99
+#     bridge_ports:
+#       - ens1f0
+#     vlan_aware: true
+#   - name: vmbr2
+#     bridge_ports: []
 
-# Build fixed bridge assignments based on normalized interface names
-# Limit to 1 interface per bridge to avoid STP issues
-# Priority order for 10GbE: vmbr99 > vmbr2 > vmbr1
-
-- name: Verify required variables are set before proceeding with bridge configuration
+- name: Ensure bridge definitions exist in inventory
   assert:
     that:
-      - nic_names is defined
-      - protected_mgmt_iface is defined
-      - eth_norm is defined
-    fail_msg: "Required variables not set. Please run discovery and naming tasks first."
+      - bridges is defined
+      - bridges | length > 0
+    fail_msg: >-
+      Define `bridges` as a non-empty list in inventory (see group_vars/all.yml
+      for examples) before running the network_provision role.
 
-- name: Debug protected management interface
-  debug:
-    msg: "Protected management interface: {{ protected_mgmt_iface }}"
-  when: protected_mgmt_iface is defined
-
-- name: Calculate available 10GbE interfaces (excluding protected)
-  set_fact:
-    available_10gbe: "{{ nic_names | dict2items | selectattr('value','match','^xg') | map(attribute='key') | select('ne', protected_mgmt_iface) | list }}"
-
-- name: Get normalized names for available 10GbE interfaces
-  set_fact:
-    available_10gbe_norm: "{{ available_10gbe | map('extract', nic_names) | list }}"
-
-- name: Assign 10GbE interfaces by priority order
-  set_fact:
-    bridge_assignments:
-      vmbr99: "{{ [available_10gbe_norm[0]] if available_10gbe_norm | length > 0 else [] }}"  # Highest priority 10GbE
-      vmbr2: "{{ [available_10gbe_norm[1]] if available_10gbe_norm | length > 1 else [] }}"  # Second priority 10GbE
-      vmbr1: "{{ [available_10gbe_norm[2]] if available_10gbe_norm | length > 2 else [] }}"  # Third priority 10GbE
-
-- name: Fill 1GbE fallbacks for bridges without 10GbE
-  set_fact:
-    # Separate eth interfaces from other interfaces and sort eth numerically
-    eth_interfaces: "{{ interfaces | select('match', '^eth[0-9]+$') | sort }}"
-    other_interfaces: "{{ interfaces | reject('match', '^eth[0-9]+$') | list }}"
-    bridges_needing_fallback: "{{ bridge_assignments | dict2items | selectattr('value', 'equalto', []) | map(attribute='key') | list }}"
-
-- name: Create prioritized interface list for fallback assignments
-  set_fact:
-    # Prioritize eth interfaces first, then other interfaces
-    prioritized_interfaces: "{{ eth_interfaces + other_interfaces }}"
-
-- name: Assign fallback interfaces to bridges needing them
-  set_fact:
-    bridge_assignments: "{{ bridge_assignments | combine({item.0: [item.1]}) }}"
-  loop: "{{ bridges_needing_fallback | zip(prioritized_interfaces) | list }}"
-  when: bridges_needing_fallback | length > 0 and prioritized_interfaces | length > 0
-
-# Ensure protected management interface is not assigned to any bridge
-- name: Ensure protected management interface is not assigned to any bridge
-  set_fact:
-    bridge_assignments: "{{ bridge_assignments | combine({item.key: item.value | reject('equalto', protected_mgmt_iface)}) }}"
-  loop: "{{ bridge_assignments | dict2items }}"
-  loop_control:
-    label: "{{ item.key }}"
-
-# Validate bridge assignments - ensure exactly 1 interface per bridge
-- name: Validate bridge assignments - ensure exactly 1 interface per bridge
+- name: Ensure each bridge definition includes a name
   assert:
-    that: item.value | length == 1
-    fail_msg: "Bridge {{ item.key }} has {{ item.value | length }} interfaces assigned, but exactly 1 interface per bridge is required for SDN stability"
-  loop: "{{ bridge_assignments | dict2items }}"
+    that:
+      - item.name is defined
+      - (item.name | string | trim | length) > 0
+    fail_msg: "Bridge definition at index {{ bridge_idx }} is missing a 'name'."
+
+  loop: "{{ bridges }}"
   loop_control:
-    label: "{{ item.key }}: {{ item.value }}"
-  when: item.key != 'vmbr0'
+    index_var: bridge_idx
+    label: "{{ item.name | default('undefined') }}"
 
-# Validate no interface conflicts - ensure each interface is assigned to exactly 1 bridge
-- name: Validate no interface conflicts - ensure each interface is assigned to exactly 1 bridge
-  set_fact:
-    all_assigned_interfaces: "{{ bridge_assignments | dict2items | selectattr('key', 'ne', 'vmbr0') | map(attribute='value') | flatten | list }}"
-  when: bridge_assignments is defined
-
-- name: Check for interface conflicts
+- name: Ensure bridge names are unique
+  vars:
+    bridge_names: "{{ bridges | map(attribute='name') | list }}"
   assert:
-    that: (all_assigned_interfaces | count) == (all_assigned_interfaces | unique | count)
-    fail_msg: "Interface conflict detected: {{ all_assigned_interfaces | difference(all_assigned_interfaces | unique) | join(', ') }} are assigned to multiple bridges. Each interface must be assigned to exactly 1 bridge."
-  when: all_assigned_interfaces is defined
+    that:
+      - bridge_names | length == bridge_names | unique | length
+    fail_msg: "Duplicate bridge names detected in the 'bridges' inventory list."
 
-# Debug bridge assignments before assertion
-- name: Debug bridge assignments before assertion
-  debug:
-    msg: "Bridge assignments: {{ bridge_assignments }}"
+- name: Ensure bridge ports are declared (use [] for none)
+  assert:
+    that:
+      - item.bridge_ports is defined
+    fail_msg: "Bridge {{ item.name }} must define bridge_ports (empty list allowed)."
+  loop: "{{ bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
 
-# Pause for confirmation before applying assignments (if requested)
-- name: Pause for confirmation before applying assignments
+- name: Validate subinterface definitions (if provided)
+  assert:
+    that:
+      - child.name is defined
+      - (child.name | string | trim | length) > 0
+      - child.type is defined
+    fail_msg: "Subinterface declarations must include both 'name' and 'type'."
+  vars:
+    child: "{{ item.1 }}"
+  loop: "{{ bridges | subelements('subinterfaces', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.1.name | default('undefined') }}"
+
+- name: Initialize normalized bridge and subinterface lists
+  set_fact:
+    normalized_bridges: []
+    normalized_subinterfaces: []
+
+- name: Normalize bridge definitions from inventory
+  set_fact:
+    normalized_bridges: "{{ normalized_bridges + [ {
+      'name': item.name,
+      'ports': ports_list,
+      'ports_arg': ports_list | join(','),
+      'ports_param': (item.type | default('bridge')) == 'OVSBridge' and 'ovs_ports' or 'bridge_ports',
+      'bridge_type': item.type | default('bridge'),
+      'autostart': (item.autostart | default(true) | bool),
+      'vlan_aware': (item.vlan_aware | default(item.name not in ['vmbr0']) | bool),
+      'mtu': item.mtu | default(''),
+      'comment': item.comment | default(''),
+      'ovs_options': item.ovs_options | default(''),
+      'ovs_mtu': item.ovs_mtu | default('')
+    } ] }}"
+  vars:
+    ports_list: >-
+      {{
+        item.bridge_ports
+        if item.bridge_ports is defined and item.bridge_ports is iterable and item.bridge_ports is not string
+        else (item.bridge_ports | default('') | regex_replace('[, ]+', ' ') | trim | split())
+      }}
+  loop: "{{ bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Normalize declared subinterfaces
+  set_fact:
+    normalized_subinterfaces: "{{ normalized_subinterfaces + [ {
+      'parent_bridge': parent.name,
+      'name': child.name,
+      'type': child.type,
+      'autostart': (child.autostart | default(true) | bool),
+      'comment': child.comment | default(''),
+      'options': (
+        default_bridge_option | combine(default_link_option) | combine(child.options | default({}))
+      )
+    } ] }}"
+  vars:
+    parent: "{{ item.0 }}"
+    child: "{{ item.1 }}"
+    child_type_lower: "{{ child.type | default('') | lower }}"
+    has_bridge_option: "{{ child.options is defined and child.options is mapping and ('bridge' in child.options) }}"
+    has_link_option: "{{ child.options is defined and child.options is mapping and ('link' in child.options or 'link0' in child.options) }}"
+    default_bridge_option: "{{ {} if has_bridge_option else {'bridge': parent.name} }}"
+    default_link_option: "{{ {'link': parent.name} if child_type_lower == 'vlan' and not has_link_option else {} }}"
+  loop: "{{ bridges | subelements('subinterfaces', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.1.name | default('undefined') }}"
+
+- name: Build list of known interface identifiers
+  set_fact:
+    known_interfaces: "{{ ((all_interfaces | default([]))
+      + (nic_names | default({}) | dict2items | map(attribute='value') | list)
+      + (normalized_subinterfaces | map(attribute='name') | list)) | unique }}"
+
+- name: Validate bridge types are supported
+  assert:
+    that:
+      - item.bridge_type in ['bridge', 'OVSBridge']
+    fail_msg: "Bridge {{ item.name }} uses unsupported type '{{ item.bridge_type }}'."
+  loop: "{{ normalized_bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Validate bridge ports exist on host (when discoverable)
+  assert:
+    that:
+      - missing_ports | length == 0
+    fail_msg: >-
+      Bridge {{ item.name }} references unknown interfaces: {{ missing_ports | join(', ') }}.
+      Available interfaces: {{ known_interfaces | default([]) | join(', ') }}
+  vars:
+    missing_ports: "{{ item.ports | difference(known_interfaces | default([])) }}"
+  loop: "{{ normalized_bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - item.ports | length > 0
+    - known_interfaces is defined
+
+- name: Pause for confirmation before applying bridge configuration
   pause:
-    prompt: "Proceed to apply bridge assignments? (press Enter to continue or CTRL-C to abort)"
+    prompt: "Proceed to apply bridge configuration? (press Enter to continue or CTRL-C to abort)"
   when: provision_confirm_before_apply | default(false) and not (provision_generate_only | default(false))
 
-# Get current Proxmox network configuration
 - name: Get current Proxmox network configuration
   become: true
   command: pvesh get /nodes/localhost/network --output-format json
@@ -109,37 +163,72 @@
   when: not (provision_generate_only | default(false))
   check_mode: no
 
-# Parse existing network interfaces
 - name: Parse existing network interfaces
   set_fact:
     existing_interfaces: "{{ proxmox_network_config.stdout | from_json | map(attribute='iface') | list }}"
   when: not (provision_generate_only | default(false)) and proxmox_network_config.stdout is defined
   check_mode: no
 
-# Create or update bridges using Proxmox API
 - name: Create or update bridges using Proxmox API
   become: true
   when: not (provision_generate_only | default(false))
-  loop: "{{ bridge_assignments | dict2items }}"
+  loop: "{{ normalized_bridges }}"
   loop_control:
-    label: "{{ item.key }}"
+    label: "{{ item.name }}"
   vars:
-    bridge_name: "{{ item.key }}"
-    bridge_ports: "{{ item.value | join(',') }}"
-  command: |
-    bash -c "
-    if /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q '^\\b{{ bridge_name }}\\b$'; then
-      pvesh set /nodes/localhost/network/{{ bridge_name }} -type bridge -bridge_ports '{{ bridge_ports }}' -bridge_vlan_aware yes -autostart yes
+    autostart_flag: "{{ item.autostart | ternary('yes', 'no') }}"
+    include_vlan: "{{ item.bridge_type == 'bridge' }}"
+    vlan_flag: "{{ item.vlan_aware | ternary('yes', 'no') }}"
+    has_ports: "{{ (item.ports_arg | length) > 0 }}"
+    mtu_arg: "{{ item.mtu | string | trim }}"
+    comment_arg: "{{ item.comment | string | trim }}"
+    ovs_opts_arg: "{{ item.ovs_options | string | trim }}"
+    ovs_mtu_arg: "{{ item.ovs_mtu | string | trim }}"
+  shell: |
+    set -euo pipefail
+    bridge_name="{{ item.name }}"
+    declare -a set_args
+    declare -a create_args
+    set_args=(-type "{{ item.bridge_type }}")
+    create_args=(-iface "{{ item.name }}" -type "{{ item.bridge_type }}")
+    set_args+=(-autostart "{{ autostart_flag }}")
+    create_args+=(-autostart "{{ autostart_flag }}")
+    {% if include_vlan | bool %}
+    set_args+=(-bridge_vlan_aware "{{ vlan_flag }}")
+    create_args+=(-bridge_vlan_aware "{{ vlan_flag }}")
+    {% endif %}
+    {% if has_ports | bool %}
+    set_args+=(-{{ item.ports_param }} "{{ item.ports_arg }}")
+    create_args+=(-{{ item.ports_param }} "{{ item.ports_arg }}")
+    {% endif %}
+    {% if mtu_arg %}
+    set_args+=(-mtu "{{ mtu_arg }}")
+    create_args+=(-mtu "{{ mtu_arg }}")
+    {% endif %}
+    {% if item.bridge_type == 'OVSBridge' and ovs_mtu_arg %}
+    set_args+=(-ovs_mtu "{{ ovs_mtu_arg }}")
+    create_args+=(-ovs_mtu "{{ ovs_mtu_arg }}")
+    {% endif %}
+    {% if comment_arg %}
+    set_args+=(-comments "{{ comment_arg }}")
+    create_args+=(-comments "{{ comment_arg }}")
+    {% endif %}
+    {% if item.bridge_type == 'OVSBridge' and ovs_opts_arg %}
+    set_args+=(-ovs_options "{{ ovs_opts_arg }}")
+    create_args+=(-ovs_options "{{ ovs_opts_arg }}")
+    {% endif %}
+    if /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q "^${bridge_name}$"; then
+      pvesh set /nodes/localhost/network/${bridge_name} "${set_args[@]}"
     else
-      pvesh create /nodes/localhost/network -iface {{ bridge_name }} -type bridge -bridge_ports '{{ bridge_ports }}' -bridge_vlan_aware yes -autostart yes
+      pvesh create /nodes/localhost/network "${create_args[@]}"
     fi
-    "
+  args:
+    executable: /bin/bash
 
-# Ensure interfaces referenced in bridges are declared
 - name: Ensure interfaces referenced in bridges are declared
   become: true
   when: not (provision_generate_only | default(false))
-  loop: "{{ bridge_assignments | dict2items | subelements('value') }}"
+  loop: "{{ normalized_bridges | subelements('ports') }}"
   loop_control:
     label: "{{ item.1 }}"
   vars:
@@ -151,7 +240,46 @@
     fi
     "
 
-# Reload network configuration through Proxmox API
+- name: Create or update bridge sub-interfaces
+  become: true
+  when:
+    - not (provision_generate_only | default(false))
+    - normalized_subinterfaces | length > 0
+  loop: "{{ normalized_subinterfaces }}"
+  loop_control:
+    label: "{{ item.name }}"
+  vars:
+    autostart_flag: "{{ item.autostart | ternary('yes', 'no') }}"
+    comment_arg: "{{ item.comment | string | trim }}"
+  shell: |
+    set -euo pipefail
+    iface_name="{{ item.name }}"
+    declare -a set_args
+    declare -a create_args
+    set_args=(-type "{{ item.type }}")
+    create_args=(-iface "{{ item.name }}" -type "{{ item.type }}")
+    set_args+=(-autostart "{{ autostart_flag }}")
+    create_args+=(-autostart "{{ autostart_flag }}")
+    {% if comment_arg %}
+    set_args+=(-comments "{{ comment_arg }}")
+    create_args+=(-comments "{{ comment_arg }}")
+    {% endif %}
+    {% for opt in (item.options | default({}) | dict2items) %}
+    {% set opt_value = opt.value %}
+    {% if opt_value is iterable and opt_value is not string %}
+    {% set opt_value = opt_value | join(',') %}
+    {% endif %}
+    set_args+=(-{{ opt.key }} "{{ opt_value }}")
+    create_args+=(-{{ opt.key }} "{{ opt_value }}")
+    {% endfor %}
+    if /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q "^${iface_name}$"; then
+      pvesh set /nodes/localhost/network/${iface_name} "${set_args[@]}"
+    else
+      pvesh create /nodes/localhost/network "${create_args[@]}"
+    fi
+  args:
+    executable: /bin/bash
+
 - name: Reload network configuration
   become: true
   when: not (provision_generate_only | default(false))
@@ -159,7 +287,6 @@
   changed_when: true
   register: network_reload_result
 
-# Summary - show final state for bridges
 - name: Summary - show final state for bridges
   shell: ip -br link show type bridge || true
   register: bridges_state
@@ -179,7 +306,6 @@
   debug:
     msg: "{{ final_proxmox_config.stdout_lines | join('\n') }}"
 
-# Optional reboot and verification (controlled by variable)
 - name: Reboot system to apply network changes
   reboot:
     reboot_timeout: 300

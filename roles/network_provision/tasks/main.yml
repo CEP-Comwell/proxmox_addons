@@ -1,9 +1,7 @@
----
-# NEW: Streamlined network_provision role - replaces nic_pinning + provision roles
-# Fixed bridge assignments for hybrid spine-leaf architecture:
-# - vmbr99: Management (10Gb interfaces)
-# - vmbr1: VM/Services (first 2 1Gb interfaces)
-# - vmbr2: External (remaining 1Gb interfaces)
+# Inventory-driven network provisioning. Discovery gathers local interface
+# facts, naming/pinning keeps deterministic identifiers (xg*, eth*), and
+# bridge configuration is sourced from inventory (`bridges` in group/host
+# vars).
 
 - import_tasks: discovery.yml
 - import_tasks: naming.yml
