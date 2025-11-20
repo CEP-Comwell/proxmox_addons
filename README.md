@@ -20,92 +20,80 @@ A modular Ansible role and playbook collection for deploying, managing, and moni
 ```mermaid
 graph LR
 
-	%% Bridges (ordered left to right)
-	MgmtBridge[vmbr99 - Management Bridge\nports: eth2]
-	VMBridge[vmbr1 - VM Bridge\nports: eth1]
-	ExtBridge[vmbr2 - External Bridge\nports: xg1]
+%% Bridges
+ProxmoxBridge["vmbr0 (Linux bridge)\nports: ens2f0 (Proxmox default)"]
+MgmtBridge["vmbr99 (OVSBridge)\nports: eth2, mtu: 9000, vlan_aware: true"]
+VMBridge["vmbr1 (OVSBridge)\nports: eth1, mtu: 9000, vlan_aware: true"]
+ExtBridge["vmbr2 (Linux bridge)\nports: xg1, mtu: 1420, VyOS uplink"]
 
-	%% Services
-	VaultVM[edgesec-vault]
-	RestVM[edgesec-rest]
-	RadiusVM[edgesec-radius]
-	DNSVM[edgesec-dns]
-	ProxyVM[Traefik Proxy VM]
+%% vmbr2 subinterfaces
+Gateway1["gateway1 (vlan 100)"]
+Gateway2["gateway2 (vlan 200)"]
+LegacyVLAN["legacy-vlan100 (vlan 100)"]
+VX10031Ifc["vxlan10031 (vxlan id 10031)"]
+VX9003Ifc["vxlan9003 (vxlan id 9003)"]
+VX9006Ifc["vxlan9006 (vxlan id 9006)"]
 
-	%% Overlays
-	VX10100(vxlan10100 - Management)
-	VX10101(vxlan10101 - Engineering)
-	VX10102(vxlan10102 - Support)
-	VX10110(vxlan10110 - Tenant VM/Service)
-	VX9000(vxlan9000 - DNS/Monitoring/edgesec-rest/edgesec-radius)
-	VX9006(vxlan9006 - edgesec-vault)
-	VX9003(vxlan9003 - Proxy Ext)
-	VX10120(vxlan10120 - External)
-	VXCEPH2(vxlan10031 - Ceph Cluster)
-	VX10032(vxlan10032 - Core Services)
+%% VXLANs and Gateway
+VX10100["vxlan10100 tenant1_mgmt"]
+VX10101["vxlan10101 tenant1_engineering"]
+VX10102["vxlan10102 tenant1_support"]
+VX10031["vxlan10031 ceph_cluster"]
+VX10032["vxlan10032 core_services"]
+VX10110["vxlan10110 tenant1_services"]
+VX9000["vxlan9000 shared_services"]
+VX9006["vxlan9006 edgesec_vault"]
+VX9003["vxlan9003 proxy_ext"]
+VX10120["vxlan10120 tenant1_ext"]
+edgesecGW{{"edgesec-gw-rr-yyz-01\nedgesec-SDN Global Fabric Gateway"}}
 
-	Gateway1[Primary Gateway - ISP 1]
-	Gateway2[Backup Gateway - ISP 2]
-	LegacyVLAN[Legacy VLANs]
+%% Bridge to VNI relationships
+MgmtBridge --> VX10100
+MgmtBridge --> VX10101
+MgmtBridge --> VX10102
+MgmtBridge --> VX10031
+MgmtBridge --> VX10032
 
-	Fabricd{fabricd - IS-IS Routing}
+VMBridge --> VX10110
+VMBridge --> VX9000
+VMBridge --> VX9006
 
-	%% Explicit bridge ordering
-	MgmtBridge --> VMBridge --> ExtBridge
+ExtBridge --> VX10120
+ExtBridge --> VX9003Ifc
+ExtBridge --> VX9006Ifc
+ExtBridge --> VX10031Ifc
+ExtBridge --> Gateway1
+ExtBridge --> Gateway2
+ExtBridge --> LegacyVLAN
 
-	%% Service VMs to overlays (all on vmbr1 except vault)
-	VaultVM --> VX10032
-	RestVM --> VX9000
-	RadiusVM --> VX9000
-	DNSVM --> VX9000
-	ProxyVM --> VX9003
-	ProxyVM --> ExtBridge
-	%% Core Services VXLAN (new)
-	MgmtBridge --> VX10032
+%% vmbr2 subinterfaces feeding Gateway / SDN fabric
+Gateway1 --> edgesecGW
+Gateway2 --> edgesecGW
+LegacyVLAN --> edgesecGW
+VX10031Ifc --> edgesecGW
+VX9003Ifc --> edgesecGW
+VX9006Ifc --> edgesecGW
 
-	%% VM Bridge overlays (tenant/service and core services)
-	VMBridge --> VX10110
-	VMBridge --> VX9000
-	VMBridge --> VX9006
+%% SDN fabric VNIs terminate on Gateway
+VX10100 --> edgesecGW
+VX10101 --> edgesecGW
+VX10102 --> edgesecGW
+VX10110 --> edgesecGW
+VX9000 --> edgesecGW
+VX9006 --> edgesecGW
+VX9003 --> edgesecGW
+VX10120 --> edgesecGW
+VX10031 --> edgesecGW
+VX10032 --> edgesecGW
 
-	%% Management Bridge overlays (management, engineering, support, storage)
-	MgmtBridge --> VX10100
-	MgmtBridge --> VX10101
-	MgmtBridge --> VX10102
-	MgmtBridge --> VXCEPH2
-
-	%% VXLANs to fabricd (bi-directional)
-	VX10100 <--> Fabricd
-	VX10101 <--> Fabricd
-	VX10102 <--> Fabricd
-	VX10110 <--> Fabricd
-	VX9000 <--> Fabricd
-	VX9006 <--> Fabricd
-	VX9003 <--> Fabricd
-	VX10120 <--> Fabricd
-	VXCEPH2 <--> Fabricd
-	VX10032 <--> Fabricd
-
-	%% External Bridge overlays (external, proxy_ext)
-	ExtBridge --> VX9003
-	ExtBridge --> VX10120
-
-	%% External Bridge to Gateways
-	ExtBridge --> Gateway1
-	ExtBridge --> Gateway2
-
-	%% External Bridge to Legacy VLANs
-	ExtBridge --> LegacyVLAN
-
-	%% Custom bridge colors
-	classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
-	classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
-	classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
-	classDef proxy fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
-
-	class MgmtBridge,VaultVM,VX10100,VX10101,VX10102,VXCEPH2,VX10032 mgmt;
-	class VMBridge,RestVM,RadiusVM,DNSVM,ProxyVM,VX10110,VX9000,VX9006 vm;
-	class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
+%% Color coding
+classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
+classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
+classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
+class ProxmoxBridge mgmt;
+class MgmtBridge,VX10100,VX10101,VX10102,VX10031,VX10032 mgmt;
+class VMBridge,VX10110,VX9000,VX9006 vm;
+class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX10031Ifc,VX9003Ifc,VX9006Ifc,VX9003,VX10120,edgesecGW ext;
 ```
 </details>
 
