@@ -1,8 +1,0 @@
-peer_active: false
-bridges:
-  - name: vmbr99
-    bridge_ports: xg2
-  - name: vmbr1
-    bridge_ports: eth2
-  - name: vmbr2
-    bridge_ports: eth1

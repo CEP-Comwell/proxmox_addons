@@ -1,0 +1,28 @@
+
+{% for bridge in linux_bridges %}
+auto {{ bridge.name }}
+iface {{ bridge.name }} inet manual
+    bridge-ports {% if bridge.bridge_ports is defined %}{{ bridge.bridge_ports | join(' ') }}{% elif bridge.parent is defined %}{{ bridge.parent }}{% else %}{{ '' }}{% endif %}
+    bridge-stp off
+    bridge-fd 0
+    {% if bridge.vlans is defined and bridge.vlans|length > 0 %}bridge-vlan-aware yes
+    bridge-vids {{ bridge.vlans | map(attribute='id') | join(' ') }}
+    bridge-pvid {{ bridge.vlans[0].id }}
+    {% endif %}{% if bridge.mtu is defined %}mtu {{ bridge.mtu }}
+    {% endif %}
+
+
+    {% if bridge.subinterfaces is defined and bridge.subinterfaces is not none and bridge.subinterfaces|length > 0 %}
+        {% for sub in bridge.subinterfaces %}
+auto {{ sub.name }}
+iface {{ sub.name }} inet static
+{% if sub.vlan_id is defined %}    vlan-id {{ sub.vlan_id }}
+    vlan-raw-device {{ bridge.name }}
+{% endif %}    bridge {{ bridge.name }}
+{% if sub.address is defined %}    address {{ sub.address }}
+{% endif %}
+
+        {% endfor %}
+    {% endif %}
+
+{% endfor %}

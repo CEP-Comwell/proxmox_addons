@@ -15,7 +15,7 @@ bridges:
     mtu: 9000
     vlan_aware: true
   - name: vmbr2
-    type: bridge
+    type: Bridge
     bridge_ports:
       - xg1
     mtu: 1420
@@ -28,22 +28,9 @@ bridges:
         type: vlan
         options:
           tag: 200
-      - name: legacy-vlan100
+      - name: vmbr2.11
         type: vlan
         options:
-          tag: 100
-      - name: vxlan10031
-        type: vxlan
-        options:
-          vxlan-id: 10031
-          vxlan-local-tunnel-ip: 10.90.0.10
-      - name: vxlan9003
-        type: vxlan
-        options:
-          vxlan-id: 9003
-          vxlan-local-tunnel-ip: 10.90.0.10
-      - name: vxlan9006
-        type: vxlan
-        options:
-          vxlan-id: 9006
-          vxlan-local-tunnel-ip: 10.90.0.10
+          inet: static
+          address: 172.16.11.20/24
+          tag: 11

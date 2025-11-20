@@ -1,0 +1,638 @@
+# ...existing code...
+ # ...existing code...
+# Inventory-driven bridge configuration for Proxmox VE
+# Bridges and subinterfaces are configured manually in /etc/network/interfaces
+
+- name: Normalize bridges
+  set_fact:
+    normalized_bridges: "{{ bridges | map('combine', {'bridge_type': item.type | default('bridge')}) | list }}"
+
+- name: Normalize subinterfaces
+  set_fact:
+    normalized_subinterfaces: "{{ bridges | subelements('subinterfaces', skip_missing=True) | map('combine', {'parent_bridge': item.0.name, 'parent_mtu': item.0.mtu | default('')}) | list }}"
+
+- name: Partition bridges
+  set_fact:
+    ovs_bridges: "{{ normalized_bridges | selectattr('bridge_type', 'equalto', 'OVSBridge') | list }}"
+    linux_bridges: "{{ normalized_bridges | selectattr('bridge_type', 'equalto', 'bridge') | list }}"
+
+- name: Partition subinterfaces
+  set_fact:
+    manual_subinterfaces: "{{ normalized_subinterfaces | selectattr('type', 'in', ['vlan', 'vxlan']) | list }}"
+
+- name: Generate OVS bridge stanzas
+  set_fact:
+    ovs_bridge_stanzas: "{{ lookup('template', 'ovs-bridges-to-interfaces.j2', ovs_bridges=ovs_bridges) | trim }}"
+  when: ovs_bridges | length > 0
+
+- name: Insert OVS bridge stanzas
+  become: true
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} ANSIBLE OVS BRIDGES"
+    block: "{{ ovs_bridge_stanzas }}"
+    insertbefore: '^source /etc/network/interfaces.d/\*'
+  when: ovs_bridges | length > 0
+
+- name: Collect manual subinterface snippets
+  set_fact:
+    manual_snippets: "{{ (manual_subinterfaces | selectattr('type', 'equalto', 'vxlan') | map('combine', {'template': 'subinterface_manual_snippet.j2'}) | list) + (manual_subinterfaces | rejectattr('type', 'equalto', 'vxlan') | map('combine', {'template': 'subinterface_manual_snippet.j2'}) | list) | map('lookup', 'template') | select('string') | reject('equalto', '') | join('\n\n') }}"
+
+- name: Backup /etc/network/interfaces
+  become: true
+  copy:
+    src: /etc/network/interfaces
+    dest: "/etc/network/interfaces.bak.{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+    remote_src: true
+    mode: "0644"
+
+- name: Remove managed interfaces from /etc/network/interfaces
+  become: true
+  command: sed -i '/^auto {{ item.name }}$/,/^$/d' /etc/network/interfaces
+  loop: "{{ manual_subinterfaces }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Deploy manual SDN configuration
+  become: true
+  copy:
+    content: "{{ manual_snippets }}\n"
+    dest: /etc/network/interfaces.d/manual-sdn.cfg
+    mode: "0644"
+  notify: reload_network
+
+- name: Bring up VXLAN interfaces
+  become: true
+  command: ifup {{ item.name }}
+  loop: "{{ manual_subinterfaces | selectattr('type', 'equalto', 'vxlan') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  ignore_errors: true
+
+- name: Reload network
+  become: true
+  command: ifreload -a
+  ignore_errors: true
+
+- name: Summary
+  command: ip -br link show type bridge
+  register: bridges_state
+  changed_when: false
+
+- name: Show bridges state
+  debug:
+    var: bridges_state.stdout_lines
+- name: Partition bridges by implementation path
+  set_fact:
+    linux_bridges: "{{ normalized_bridges | selectattr('bridge_type', 'equalto', 'bridge') | list }}"
+    ovs_bridges: "{{ normalized_bridges | selectattr('bridge_type', 'equalto', 'OVSBridge') | list }}"
+    ovs_bridge_names: "{{ (normalized_bridges | selectattr('bridge_type', 'equalto', 'OVSBridge') | map(attribute='name') | list) }}"
+
+# Remove legacy Linux bridge stanzas (optional, robust)
+- name: Remove legacy Linux bridge stanzas (vmbr2 example)
+  become: true
+  replace:
+    path: /etc/network/interfaces
+    regexp: '(^auto vmbr2\niface vmbr2[\s\S]+?)(?=^auto|^source|\Z)'
+    replace: ''
+  ignore_errors: true
+
+# Render Linux bridge stanzas for /etc/network/interfaces using a dedicated template
+- name: Render Linux bridge stanzas for /etc/network/interfaces
+  set_fact:
+    linux_bridge_stanzas: "{{ lookup('template', 'linux-bridges-to-interfaces.j2', linux_bridges=linux_bridges) | trim }}"
+  when: linux_bridges | length > 0
+
+# Insert Linux bridge stanzas into /etc/network/interfaces (for GUI visibility)
+- name: Insert Linux bridge stanzas into /etc/network/interfaces
+  become: true
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} ANSIBLE LINUX BRIDGES"
+    block: "{{ linux_bridge_stanzas }}"
+    insertbefore: '^source /etc/network/interfaces.d/\\*'
+  when: linux_bridges | length > 0
+
+
+- name: Debug OVS bridges list
+  debug:
+    var: ovs_bridges
+  when: ovs_bridges is defined
+
+- name: Assert OVS bridges are present
+  assert:
+    that:
+      - ovs_bridges is defined
+      - ovs_bridges | length > 0
+    fail_msg: |
+      No OVS bridges found in inventory or variable processing. Please check your inventory/host_vars for OVSBridge definitions (e.g., type: OVSBridge).
+      The playbook will not continue until at least one OVS bridge is detected.
+  when: not (provision_generate_only | default(false))
+- name: Render OVS bridge stanzas for /etc/network/interfaces
+  set_fact:
+    ovs_bridge_stanzas: "{{ lookup('template', 'ovs-bridges-to-interfaces.j2', ovs_bridges=ovs_bridges) | trim }}"
+  when: ovs_bridges | length > 0
+
+- name: Debug OVS bridge stanzas
+  debug:
+    var: ovs_bridge_stanzas
+  when: ovs_bridges | length > 0
+
+# Insert OVS bridge stanzas into /etc/network/interfaces (for GUI visibility)
+- name: Insert OVS bridge stanzas into /etc/network/interfaces
+  become: true
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} ANSIBLE OVS BRIDGES"
+    block: "{{ ovs_bridge_stanzas }}"
+    insertbefore: '^source /etc/network/interfaces.d/\*'
+  when: ovs_bridges | length > 0
+
+- name: Ensure bridge definitions exist in inventory
+  assert:
+    that:
+      - bridges is defined
+      - bridges | length > 0
+    fail_msg: >-
+      Define `bridges` as a non-empty list in inventory (see group_vars/all.yml
+      for examples) before running the network_provision role.
+
+- name: Ensure each bridge definition includes a name
+  assert:
+    that:
+      - item.name is defined
+      - (item.name | string | trim | length) > 0
+    fail_msg: "Bridge definition at index {{ bridge_idx }} is missing a 'name'."
+
+  loop: "{{ bridges }}"
+  loop_control:
+    index_var: bridge_idx
+    label: "{{ item.name | default('undefined') }}"
+ # ...existing code...
+- name: Ensure bridge names are unique
+  vars:
+    bridge_names: "{{ bridges | map(attribute='name') | list }}"
+  assert:
+    that:
+      - bridge_names | length == bridge_names | unique | length
+    fail_msg: "Duplicate bridge names detected in the 'bridges' inventory list."
+
+- name: Ensure bridge ports are declared (use [] for none)
+  assert:
+    that:
+      - item.bridge_ports is defined
+    fail_msg: "Bridge {{ item.name }} must define bridge_ports (empty list allowed)."
+  loop: "{{ bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Validate subinterface definitions (if provided)
+  assert:
+    that:
+      - child.name is defined
+      - (child.name | string | trim | length) > 0
+      - child.type is defined
+    fail_msg: "Subinterface declarations must include both 'name' and 'type'."
+  vars:
+    child: "{{ item.1 }}"
+  loop: "{{ bridges | subelements('subinterfaces', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.1.name | default('undefined') }}"
+
+- name: Initialize normalized bridge and subinterface lists
+  set_fact:
+    normalized_bridges: []
+    normalized_subinterfaces: []
+
+- name: Normalize bridge definitions from inventory
+  set_fact:
+    normalized_bridges: "{{ normalized_bridges + [ {
+      'name': item.name,
+      'ports': ports_list,
+      'ports_arg': ports_list | join(','),
+      'ports_param': (item.type | default('bridge')) == 'OVSBridge' and 'ovs_ports' or 'bridge_ports',
+      'bridge_type': item.type | default('bridge'),
+      'autostart': (item.autostart | default(true) | bool),
+      'vlan_aware': (item.vlan_aware | default(item.name not in ['vmbr0']) | bool),
+      'mtu': item.mtu | default(''),
+      'comment': item.comment | default(''),
+      'ovs_options': item.ovs_options | default(''),
+      'ovs_mtu': item.ovs_mtu | default('')
+    } ] }}"
+  vars:
+    ports_list: >-
+      {{
+        item.bridge_ports
+        if item.bridge_ports is defined and item.bridge_ports is iterable and item.bridge_ports is not string
+        else (item.bridge_ports | default('') | regex_replace('[, ]+', ' ') | trim | split())
+      }}
+  loop: "{{ bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Partition bridges by implementation path
+  set_fact:
+    linux_bridges: "{{ normalized_bridges | selectattr('bridge_type', 'equalto', 'bridge') | list }}"
+    ovs_bridges: "{{ normalized_bridges | selectattr('bridge_type', 'equalto', 'OVSBridge') | list }}"
+    ovs_bridge_names: "{{ (normalized_bridges | selectattr('bridge_type', 'equalto', 'OVSBridge') | map(attribute='name') | list) }}"
+
+- name: Normalize declared subinterfaces
+  set_fact:
+    normalized_subinterfaces: "{{ normalized_subinterfaces + [ {
+      'parent_bridge': parent.name,
+      'parent_mtu': parent.mtu | default(''),
+      'name': child.name,
+      'type': child.type,
+      'autostart': (child.autostart | default(true) | bool),
+      'comment': child.comment | default(''),
+      'options': (
+        default_bridge_option | combine(default_link_option) | combine(child.options | default({}))
+      )
+    } ] }}"
+  vars:
+    parent: "{{ item.0 }}"
+    child: "{{ item.1 }}"
+    child_type_lower: "{{ child.type | default('') | lower }}"
+    has_bridge_option: "{{ child.options is defined and child.options is mapping and ('bridge' in child.options) }}"
+    has_link_option: "{{ child.options is defined and child.options is mapping and ('link' in child.options or 'link0' in child.options) }}"
+    default_bridge_option: "{{ {} if has_bridge_option else {'bridge': parent.name} }}"
+    default_link_option: "{{ {'link': parent.name} if child_type_lower == 'vlan' and not has_link_option else {} }}"
+  loop: "{{ bridges | subelements('subinterfaces', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.1.name | default('undefined') }}"
+
+- name: Build bridge type lookup
+  set_fact:
+    bridge_type_map: "{{ dict(normalized_bridges | map(attribute='name') | zip(normalized_bridges | map(attribute='bridge_type'))) }}"
+
+- name: Identify subinterfaces attached to OVS bridges
+  set_fact:
+    ovs_subinterfaces: "{{ normalized_subinterfaces | selectattr('parent_bridge', 'in', ovs_bridge_names | default([])) | list }}"
+
+- name: Partition subinterfaces by automation capability
+  vars:
+    manual_subinterface_types: ['vlan', 'vxlan']
+  set_fact:
+    manual_subinterfaces: "{{ normalized_subinterfaces | selectattr('type', 'in', manual_subinterface_types) | list }}"
+    api_managed_subinterfaces: []
+
+- name: Build list of known interface identifiers
+  set_fact:
+    known_interfaces: "{{ ((all_interfaces | default([]))
+      + (nic_names | default({}) | dict2items | map(attribute='value') | list)
+      + (normalized_subinterfaces | map(attribute='name') | list)) | unique }}"
+
+- name: Highlight subinterfaces attached to OVS bridges
+  debug:
+    msg: >-
+      The following subinterfaces belong to OVS bridges and must be configured manually: {{ ovs_subinterfaces | map(attribute='name') | list | join(', ') }}.
+  when:
+    - ovs_subinterfaces | default([]) | length > 0
+
+- name: Validate bridge types are supported
+  assert:
+    that:
+      - item.bridge_type in ['bridge', 'OVSBridge']
+    fail_msg: "Bridge {{ item.name }} uses unsupported type '{{ item.bridge_type }}'."
+  loop: "{{ normalized_bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Validate bridge ports exist on host (when discoverable)
+  assert:
+    that:
+      - missing_ports | length == 0
+    fail_msg: >-
+      Bridge {{ item.name }} references unknown interfaces: {{ missing_ports | join(', ') }}.
+      Available interfaces: {{ known_interfaces | default([]) | join(', ') }}
+  vars:
+    missing_ports: "{{ item.ports | difference(known_interfaces | default([])) }}"
+  loop: "{{ normalized_bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - item.ports | length > 0
+    - known_interfaces is defined
+
+- name: Pause for confirmation before applying bridge configuration
+  pause:
+    prompt: "Proceed to apply bridge configuration? (press Enter to continue or CTRL-C to abort)"
+  when: (
+        (provision_confirm_before_apply | default(false))
+        or (manual_subinterfaces | default([]) | length > 0)
+        or (ovs_bridges | default([]) | length > 0)
+      )
+      and not (provision_generate_only | default(false))
+
+- name: Initialize manual configuration bundle
+  set_fact:
+    manual_snippets: []
+    manual_cleanup_targets: []
+    manual_cleanup_file_paths: []
+    manual_cleanup_template: "sudo sed -i '/^auto \\1$/,/^$/d' /etc/network/interfaces"
+    manual_cleanup_file_template: "sudo rm -f '\\1'"
+  when: not (provision_generate_only | default(false))
+
+
+# Collect VXLAN manual snippets for subinterfaces (first, for correct ordering)
+- name: Collect VXLAN manual snippets for subinterfaces
+  set_fact:
+    manual_snippets: "{{ manual_snippets + [ lookup('template', 'subinterface_manual_snippet.j2', item=item) | trim ] }}"
+    manual_cleanup_targets: "{{ manual_cleanup_targets + [ item.name ] }}"
+    manual_cleanup_file_paths: "{{ manual_cleanup_file_paths + ['/etc/network/interfaces.d/' + item.name + '.cfg'] }}"
+  loop: "{{ manual_subinterfaces | selectattr('type', 'equalto', 'vxlan') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not (provision_generate_only | default(false))
+    - manual_subinterfaces | default([]) | length > 0
+
+# Collect non-VXLAN manual snippets for subinterfaces
+- name: Collect non-VXLAN manual snippets for subinterfaces
+  set_fact:
+    manual_snippets: "{{ manual_snippets + [ lookup('template', 'subinterface_manual_snippet.j2', item=item) | trim ] }}"
+    manual_cleanup_targets: "{{ manual_cleanup_targets + [ item.name ] }}"
+    manual_cleanup_file_paths: "{{ manual_cleanup_file_paths + ['/etc/network/interfaces.d/' + item.name + '.cfg'] }}"
+  loop: "{{ manual_subinterfaces | rejectattr('type', 'equalto', 'vxlan') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not (provision_generate_only | default(false))
+    - manual_subinterfaces | default([]) | length > 0
+
+- name: Build combined manual configuration instructions
+  set_fact:
+    manual_config_text: "{{ manual_snippets | default([]) | select('string') | reject('equalto', '') | join('\n\n') }}"
+    manual_cleanup_commands: "{{ manual_cleanup_targets | default([]) | unique | map('regex_replace', '^(.*)$', manual_cleanup_template) | list }}"
+    manual_cleanup_file_commands: "{{ manual_cleanup_file_paths | default([]) | unique | map('regex_replace', '^(.*)$', manual_cleanup_file_template) | list }}"
+    manual_backup_path: "/etc/network/interfaces.bak.{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+  when: not (provision_generate_only | default(false))
+
+- name: Apply manual network configuration bundle
+  when:
+    - not (provision_generate_only | default(false))
+    - manual_config_text | default('') | length > 0
+  block:
+    - name: Backup /etc/network/interfaces before applying manual bundle
+      become: true
+      copy:
+        src: /etc/network/interfaces
+        dest: "{{ manual_backup_path }}"
+        remote_src: true
+        mode: "0644"
+
+    - name: Remove managed interfaces from /etc/network/interfaces
+      become: true
+      command:
+        argv:
+          - sed
+          - -i
+          - "/^auto {{ item }}$/,/^$/d"
+          - /etc/network/interfaces
+      loop: "{{ manual_cleanup_targets | default([]) | unique }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Remove legacy interface snippets
+      become: true
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ manual_cleanup_file_paths | default([]) | unique }}"
+      loop_control:
+        label: "{{ item | basename }}"
+
+    - name: Deploy manual SDN configuration snippet
+      become: true
+      copy:
+        content: "{{ manual_config_text }}\n"
+        dest: /etc/network/interfaces.d/manual-sdn.cfg
+        owner: root
+        group: root
+        mode: "0644"
+      notify: reload_network
+
+    - name: Report manual SDN configuration deployment
+      debug:
+        msg: "Installed manual SDN configuration at /etc/network/interfaces.d/manual-sdn.cfg (backup stored at {{ manual_backup_path }})"
+
+- name: Bring up VXLAN interfaces manually
+  become: true
+  when: not (provision_generate_only | default(false))
+  loop: "{{ manual_subinterfaces | selectattr('type', 'equalto', 'vxlan') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  command: ifup {{ item.name }}
+  ignore_errors: true  # In case already up or other issues
+
+# Get current Proxmox network configuration
+  become: true
+  command: pvesh get /nodes/localhost/network --output-format json
+  register: proxmox_network_config
+  changed_when: false
+  when: not (provision_generate_only | default(false))
+  check_mode: no
+
+- name: Parse existing network interfaces
+  set_fact:
+    existing_interfaces: "{{ proxmox_network_config.stdout | from_json | map(attribute='iface') | list }}"
+  when: not (provision_generate_only | default(false)) and proxmox_network_config.stdout is defined
+  check_mode: no
+
+
+# Now create or update bridges using Proxmox API
+- name: Create or update bridges using Proxmox API
+  become: true
+  when: not (provision_generate_only | default(false))
+  loop: "{{ linux_bridges }}"
+  loop_control:
+    label: "{{ item.name }}"
+  vars:
+    autostart_flag: "{{ item.autostart | ternary('yes', 'no') }}"
+    include_vlan: "{{ item.bridge_type == 'bridge' }}"
+    vlan_flag: "{{ item.vlan_aware | ternary('yes', 'no') }}"
+    has_ports: "{{ (item.ports_arg | length) > 0 }}"
+    comment_arg: "{{ item.comment | string | trim }}"
+    ovs_opts_arg: "{{ item.ovs_options | string | trim }}"
+    ovs_mtu_arg: "{{ item.ovs_mtu | string | trim }}"
+  shell: |
+    set -euo pipefail
+    bridge_name="{{ item.name }}"
+    declare -a set_args
+    declare -a create_args
+    set_args=(--type "{{ item.bridge_type }}")
+    create_args=(--iface "{{ item.name }}" --type "{{ item.bridge_type }}")
+    set_args+=(--autostart "{{ autostart_flag }}")
+    create_args+=(--autostart "{{ autostart_flag }}")
+    {% if include_vlan | bool %}
+    set_args+=(--bridge_vlan_aware "{{ vlan_flag }}")
+    create_args+=(--bridge_vlan_aware "{{ vlan_flag }}")
+    {% endif %}
+    {% if has_ports | bool %}
+    set_args+=(--{{ item.ports_param }} "{{ item.ports_arg }}")
+    create_args+=(--{{ item.ports_param }} "{{ item.ports_arg }}")
+    {% endif %}
+    {% if item.bridge_type == 'OVSBridge' and ovs_mtu_arg %}
+    set_args+=(--ovs_mtu "{{ ovs_mtu_arg }}")
+    create_args+=(--ovs_mtu "{{ ovs_mtu_arg }}")
+    {% endif %}
+    {% if comment_arg %}
+    set_args+=(--comments "{{ comment_arg }}")
+    create_args+=(--comments "{{ comment_arg }}")
+    {% endif %}
+    {% if item.bridge_type == 'OVSBridge' and ovs_opts_arg %}
+    set_args+=(--ovs_options "{{ ovs_opts_arg }}")
+    create_args+=(--ovs_options "{{ ovs_opts_arg }}")
+    {% endif %}
+    if /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q "^${bridge_name}$"; then
+      pvesh set /nodes/localhost/network/${bridge_name} "${set_args[@]}"
+    else
+      pvesh create /nodes/localhost/network "${create_args[@]}"
+    fi
+  args:
+    executable: /bin/bash
+
+- name: Ensure interfaces referenced in bridges are declared
+  become: true
+  when: not (provision_generate_only | default(false))
+  loop: "{{ linux_bridges | subelements('ports') }}"
+  loop_control:
+    label: "{{ item.1 }}"
+  vars:
+    iface: "{{ item.1 }}"
+  command: |
+    bash -c "
+    if ! /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q '^\\b{{ iface }}\\b$'; then
+      pvesh create /nodes/localhost/network -iface {{ iface }} -type eth
+    fi
+    "
+
+- name: Create or update bridge sub-interfaces
+  become: true
+  when:
+    - not (provision_generate_only | default(false))
+    - api_managed_subinterfaces | default([]) | length > 0
+    - bridge_type_map[item.parent_bridge] | default('bridge') != 'OVSBridge'
+  loop: "{{ api_managed_subinterfaces }}"
+  loop_control:
+    label: "{{ item.name }}"
+  vars:
+    autostart_flag: "{{ item.autostart | ternary('yes', 'no') }}"
+    comment_arg: "{{ item.comment | string | trim }}"
+    iface_type_lower: "{{ item.type | default('') | lower }}"
+  shell: |
+    set -euo pipefail
+    iface_name="{{ item.name }}"
+    declare -a set_args
+    declare -a create_args
+    set_args=(--type "{{ item.type }}")
+    create_args=(--iface "{{ item.name }}" --type "{{ item.type }}")
+    set_args+=(--autostart "{{ autostart_flag }}")
+    create_args+=(--autostart "{{ autostart_flag }}")
+    {% if comment_arg %}
+    set_args+=(--comments "{{ comment_arg }}")
+    create_args+=(--comments "{{ comment_arg }}")
+    {% endif %}
+    {% set opts = item.options | default({}) %}
+    {% if iface_type_lower == 'vlan' %}
+    {% set vlan_id_opt = opts.get('vlan-id', opts.get('vlan_id', opts.get('tag'))) %}
+    {% set vlan_raw_opt = opts.get('vlan-raw-device', opts.get('vlan_raw_device', opts.get('raw-device', opts.get('raw_device', opts.get('link', item.parent_bridge))))) %}
+    {% if vlan_id_opt %}
+    set_args+=(--vlan-id "{{ vlan_id_opt }}")
+    create_args+=(--vlan-id "{{ vlan_id_opt }}")
+    {% endif %}
+    {% if vlan_raw_opt %}
+    set_args+=(--vlan-raw-device "{{ vlan_raw_opt }}")
+    create_args+=(--vlan-raw-device "{{ vlan_raw_opt }}")
+    {% endif %}
+    {% for opt in (opts | dict2items) %}
+    {% if opt.key not in ['tag', 'vlan-id', 'vlan_id', 'vlan-raw-device', 'vlan_raw_device', 'raw-device', 'raw_device', 'link'] %}
+    {% set opt_value = opt.value %}
+    {% if opt_value is iterable and opt_value is not string %}
+    {% set opt_value = opt_value | join(',') %}
+    {% endif %}
+    set_args+=(--{{ opt.key }} "{{ opt_value }}")
+    create_args+=(--{{ opt.key }} "{{ opt_value }}")
+    {% endif %}
+    {% endfor %}
+    {% else %}
+    {% for opt in (opts | dict2items) %}
+    {% set opt_value = opt.value %}
+    {% if opt_value is iterable and opt_value is not string %}
+    {% set opt_value = opt_value | join(',') %}
+    {% endif %}
+    set_args+=(--{{ opt.key }} "{{ opt_value }}")
+    create_args+=(--{{ opt.key }} "{{ opt_value }}")
+    {% endfor %}
+    {% endif %}
+    if /usr/bin/jq -r '.[].iface' < <(pvesh get /nodes/localhost/network --output-format json) | grep -q "^${iface_name}$"; then
+      pvesh set /nodes/localhost/network/${iface_name} "${set_args[@]}"
+    else
+      pvesh create /nodes/localhost/network "${create_args[@]}"
+    fi
+  args:
+    executable: /bin/bash
+
+- name: Reload network configuration
+  become: true
+  when: not (provision_generate_only | default(false))
+  command: pvesh set /nodes/localhost/network
+  changed_when: true
+  register: network_reload_result
+
+- name: Summary - show final state for bridges
+  shell: ip -br link show type bridge || true
+  register: bridges_state
+  changed_when: false
+
+- name: Show bridges state
+  debug:
+    var: bridges_state.stdout_lines
+
+- name: Show Proxmox network configuration
+  become: true
+  command: pvesh get /nodes/localhost/network
+  register: final_proxmox_config
+  changed_when: false
+
+- name: Display final Proxmox network configuration
+  debug:
+    msg: "{{ final_proxmox_config.stdout_lines | join('\n') }}"
+
+- name: Reboot system to apply network changes
+  reboot:
+    reboot_timeout: 300
+    msg: "Rebooting system to apply network configuration changes"
+  when: provision_reboot_after_config | default(false)
+  register: reboot_result
+
+- name: Wait for system to stabilize after reboot
+  command: sleep 160
+  when: provision_reboot_after_config | default(false) and reboot_result is defined and reboot_result.changed
+  changed_when: false
+
+- name: Verify bridges are active after reboot
+  command: ip -br link show type bridge
+  register: post_reboot_bridges
+  when: provision_reboot_after_config | default(false) and reboot_result is defined and reboot_result.changed
+  changed_when: false
+
+- name: Verify Proxmox network configuration after reboot
+  become: true
+  command: pvesh get /nodes/localhost/network
+  register: post_reboot_config
+  when: provision_reboot_after_config | default(false) and reboot_result is defined and reboot_result.changed
+  changed_when: false
+
+- name: Display post-reboot verification results
+  debug:
+    msg: |
+      === Post-Reboot Network Verification ===
+      Bridge Status:
+      {{ post_reboot_bridges.stdout_lines | join('\n') }}
+
+      Proxmox Network Configuration:
+      {{ post_reboot_config.stdout_lines | join('\n') }}
+
+      ✅ Network configuration successfully applied and verified after reboot!
+  when: provision_reboot_after_config | default(false) and reboot_result is defined and reboot_result.changed

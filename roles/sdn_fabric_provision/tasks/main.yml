@@ -260,9 +260,7 @@
     dest: /etc/pve/sdn/sdn.cfg
     backup: true
     unsafe_writes: true
-  when:
-    - not (dry_run | default(false))
-    - sdn_manage_config_file | default(false)
+  when: not (dry_run | default(false))
   notify: Reload SDN configuration
   run_once: true
   become: true

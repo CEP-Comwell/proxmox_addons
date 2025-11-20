@@ -1,0 +1,57 @@
+---
+# Create or ensure a single VXLAN interface exists for an overlay variable named 'overlay'
+
+- name: Build vxlan iface name
+  set_fact:
+    vxlan_iface: "vxlan{{ overlay.vni }}"
+
+- name: Check if vxlan iface exists on this node
+  ansible.builtin.command:
+    cmd: pvesh get /nodes/{{ inventory_hostname }}/network --output-format json
+  register: netjson
+  changed_when: false
+  failed_when: false
+  args:
+    executable: /bin/sh
+
+- name: Determine if vxlan iface exists
+  set_fact:
+    netlist: "{{ netjson.stdout | from_json }}"
+  when: netjson.stdout is defined and netjson.stdout | length > 0
+  changed_when: false
+  failed_when: false
+  changed_when: false
+
+- name: Build list of existing iface names
+  set_fact:
+    ifaces: "{{ (netlist | default([])) | map(attribute='iface') | list }}"
+  changed_when: false
+
+- name: Determine if vxlan iface exists
+  set_fact:
+    iface_exists: "{{ vxlan_iface in (ifaces | default([])) }}"
+  changed_when: false
+
+- name: Create vxlan iface if missing
+  ansible.builtin.shell: >-
+    if [ "{{ iface_exists | bool }}" = "True" ]; then
+      echo 'EXISTS';
+    else
+      pvesh create /nodes/{{ inventory_hostname }}/network \
+        --iface {{ vxlan_iface }} \
+        --type vxlan \
+        --bridge {{ overlay.bridge }} \
+        --vni {{ overlay.vni }} \
+        {% if overlay.physdev is defined %}--vxlan-physdev {{ overlay.physdev }}{% endif %} \
+        --autostart 1 && echo 'CREATED';
+    fi
+  args:
+    executable: /bin/sh
+  register: vxlan_result
+  changed_when: "'CREATED' in vxlan_result.stdout"
+  failed_when: false
+
+- name: Debug vxlan create result
+  debug:
+    var: vxlan_result
+  when: vxlan_result is defined

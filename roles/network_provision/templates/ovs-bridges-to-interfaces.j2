@@ -1,0 +1,16 @@
+# ANSIBLE MANAGED OVS BRIDGES - DO NOT EDIT MANUALLY
+{% for bridge in ovs_bridges %}
+auto {{ bridge.name }}
+allow-ovs {{ bridge.name }}
+iface {{ bridge.name }} inet manual
+    ovs_type OVSBridge
+    ovs_ports {{ bridge.bridge_ports | join(' ') }}
+    {% if bridge.get('mtu') %}mtu {{ bridge.mtu }}{% endif %}
+    {% if bridge.get('vlan_aware') %}# vlan_aware: true (configure tagging/trunking via ovs-vsctl as required){% endif %}
+{% for port in bridge.bridge_ports %}
+allow-ovs {{ port }}
+iface {{ port }} inet manual
+    ovs_type OVSPort
+    ovs_bridge {{ bridge.name }}
+{% endfor %}
+{% endfor %}

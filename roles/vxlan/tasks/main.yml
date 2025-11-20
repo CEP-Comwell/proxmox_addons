@@ -159,6 +159,9 @@
     msg: "{{ network_config.stdout }}"
   when: network_config.stdout is defined
 
+- name: Deploy VXLAN overlays
+  import_tasks: deploy_vxlan_overlays.yml
+
 - name: Display SDN configuration
   ansible.builtin.debug:
     msg: "{{ sdn_config.stdout }}"

@@ -12,4 +12,5 @@
   roles:
     - prereqs           # Install prerequisite packages (jq, git, etc.)
     - network_provision  # Streamlined single role for interface naming and bridge creation
+    - vxlan              # Create and configure VXLAN overlays on node(s)
     - sdn_fabric_provision  # Provisions SDN fabric, VNETs, subnets, ports (never touches vmbr0)

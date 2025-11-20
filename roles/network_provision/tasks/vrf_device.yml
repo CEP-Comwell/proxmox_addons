@@ -1,0 +1,41 @@
+---
+# Task file: vrf_device.yml
+# Expects item (dict with key, value) from vrf_mappings loop
+- name: Check if VRF device exists
+  command: ip -d link show {{ item.key }}
+  register: vrf_check
+  failed_when: false
+  changed_when: false
+
+- name: Parse current VRF table id if the VRF exists
+  set_fact:
+    vrf_current_table: "{{ (vrf_check.stdout | regex_search('table\\s+(\\d+)', '\\1') | default('')) }}"
+  when: vrf_check.rc == 0
+
+- name: Warn if current VRF table does not match expected table
+  debug:
+    msg: >-
+      "VRF {{ item.key }} exists with table {{ vrf_current_table }} but expected table is {{ item.value }}.\nIf you wish to change this, set 'vrf_force_recreate: true' to force re-create (disruptive)."
+  when:
+    - vrf_check.rc == 0
+    - vrf_current_table | int != item.value | int
+
+- name: Create VRF device if missing
+  command: ip link add {{ item.key }} type vrf table {{ item.value }}
+  when: vrf_check.rc != 0
+  register: vrf_create_result
+  failed_when: false
+  changed_when: vrf_create_result.rc == 0
+
+- name: Bring VRF device up if missing or down
+  command: ip link set dev {{ item.key }} up
+  when: vrf_check.rc != 0 or ('state DOWN' in (vrf_check.stdout | default('')|string))
+  failed_when: false
+  changed_when: false
+
+- name: Add host routes for VRF (if any are configured)
+  loop: "{{ vrf_subnets[item.key] | default([]) }}"
+  loop_control:
+    loop_var: route_item
+  command: ip route add table {{ item.key }} {{ route_item.route }} dev {{ route_item.dev }}
+  ignore_errors: yes

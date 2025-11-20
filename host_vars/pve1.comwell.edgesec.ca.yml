@@ -1,2 +1,62 @@
-# Rely on network_provision role to derive bridge assignments dynamically.
-peer_active: false
+
+# Host-specific network configuration for pve1.comwell.edgesec.ca
+bridges:
+
+  # Default Proxmox bridge (do not change)
+  - name: vmbr0
+    type: bridge
+    ports:
+      - ens2f0
+    address: 172.16.10.20/24
+    gateway: 172.16.10.1
+    stp: off
+    fd: 0
+
+  # Management bridge (diagram: vmbr99)
+
+  - name: vmbr99
+    type: ovs
+    ports:
+      - eth2
+    mtu: 9000
+    vlan_aware: true
+
+  # VM bridge (diagram: vmbr1)
+
+  - name: vmbr1
+    type: ovs
+    ports:
+      - eth1
+    mtu: 9000
+    vlan_aware: true
+
+  # External bridge (diagram: vmbr2)
+
+  - name: vmbr2
+    type: bridge
+    ports:
+      - xg1
+    mtu: 1420
+
+subinterfaces:
+  vmbr2:
+    - name: gateway1
+      type: vlan
+      tag: 100
+    - name: gateway2
+      type: vlan
+      tag: 200
+    - name: legacy-vlan100
+      type: vlan
+      tag: 100
+    - name: vxlan10031
+      type: vxlan
+      id: 10031
+    - name: vxlan9003
+      type: vxlan
+      id: 9003
+    - name: vxlan9006
+      type: vxlan
+      id: 9006
+
+# All referenced interfaces exist on the system. No eth0/eth3 present.

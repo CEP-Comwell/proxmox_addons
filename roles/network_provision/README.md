@@ -233,6 +233,33 @@ iface vmbr1 inet manual
         bridge-fd 0
 ```
 
+## Per-host bridge configuration (host_vars)
+
+This role expects per-host bridge definitions to be provided in `host_vars/<node>.yml`. This keeps host-specific networking outside the role and avoids hard-coded interface stanzas.
+
+Example `host_vars/pve1.comwell.edgesec.ca.yml`:
+
+```yaml
+bridges:
+  - name: vmbr2
+    type: Bridge
+    parent: xg1
+    mtu: 1420
+    vlans:
+      - id: 11
+      - id: 100
+      - id: 200
+    subinterfaces:
+      - name: vmbr2.11
+        type: vlan
+        vlan_id: 11
+        address: 172.16.11.20/24
+
+```
+
+The role renders these host_vars with `linux-bridges.j2` into `linux_bridge_stanzas` which are then inserted into `/etc/network/interfaces` via `blockinfile`.
+
+
 ## Handlers
 
 - **update initramfs**: Updates initramfs after .link file changes (used when `pve-network-interface-pinning` succeeds)

@@ -1,16 +1,18 @@
-{% set opts = item.options | default({}) %}
-{% set iface_type = item.type | default('') | lower %}
-{% if item.autostart | default(true) %}auto {{ item.name }}
-{% else %}# auto {{ item.name }} (autostart disabled)
-{% endif %}iface {{ item.name }} inet manual
-{% if iface_type == 'vlan' %}{% set vlan_id = opts.get('vlan-id', opts.get('tag')) %}{% set raw_dev = opts.get('vlan-raw-device', opts.get('raw-device', opts.get('link', item.parent_bridge))) %}{% if vlan_id %}    vlan-id {{ vlan_id }}
+{# Manual rendering is required until Proxmox exposes VLAN/VXLAN options via API. #}
+{% set opts = sub.options | default({}) %}
+{% set iface_type = sub.type | default('') | lower %}
+{% if sub.autostart | default(true) %}auto {{ sub.name }}
+{% else %}# auto {{ sub.name }} (autostart disabled)
+{% endif %}iface {{ sub.name }} inet {{ opts.get('inet', 'manual') }}
+{% if iface_type == 'vlan' %}{% set vlan_id = opts.get('vlan-id', opts.get('tag')) %}{% set raw_dev = opts.get('vlan-raw-device', opts.get('raw-device', opts.get('link', sub.parent_bridge))) %}{% if vlan_id %}    vlan-id {{ vlan_id }}
 {% endif %}{% if raw_dev %}    vlan-raw-device {{ raw_dev }}
-{% endif %}{% if opts.get('bridge', item.parent_bridge) %}    bridge {{ opts.get('bridge', item.parent_bridge) }}
-{% endif %}{% elif iface_type == 'vxlan' %}{% set vxlan_id = opts.get('vxlan-id', opts.get('vxlan_id')) %}{% set vxlan_local = opts.get('vxlan-local-tunnel-ip', opts.get('vxlan_local_tunnel_ip')) %}{% set vxlan_svc = opts.get('vxlan-svcnodeip', opts.get('vxlan_svcnodeip', vxlan_local)) %}{% set vxlan_physdev = opts.get('vxlan-physdev', opts.get('vxlan_physdev', item.parent_bridge)) %}{% if vxlan_id %}    vxlan-id {{ vxlan_id }}
+{% endif %}{% if opts.get('bridge', sub.parent_bridge) %}    bridge {{ opts.get('bridge', sub.parent_bridge) }}
+{% endif %}{% if opts.get('inet') == 'static' and opts.get('address') %}    address {{ opts.get('address') }}
+{% endif %}{% elif iface_type == 'vxlan' %}{% set vxlan_id = opts.get('vxlan-id', opts.get('vxlan_id')) %}{% set vxlan_local = opts.get('vxlan-local-tunnel-ip', opts.get('vxlan_local_tunnel_ip')) %}{% set vxlan_svc = opts.get('vxlan-svcnodeip', opts.get('vxlan_svcnodeip', vxlan_local)) %}{% set vxlan_physdev = opts.get('vxlan-physdev', opts.get('vxlan_physdev', sub.parent_bridge)) %}{% set vxlan_mtu = opts.get('mtu', sub.parent_mtu | default('')) %}{% if vxlan_id %}    vxlan-id {{ vxlan_id }}
 {% endif %}{% if vxlan_local %}    vxlan-local-tunnel-ip {{ vxlan_local }}
 {% endif %}{% if vxlan_svc %}    vxlan-svcnodeip {{ vxlan_svc }}
 {% endif %}{% if vxlan_physdev %}    vxlan-physdev {{ vxlan_physdev }}
-{% endif %}{% if opts.get('bridge', item.parent_bridge) %}    bridge {{ opts.get('bridge', item.parent_bridge) }}
-{% endif %}    # TODO(api-support): Replace this manual VXLAN snippet when the Proxmox network API exposes vxlan parameters.
-{% else %}{% for key, value in opts.items() %}{% if value is iterable and value is not string %}{% set rendered_value = value | join(' ') %}{% else %}{% set rendered_value = value %}{% endif %}    {{ key }} {{ rendered_value }}
-{% endfor %}{% endif %}
+{% endif %}{% if vxlan_mtu %}    mtu {{ vxlan_mtu }}
+{% endif %}
+{% else %}{% for key, value in opts.items() %}{% if key not in ['bridge', 'inet'] %}{% if value is iterable and value is not string %}{% set rendered_value = value | join(' ') %}{% else %}{% set rendered_value = value %}{% endif %}    {{ key }} {{ rendered_value }}
+{% endif %}{% endfor %}{% endif %}

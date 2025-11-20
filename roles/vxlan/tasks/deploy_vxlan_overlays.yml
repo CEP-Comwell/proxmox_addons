@@ -1,19 +1,24 @@
 ---
-# Example: Deploy VXLAN overlays for all tenants on a Proxmox node
-# This playbook uses the new defaults structure for overlays and bridges
+# Tasks: Deploy VXLAN overlays for all tenants on a Proxmox node
+# This tasks file is imported by the vxlan role main tasks.
+    - name: Map default overlay variables (backwards compatibility)
+      set_fact:
+        tenants: "{{ tenant_overlays | default([]) }}"
+        common_services: "{{ service_overlays | default([]) }}"
+        vxlan_bridges: "{{ vxlan_bridges | default([]) }}"
 
-- name: Configure VXLAN overlays for tenants
-  hosts: proxmox_nodes
-  become: true
-  vars_files:
-    - roles/vxlan/defaults/main.yml
-  tasks:
     - name: Create bridges
       ansible.builtin.command:
         cmd: "pvesh create /nodes/{{ inventory_hostname }}/network -iface {{ item.name }} -type bridge"
       loop: "{{ vxlan_bridges | default([]) }}"
       when: item.name is defined
       ignore_errors: true
+      register: bridge_create_results
+
+    - name: Debug bridge create results
+      debug:
+        var: bridge_create_results
+      when: vxlan_bridges | default([]) | length > 0
 
     - name: Configure VXLAN overlays per tenant
       ansible.builtin.debug:
@@ -22,26 +27,23 @@
       loop_control:
         loop_var: tenant
 
-    - name: Create VXLAN interfaces for overlays
-      ansible.builtin.command:
-        cmd: "pvesh create /nodes/{{ inventory_hostname }}/network -iface vxlan{{ overlay.vni }} -type vxlan -bridge {{ overlay.bridge }} -vni {{ overlay.vni }}"
+    - name: Create VXLAN interfaces for overlays (idempotent)
+      include_tasks: create_vxlan.yml
       loop: "{{ tenants | map(attribute='overlays') | list | flatten(1) }}"
       loop_control:
         loop_var: overlay
       ignore_errors: true
 
-    - name: Configure common service overlays (e.g., DNS)
-      ansible.builtin.command:
-        cmd: "pvesh create /nodes/{{ inventory_hostname }}/network -iface vxlan{{ service.vni }} -type vxlan -bridge {{ service.bridge }} -vni {{ service.vni }}"
+    - name: Configure common service overlays (e.g., DNS) - idempotent
+      include_tasks: create_vxlan.yml
       loop: "{{ common_services | default([]) }}"
       loop_control:
-        loop_var: service
+        loop_var: overlay
       ignore_errors: true
 
-    - name: Configure legacy overlays (e.g., Ceph)
-      ansible.builtin.command:
-        cmd: "pvesh create /nodes/{{ inventory_hostname }}/network -iface vxlan{{ legacy.vni }} -type vxlan -bridge {{ legacy.bridge }} -vni {{ legacy.vni }}"
+    - name: Configure legacy overlays (e.g., Ceph) - idempotent
+      include_tasks: create_vxlan.yml
       loop: "{{ legacy_overlays | default([]) }}"
       loop_control:
-        loop_var: legacy
+        loop_var: overlay
       ignore_errors: true

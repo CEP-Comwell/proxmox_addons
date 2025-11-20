@@ -1,0 +1,30 @@
+# Default VRF and subnet mappings for network_provision role
+vrf_mappings:
+  vrf_zone1: 100
+  vrf_zone2: 200  # Change to 1001 if you want to match current host config
+
+vrf_subnets:
+  vrf_zone1:
+    - route: 10.10.31.0/24
+      dev: vmbr99
+    - route: 10.10.32.0/24
+      dev: vmbr99
+    - route: 10.101.0.0/24
+      dev: vmbr99
+    - route: 10.101.1.0/24
+      dev: vmbr99
+    - route: 10.101.2.0/24
+      dev: vmbr99
+    - route: 10.110.10.0/24
+      dev: vmbr1
+    - route: 10.90.0.0/24
+      dev: vmbr1
+    - route: 10.90.3.0/24
+      dev: vmbr2
+    - route: 10.90.6.0/24
+      dev: vmbr1
+    - route: 10.120.10.0/24
+      dev: vmbr2
+  vrf_zone2:
+    - route: 172.16.11.0/24
+      dev: vmbr2.11

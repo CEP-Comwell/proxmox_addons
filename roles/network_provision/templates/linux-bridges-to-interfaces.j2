@@ -1,0 +1,12 @@
+# ANSIBLE MANAGED LINUX BRIDGES - DO NOT EDIT MANUALLY
+{% for bridge in linux_bridges %}
+auto {{ bridge.name }}
+iface {{ bridge.name }} inet manual
+    bridge-ports {{ bridge.ports | join(' ') }}
+    bridge-stp off
+    bridge-fd 0
+    {% if bridge.vlan_aware %}bridge-vlan-aware yes{% endif %}
+    {# Only set MTU if all ports have the same MTU and are defined before the bridge #}
+    {% set all_ports_have_mtu = bridge.ports | length > 0 and (bridge.ports | map('extract', hostvars[inventory_hostname]['manual_subinterfaces'] | default([])) | map(attribute='options') | map(attribute='mtu', default=bridge.mtu) | list | unique | length == 1) %}
+    {% if all_ports_have_mtu and bridge.mtu %}mtu {{ bridge.mtu }}{% endif %}
+{% endfor %}
