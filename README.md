@@ -21,10 +21,10 @@ A modular Ansible role and playbook collection for deploying, managing, and moni
 graph LR
 
 %% Bridges
-ProxmoxBridge["vmbr0 (Linux bridge)\nports: ens2f0 (Proxmox default)"]
-MgmtBridge["vmbr99 (OVSBridge)\nports: eth2, mtu: 9000, vlan_aware: true"]
-VMBridge["vmbr1 (OVSBridge)\nports: eth1, mtu: 9000, vlan_aware: true"]
-ExtBridge["vmbr2 (Linux bridge)\nports: xg1, mtu: 1420, VyOS uplink"]
+ProxmoxBridge["vmbr0 (Linux bridge) ports: ens2f0 (Proxmox default)"]
+MgmtBridge["vmbr99 (OVSBridge) ports: eth2, mtu: 9000, vlan_aware: true"]
+VMBridge["vmbr1 (OVSBridge) ports: eth1, mtu: 9000, vlan_aware: true"]
+ExtBridge["vmbr2 (Linux bridge) ports: xg1, mtu: 1420, VyOS uplink"]
 
 %% vmbr2 subinterfaces
 Gateway1["gateway1 (vlan 100)"]
@@ -45,7 +45,7 @@ VX9000["vxlan9000 shared_services"]
 VX9006["vxlan9006 edgesec_vault"]
 VX9003["vxlan9003 proxy_ext"]
 VX10120["vxlan10120 tenant1_ext"]
-edgesecGW{{"edgesec-gw-rr-yyz-01\nedgesec-SDN Global Fabric Gateway"}}
+edgesecGW{{"edgesec-gw-rr-yyz-01 edgesec-SDN Global Fabric Gateway"}}
 
 %% Bridge to VNI relationships
 MgmtBridge --> VX10100
