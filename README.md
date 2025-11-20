@@ -107,46 +107,6 @@ graph LR
 	class VMBridge,RestVM,RadiusVM,DNSVM,ProxyVM,VX10110,VX9000,VX9006 vm;
 	class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX9003,VX10120 ext;
 ```
-VMBridge --> VX10110
-VMBridge --> VX9000
-VMBridge --> VX9006
-
-ExtBridge --> VX10120
-ExtBridge --> VX9003Ifc
-ExtBridge --> VX9006Ifc
-ExtBridge --> VX10031Ifc
-ExtBridge --> Gateway1
-ExtBridge --> Gateway2
-ExtBridge --> LegacyVLAN
-
-%% vmbr2 subinterfaces feeding VyOS / SDN fabric
-Gateway1 --> VyOSGW
-Gateway2 --> VyOSGW
-LegacyVLAN --> VyOSGW
-VX10031Ifc --> VyOSGW
-VX9003Ifc --> VyOSGW
-VX9006Ifc --> VyOSGW
-
-%% SDN fabric VNIs terminate on VyOS as the EVPN gateway
-VX10100 --> VyOSGW
-VX10101 --> VyOSGW
-VX10102 --> VyOSGW
-VX10110 --> VyOSGW
-VX9000 --> VyOSGW
-VX9006 --> VyOSGW
-VX9003 --> VyOSGW
-VX10120 --> VyOSGW
-VX10031 --> VyOSGW
-VX10032 --> VyOSGW
-
-%% Color coding
-classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
-classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
-classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
-class MgmtBridge,VX10100,VX10101,VX10102,VX10031,VX10032 mgmt;
-class VMBridge,VX10110,VX9000,VX9006 vm;
-class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX10031Ifc,VX9003Ifc,VX9006Ifc,VX9003,VX10120,VyOSGW ext;
-```
 </details>
 
 <details>
