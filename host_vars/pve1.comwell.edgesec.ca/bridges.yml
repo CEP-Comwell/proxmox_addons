@@ -34,3 +34,23 @@ bridges:
           inet: static
           address: 172.16.11.20/24
           tag: 11
+      - name: vmbr2.100
+        type: vlan
+        options:
+          address: 10.10.31.20/24
+          tag: 100
+      - name: vxlan10031
+        type: vxlan
+        options:
+          id: 10031
+          mtu: 1400
+      - name: vxlan9003
+        type: vxlan
+        options:
+          id: 9003
+          mtu: 1400
+      - name: vxlan9006
+        type: vxlan
+        options:
+          id: 9006
+          mtu: 1400

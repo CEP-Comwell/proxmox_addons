@@ -26,10 +26,6 @@ bridges:
         type: vlan
         options:
           tag: 200
-      - name: legacy-vlan100
-        type: vlan
-        options:
-          tag: 100
       - name: vxlan10031
         type: vxlan
         options:
