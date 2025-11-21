@@ -1,0 +1,33 @@
+name: Ansible sanity
+
+on:
+  push:
+    branches: [ main, 'fix/*', 'feat/*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ansible-sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible and lint deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+          # ansible-lint is optional; leave commented if you don't want it in CI
+          pip install ansible-lint
+
+      - name: Run ansible syntax-check
+        run: |
+          ansible-playbook --syntax-check edgesec-sdn/playbooks/provision.yml -i inventory
+
+      - name: Run ansible-lint (optional)
+        run: |
+          ansible-lint edgesec-sdn/playbooks/provision.yml || true

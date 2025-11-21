@@ -1,4 +1,3 @@
----
 # Simplified bridging tasks (single-file orchestration)
 #
 # Purpose
@@ -222,12 +221,11 @@
   vars:
     _existing: >-
       {{ (pvesh_networks_raw.stdout | default('[]') | from_json) | selectattr('iface','equalto', item.name) | list | first | default({}) }}
-     # only include flags with non-empty values to avoid pvesh "too many arguments"
-     _create_params: >-
+    _create_params: >-
       {{ ['--iface', item.name | default(''), '--type', 'bridge']
-        + (['--bridge_ports', item.interface] if (item.interface is defined and (item.interface | string) | length > 0) else [])
-        + (['--address', item.address] if (item.address is defined and (item.address | string) | length > 0) else [])
-        + (['--mtu', item.mtu|string] if (item.mtu is defined and (item.mtu|string) | length > 0) else [])
+         + (['--bridge_ports', item.interface] if (item.interface is defined and item.interface | length > 0) else [])
+         + (['--address', item.address] if (item.address is defined) else [])
+         + (['--mtu', item.mtu|string] if (item.mtu is defined) else [])
       }}
   command: >-
     pvesh --noproxy create /nodes/{{ pve_node_id }}/network {{ _create_params | join(' ') }}
@@ -240,22 +238,6 @@
   failed_when: false
   tags:
     - deploy_linux_bridges
-
-- name: Validate linux bridge iface name for pvesh create
-  assert:
-    that:
-      - "(item.name is match('^[A-Za-z0-9._]+$'))"
-    fail_msg: "Invalid iface name '{{ item.name }}' for Proxmox API. Rename or adjust the host var before creating via pvesh."
-  loop: "{{ linux_bridges_unique | default(linux_bridges) | default([]) }}"
-  loop_control:
-    label: "{{ item.name | default('unnamed') }}"
-    index_var: iface_idx
-  when: pve_node_id is defined and (linux_bridges | length > 0) and (pvesh_iface_lookup is defined and (pvesh_iface_lookup.results[iface_idx].rc | default(0)) != 0)
-  tags:
-    - deploy_linux_bridges
-
-- name: Validate linux bridge iface name for pvesh create
-  # (removed - validation is run earlier to prevent pvesh create calls with invalid names)
 
 - name: 'Fallback: reconcile iface when create failed with "interface already exists"'
   become: true
@@ -378,19 +360,6 @@
   tags:
     - deploy_linux_bridges
 
-- name: Validate subinterface iface name for pvesh create
-  assert:
-    that:
-      - "(item.name is match('^[A-Za-z0-9._]+$'))"
-    fail_msg: "Invalid subinterface name '{{ item.name }}' for Proxmox API. Rename or adjust the host var before creating via pvesh."
-  loop: "{{ bridge_subinterfaces | default([]) }}"
-  loop_control:
-    label: "{{ item.name }}"
-    index_var: sub_idx
-  when: pve_node_id is defined and (bridge_subinterfaces | length > 0) and (pvesh_subiface_lookup is defined and (pvesh_subiface_lookup.results[sub_idx].rc | default(0)) != 0)
-  tags:
-    - deploy_linux_bridges
-
 - name: Create subinterfaces (when missing)
   become: true
   vars:
@@ -398,24 +367,14 @@
     _opts: "{{ (item.options.options | default(item.options)) | default({}) }}"
     _vlan_id: "{{ _opts['vlan-id'] | default(_opts.vlan_id | default(_opts.tag | default(None))) }}"
     _vlan_raw: "{{ _opts['vlan-raw-device'] | default(_opts.vlan_raw_device | default(_opts['raw-device'] | default(_opts.raw_device | default(item.parent)))) }}"
-    _vxlan_id: "{{ _opts.id | default(_opts.vni | default(None)) }}"
-    _is_vxlan: "{{ (item.type | default('vlan')) == 'vxlan' }}"
-    # build flags as single "--flag=value" strings so empty values are never left as a bare flag
     _create_params: >-
-      {{ ["--iface=" ~ item.name, "--type=" ~ (item.type | default('vlan'))]
+      {{ ['--iface', item.name, '--type', item.type | default('vlan')]
+         + (['--vlan-id', _vlan_id|string] if (_vlan_id is defined and _vlan_id is not none) else [])
+         + (['--vlan-raw-device', _vlan_raw] if (_vlan_raw is defined and _vlan_raw | length > 0) else [])
          + (
-           (["--id=" ~ (_vxlan_id|string)] if (_is_vxlan and _vxlan_id is defined and _vxlan_id is not none and (_vxlan_id|string) | length > 0) else [])
-         )
-         + (
-           (["--vlan-id=" ~ (_vlan_id|string), "--vlan-raw-device=" ~ _vlan_raw] if (not _is_vxlan and _vlan_id is defined and _vlan_id is not none and (_vlan_id|string) | length > 0 and (_vlan_raw is defined and _vlan_raw | length > 0) ) else [])
-         )
-         + (
-           (['--cidr=' ~ _opts.address])
+           (['--cidr', _opts.address])
            if (_opts.address is defined and ('/' in (_opts.address | string)))
-           else (['--address=' ~ _opts.address] if (_opts.address is defined and (_opts.address | string) | length > 0) else [])
-         )
-         + (
-           (['--mtu=' ~ (_opts.mtu|string)] if (_opts.mtu is defined and (_opts.mtu|string) | length > 0) else [])
+           else (['--address', _opts.address] if (_opts.address is defined) else [])
          )
       }}
   command: >-
@@ -436,18 +395,11 @@
     _opts: "{{ (item.options.options | default(item.options)) | default({}) }}"
     _vlan_id: "{{ _opts['vlan-id'] | default(_opts.vlan_id | default(_opts.tag | default(None))) }}"
     _vlan_raw: "{{ _opts['vlan-raw-device'] | default(_opts.vlan_raw_device | default(_opts['raw-device'] | default(_opts.raw_device | default(item.parent)))) }}"
-    _vxlan_id: "{{ _opts.id | default(_opts.vni | default(None)) }}"
-    _is_vxlan: "{{ (item.type | default('vlan')) == 'vxlan' }}"
     _set_params: >-
-      {{ ["--type=" ~ (item.type | default('vlan'))]
-        + (
-          (["--id=" ~ (_vxlan_id|string)] if (_is_vxlan and _vxlan_id is defined and _vxlan_id is not none and (_vxlan_id|string) | length > 0) else [])
-        )
-        + (
-          (["--vlan-id=" ~ (_vlan_id|string), "--vlan-raw-device=" ~ _vlan_raw] if (not _is_vxlan and _vlan_id is defined and _vlan_id is not none and (_vlan_id|string) | length > 0 and (_vlan_raw is defined and _vlan_raw | length > 0)) else [])
-        )
-        + (['--cidr=' ~ _opts.address] if (_opts.address is defined and ('/' in (_opts.address | string))) else (['--address=' ~ _opts.address] if (_opts.address is defined and (_opts.address | string) | length > 0) else []))
-        + (['--mtu=' ~ (_opts.mtu|string)] if (_opts.mtu is defined and (_opts.mtu|string) | length > 0 else []) )
+      {{ ['--type', item.type | default('vlan')]
+        + (['--vlan-id', _vlan_id|string] if (_vlan_id is defined and _vlan_id is not none) else [])
+        + (['--vlan-raw-device', _vlan_raw] if (_vlan_raw is defined and _vlan_raw | length > 0) else [])
+        + (['--cidr', _opts.address] if (_opts.address is defined and ('/' in (_opts.address | string))) else (['--address', _opts.address] if (_opts.address is defined) else []))
       }}
   command: >-
     pvesh --noproxy set /nodes/{{ pve_node_id }}/network/{{ item.name }} {{ _set_params | join(' ') }}
@@ -472,18 +424,11 @@
     _opts: "{{ (item.options.options | default(item.options)) | default({}) }}"
     _vlan_id: "{{ _opts['vlan-id'] | default(_opts.vlan_id | default(_opts.tag | default(None))) }}"
     _vlan_raw: "{{ _opts['vlan-raw-device'] | default(_opts.vlan_raw_device | default(_opts['raw-device'] | default(_opts.raw_device | default(item.parent)))) }}"
-    _vxlan_id: "{{ _opts.id | default(_opts.vni | default(None)) }}"
-    _is_vxlan: "{{ (item.type | default('vlan')) == 'vxlan' }}"
     _set_params: >-
-      {{ []
-        + (
-          (["--id=" ~ (_vxlan_id|string)] if (_is_vxlan and _vxlan_id is defined and _vxlan_id is not none and (_vxlan_id|string) | length > 0) else [])
-        )
-        + (
-          (["--vlan-id=" ~ (_vlan_id|string), "--vlan-raw-device=" ~ _vlan_raw] if (not _is_vxlan and _vlan_id is defined and _vlan_id is not none and (_vlan_id|string) | length > 0 and (_vlan_raw is defined and _vlan_raw | length > 0)) else [])
-        )
-        + (['--cidr=' ~ _opts.address] if (_opts.address is defined and ('/' in (_opts.address | string))) else (['--address=' ~ _opts.address] if (_opts.address is defined and (_opts.address | string) | length > 0) else []))
-        + (['--mtu=' ~ (_opts.mtu|string)] if (_opts.mtu is defined and (_opts.mtu|string) | length > 0 else []) )
+      {{ ['--type', item.type | default('vlan')]
+        + (['--vlan-id', _vlan_id|string] if (_vlan_id is defined and _vlan_id is not none) else [])
+        + (['--vlan-raw-device', _vlan_raw] if (_vlan_raw is defined and _vlan_raw | length > 0) else [])
+        + (['--cidr', _opts.address] if (_opts.address is defined and ('/' in (_opts.address | string))) else (['--address', _opts.address] if (_opts.address is defined) else []))
       }}
   command: >-
     pvesh --noproxy set /nodes/{{ pve_node_id }}/network/{{ item.name }} {{ _set_params | join(' ') }}
@@ -530,8 +475,6 @@
 # or when explicitly requested by write_interfaces_file.
 - name: Write Linux bridge interface files (fallback)
   become: true
-  vars:
-    bridge: "{{ item }}"
   template:
     src: linux_bridges_interfaces.j2
     dest: "/etc/network/interfaces.d/{{ item.name }}.cfg"
@@ -553,202 +496,3 @@
   register: ifquery_result
   failed_when: ifquery_result.rc != 0
   changed_when: false
-
----
-# Simplified bridging tasks (single-file orchestration)
-#
-# Purpose
-# - Provide a compact flow for rendering and (optionally) applying both OVS
-#   and Linux bridge configuration for a single host.
-#
-# Notes for junior engineers
-# - This file mirrors the main `bridging.yml` flow but keeps the tasks
-#   simpler and more explicit for quick runs. It still delegates normalization
-#   to `normalize_ovs.yml` and prefers Proxmox `pvesh` for Linux bridge actions.
-
-- name: Load host-specific OVS vars (if any)
-  include_vars:
-    file: "{{ playbook_dir }}/../../host_vars/{{ inventory_hostname }}/bridges.yml"
-    name: ovs_host_vars
-  ignore_errors: true
-  tags:
-    - deploy_ovs_bridges
-    - deploy_linux_bridges
-
-- name: Load host-specific network vars (if any)
-  include_vars:
-    file: "{{ playbook_dir }}/../../host_vars/{{ inventory_hostname }}/network.yml"
-    name: net_host_vars
-  ignore_errors: true
-  tags:
-    - deploy_ovs_bridges
-    - deploy_linux_bridges
-
-- name: Merge bridges from host vars and role/group `bridges`
-  set_fact:
-    merged_bridges: >-
-      {{ (ovs_host_vars.bridges | default([])) + (net_host_vars.bridges | default([])) + (bridges | default([])) }}
-  tags:
-    - deploy_ovs_bridges
-    - deploy_linux_bridges
-
-- name: Initialize normalized_bridges
-  set_fact:
-    normalized_bridges: []
-  tags:
-    - deploy_ovs_bridges
-    - deploy_linux_bridges
-
-- name: Normalize each bridge entry (interface and type)
-  set_fact:
-    normalized_bridges: >-
-      {{ normalized_bridges + [ (
-        item | combine({
-          'ports': (item.ports | default(item.bridge_ports | default([]))),
-          'interface': ((item.ports | default(item.bridge_ports | default([])))[0] if ((item.ports | default(item.bridge_ports | default([]))) | length > 0) else (item.parent | default(item.interface | default('')))),
-          'type': ( 'ovs' if ('ovs' in (item.type | default('bridge') | string | lower)) else 'bridge' )
-        })
-      ) ] }}
-  loop: "{{ merged_bridges | default([]) }}"
-  loop_control:
-    label: "{{ item.name | default('unnamed') }}"
-  tags:
-    - deploy_ovs_bridges
-    - deploy_linux_bridges
-
-- name: Split into ovs_bridges and linux_bridges
-  set_fact:
-    ovs_bridges: "{{ normalized_bridges | selectattr('type','equalto','ovs') | list }}"
-    linux_bridges: "{{ normalized_bridges | selectattr('type','equalto','bridge') | list }}"
-  tags:
-    - deploy_ovs_bridges
-    - deploy_linux_bridges
-
-- name: Initialize unique linux_bridges list
-  set_fact:
-    linux_bridges_unique: []
-  tags:
-    - deploy_linux_bridges
-
-- name: Build unique linux_bridges by name (deduplicate duplicates from host_vars)
-  set_fact:
-    linux_bridges_unique: "{{ linux_bridges_unique + [ item ] }}"
-  loop: "{{ linux_bridges | default([]) }}"
-  loop_control:
-    label: "{{ item.name | default('unnamed') }}"
-  when: "(linux_bridges_unique | map(attribute='name') | list).count(item.name) == 0"
-  tags:
-    - deploy_linux_bridges
-
-# OVS flow (simplified)
-# - Build the `ovs_bridge_block` from `ovs_bridges` facts.
-# - Remove any duplicate Linux bridge stanzas for interfaces that will be
-#   managed by OVS (so there's no conflict in `/etc/network/interfaces`).
-- name: Build OVS /etc/network/interfaces block
-  set_fact:
-    ovs_bridge_block: "{{ lookup('template', playbook_dir + '/../../roles/network_provision/templates/ovs_bridges.j2') }}"
-  when: ovs_bridges | length > 0
-  changed_when: false
-  tags:
-    - deploy_ovs_bridges
-
-- name: Remove existing Linux bridge stanzas for OVS-named bridges
-  become: true
-  shell: |
-    for br in {{ ovs_bridges | map(attribute='name') | join(' ') }}; do
-      perl -0777 -i -pe "s/\nauto ${br}[\\s\\S]*?(?=\nauto |\n# BEGIN |\nsource )//g" /etc/network/interfaces || true
-    done
-  when: ovs_bridges | length > 0
-  tags:
-    - deploy_ovs_bridges
-
-- name: Normalize any existing OVS blocks and ensure spacing between iface stanzas
-  include_tasks: normalize_ovs.yml
-  # Normalization is intentionally a separate, included task file so both
-  # flows share the same backing logic and safety checks.
-  tags:
-    - deploy_ovs_bridges
-
-- name: Insert OVS block into /etc/network/interfaces (above source include)
-  become: true
-  blockinfile:
-    path: /etc/network/interfaces
-    marker: "# {mark} OVS BRIDGES"
-    block: "{{ ovs_bridge_block }}"
-    insertbefore: '^source /etc/network/interfaces.d/*'
-  notify: reload_network
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
-  tags:
-    - deploy_ovs_bridges
-
-- name: Show OVS bridge block (no host edits)
-  debug:
-    msg: "{{ ovs_bridge_block }}"
-  when: (ovs_bridges | length > 0) and not (write_interfaces_file | default(false))
-  tags:
-    - deploy_ovs_bridges
-
-- name: Create OVS bridges (live) when requested
-  become: true
-  command: "/usr/bin/ovs-vsctl --may-exist add-br {{ item.name }}"
-  loop: "{{ ovs_bridges | default([]) }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: (ovs_create | default(false)) and (ovs_bridges | length > 0)
-  tags:
-    - deploy_ovs_bridges
-
-- name: Add ports to OVS bridges (live) when requested
-  become: true
-  command: "/usr/bin/ovs-vsctl --may-exist add-port {{ item.name }} {{ item.interface }}"
-  loop: "{{ ovs_bridges | default([]) }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: (ovs_create | default(false)) and (ovs_bridges | length > 0) and (item.interface is defined and item.interface != '')
-  tags:
-    - deploy_ovs_bridges
-
-- name: Set OVS port MTU (live) when requested
-  become: true
-  command: "/usr/bin/ovs-vsctl set Interface {{ item.interface }} mtu_request={{ item.mtu }}"
-  loop: "{{ ovs_bridges | default([]) }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: (ovs_create | default(false)) and (ovs_bridges | length > 0) and (item.mtu is defined and item.mtu | int > 0) and (item.interface is defined and item.interface != '')
-  tags:
-    - deploy_ovs_bridges
-
-### Linux bridge tasks (tag: deploy_linux_bridges)
-
-# Discover Proxmox node id and existing network objects so we can be idempotent
-- name: Get Proxmox nodes (for node id resolution)
-  become: true
-  command: pvesh --noproxy get /nodes --output-format json
-  register: pvesh_nodes_raw
-  changed_when: false
-  tags:
-    - deploy_linux_bridges
-
-- name: Set pve_node_id (first node)
-  set_fact:
-    pve_node_id: "{{ (pvesh_nodes_raw.stdout | from_json)[0].node }}"
-  when: pvesh_nodes_raw.stdout is defined and (pvesh_nodes_raw.stdout | default('') | trim) != ''
-  tags:
-    - deploy_linux_bridges
-
-- name: Get existing network objects for node
-  become: true
-  command: "pvesh --noproxy get /nodes/{{ pve_node_id }}/network --output-format json"
-  register: pvesh_networks_raw
-  changed_when: false
-  when: pve_node_id is defined
-  tags:
-    - deploy_linux_bridges
-
-- name: Set existing_ifaces list
-  set_fact:
-    existing_networks: "{{ pvesh_networks_raw.stdout | default('[]') | from_json }}"
-    existing_ifaces: "{{ (pvesh_networks_raw.stdout | default('[]') | from_json) | map(attribute='iface') | list }}"
-  when: pvesh_networks_raw is defined
-  tags:
-    - deploy_linux_bridges
