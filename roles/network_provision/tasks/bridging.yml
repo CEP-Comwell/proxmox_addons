@@ -36,6 +36,21 @@
     - deploy_ovs_bridges
     - deploy_linux_bridges
 
+- name: Validate all bridge and subinterface names (fail-fast for invalid names)
+  assert:
+    that:
+      - "(all_iface_names | map('regex_search', '^[A-Za-z0-9._]+$') | list | length) == (all_iface_names | length)"
+    fail_msg: "One or more interface/subinterface names are invalid for Proxmox API. Names must match ^[A-Za-z0-9._]+$. Offending: {{ all_iface_names | reject('regex_search','^[A-Za-z0-9._]+$') | list }}"
+  vars:
+    all_bridge_names: "{{ (ovs_host_vars.bridges | default([])) + (net_host_vars.bridges | default([])) + (bridges | default([])) | map(attribute='name') | list }}"
+    all_sub_names: >-
+      {{ ((ovs_host_vars.bridges | default([])) + (net_host_vars.bridges | default([])) + (bridges | default([])))
+         | map(attribute='subinterfaces') | select('defined') | list | sum(start=[]) | map(attribute='name') | list }}
+    all_iface_names: "{{ (all_bridge_names + all_sub_names) | select('defined') | list }}"
+  when: ( (ovs_host_vars.bridges | default([])) or (net_host_vars.bridges | default([])) or (bridges | default([])) )
+  tags:
+    - deploy_linux_bridges
+
 - name: Initialize normalized_bridges
   set_fact:
     normalized_bridges: []
@@ -447,7 +462,7 @@
           (["--vlan-id=" ~ (_vlan_id|string), "--vlan-raw-device=" ~ _vlan_raw] if (not _is_vxlan and _vlan_id is defined and _vlan_id is not none and (_vlan_id|string) | length > 0 and (_vlan_raw is defined and _vlan_raw | length > 0)) else [])
         )
         + (['--cidr=' ~ _opts.address] if (_opts.address is defined and ('/' in (_opts.address | string))) else (['--address=' ~ _opts.address] if (_opts.address is defined and (_opts.address | string) | length > 0) else []))
-        + (['--mtu=' ~ (_opts.mtu|string)] if (_opts.mtu is defined and (_opts.mtu|string) | length > 0 else []) )
+        + (['--mtu=' ~ (_opts.mtu|string)] if (_opts.mtu is defined and (_opts.mtu|string) | length > 0) else [])
       }}
   command: >-
     pvesh --noproxy set /nodes/{{ pve_node_id }}/network/{{ item.name }} {{ _set_params | join(' ') }}
@@ -483,7 +498,7 @@
           (["--vlan-id=" ~ (_vlan_id|string), "--vlan-raw-device=" ~ _vlan_raw] if (not _is_vxlan and _vlan_id is defined and _vlan_id is not none and (_vlan_id|string) | length > 0 and (_vlan_raw is defined and _vlan_raw | length > 0)) else [])
         )
         + (['--cidr=' ~ _opts.address] if (_opts.address is defined and ('/' in (_opts.address | string))) else (['--address=' ~ _opts.address] if (_opts.address is defined and (_opts.address | string) | length > 0) else []))
-        + (['--mtu=' ~ (_opts.mtu|string)] if (_opts.mtu is defined and (_opts.mtu|string) | length > 0 else []) )
+        + (['--mtu=' ~ (_opts.mtu|string)] if (_opts.mtu is defined and (_opts.mtu|string) | length > 0) else [])
       }}
   command: >-
     pvesh --noproxy set /nodes/{{ pve_node_id }}/network/{{ item.name }} {{ _set_params | join(' ') }}
