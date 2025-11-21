@@ -508,7 +508,24 @@ proxmox_addons/
 **Key Integration Hub:**  
 - `edgesec-rest/` is the central API and automation hub, integrating with all other subprojects (Vault, SDN, TAPx, RADIUS) and external systems (NetBox, Datto RMM, NetBird, etc).
 
-**Each subproject** has its own `README.md` and quick start, with roles and playbooks organized for modular use and cross-integration.
+
+---
+
+## 🛠️ Maintainers: Inventory & Overlay Structure
+
+- **Canonical overlay/VNI plan**: Define all overlays, bridges, and VNI mappings in `group_vars/all.yml` under `sdn_vni_plan`. This is the single source of truth for the SDN fabric.
+- **Per-node instantiation**: In `host_vars/<node>.yml`, only include the subinterfaces and overlays actually present on that node. Do not copy the full plan—keep it minimal for auditability and rollback.
+- **Role-driven consumption**: All roles (`network_provision`, `vxlan`, `nftables`) consume these variables directly. No duplication or manual mapping is needed.
+- **Best practice**: When adding or removing overlays, update `group_vars/all.yml` first, then update only the affected nodes' `host_vars` to match the new plan.
+- **Peering naming**: For inter-site VXLAN peering, use the convention `edgesec-peer-[tenant]-[srcsite]-[dstsite]-vx[VNI]` (e.g., `edgesec-peer-tenant1-van-cal-vx10031`).
+- **Documentation**: Keep diagrams and inventory in sync. Use the Mermaid diagrams and the `sdn_vni_plan` as your reference.
+
+This structure ensures:
+- Minimal, auditable, and rollback-friendly inventory
+- Easy extension for new overlays or nodes
+- Consistency between documentation, inventory, and deployed state
+
+For more, see the [edgesec-SDN README](edgesec-sdn/README.md) and the [VXLAN Role Documentation](roles/vxlan/README.md).
 
 ---
 

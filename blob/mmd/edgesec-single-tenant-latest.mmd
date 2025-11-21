@@ -1,0 +1,78 @@
+graph LR
+
+%% Bridges
+ProxmoxBridge["vmbr0 (Linux bridge)\nports: ens2f0 (Proxmox default)"]
+MgmtBridge["vmbr99 (OVSBridge)\nports: eth2, mtu: 9000, vlan_aware: true"]
+VMBridge["vmbr1 (OVSBridge)\nports: eth1, mtu: 9000, vlan_aware: true"]
+ExtBridge["vmbr2 (Linux bridge)\nports: xg1, mtu: 1420, VyOS uplink"]
+
+%% vmbr2 subinterfaces
+Gateway1["gateway1 (vlan 100)"]
+Gateway2["gateway2 (vlan 200)"]
+VX10031["VX10031 (ceph_cluster)"]
+VX9003["VX9003 (proxy_ext)"]
+VX9006["VX9006 (edgesec_vault)"]
+
+%% VXLANs and Gateway
+VX10100["VX10100\n(tenant1_mgmt)"]
+VX10101["VX10101\n(tenant1_engineering)"]
+VX10102["VX10102\n(tenant1_support)"]
+VX10031["VX10031\n(ceph_cluster)"]
+VX10032["VX10032\n(core_services)"]
+VX10110["VX10110\n(tenant1_services)"]
+VX9000["VX9000\n(shared_services)"]
+VX9006["VX9006\n(edgesec_vault)"]
+VX9003["VX9003\n(proxy_ext)"]
+VX10120["VX10120\n(tenant1_ext)"]
+edgesecGW{{"edgesec-gw-rr-yyz-01\nedgesec-SDN Global Fabric Gateway"}}
+
+%% Bridge to VNI relationships
+MgmtBridge --> VX10100
+MgmtBridge --> VX10101
+MgmtBridge --> VX10102
+MgmtBridge --> VX10031
+MgmtBridge --> VX10032
+
+VMBridge --> VX10110
+VMBridge --> VX9000
+VMBridge --> VX9006
+
+ExtBridge --> VX10120
+ExtBridge --> VX9003
+ExtBridge --> Gateway1
+ExtBridge --> Gateway2
+
+%% vmbr2 subinterfaces feeding Gateway / SDN fabric
+Gateway1 --> edgesecGW
+Gateway2 --> edgesecGW
+VX10031 --> edgesecGW
+VX9003 --> edgesecGW
+VX9006 --> edgesecGW
+
+
+%% SDN fabric VNIs terminate on Gateway
+VX10100 --> edgesecGW
+VX10101 --> edgesecGW
+VX10102 --> edgesecGW
+VX10110 --> edgesecGW
+VX9000 --> edgesecGW
+VX9006 --> edgesecGW
+VX10031 --> edgesecGW
+VX10032 --> edgesecGW
+
+%% Peered overlays (remote VTEP connectivity)
+PEERED((🌐 Peered Overlay))
+VX10031 -. "edgesec-peer-tenant1-van-cal-vx10031" .-> PEERED
+VX10032 -. "edgesec-peer-tenant1-van-cal-vx10032" .-> PEERED
+VX10110 -. "edgesec-peer-tenant1-van-cal-vx10110" .-> PEERED
+VX9006 -. "edgesec-peer-tenant1-van-cal-vx9006" .-> PEERED
+
+%% Color coding
+classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
+classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
+classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
+classDef legacy fill:#eeeeee,stroke:#888888,stroke-width:2px,stroke-dasharray: 5 5;
+class ProxmoxBridge legacy;
+class MgmtBridge,VX10100,VX10101,VX10102,VX10031,VX10032 mgmt;
+class VMBridge,VX10110,VX9000,VX9006 vm;
+class ExtBridge,Gateway1,Gateway2,VX9003,VX10120,edgesecGW ext;

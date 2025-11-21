@@ -227,17 +227,18 @@ Place SDN-related Docker Compose files in the `docker/` subdirectory. Each file 
 
 ## Usage
 
-### Multi-Phase SDN Deployment
 
-Follow this structured 3-phase approach for reliable SDN deployment:
+### Multi-Phase SDN Deployment (Modular, Role-Driven)
+
+This SDN stack uses a modular, inventory-driven approach. All overlays, bridges, and VXLANs are defined in `group_vars/all.yml` (canonical plan) and instantiated per-node via `host_vars/` (minimal, only what is needed for each node). Roles consume these variables directly:
 
 #### Phase 1: Single Node Setup
 ```bash
-# Provision local bridges and SDN infrastructure on individual nodes
+# Provision local bridges and SDN infrastructure on individual nodes (uses canonical overlay/VNI plan)
 ansible-playbook -i ../../inventory playbooks/provision_network.yml
 
-# Optional: Limit to specific nodes
-ansible-playbook -i ../../inventory playbooks/provision_network.yml --limit proxmox-node-1
+# Limit to specific nodes
+ansible-playbook -i ../../inventory playbooks/provision_network.yml --limit pve-node1
 ```
 
 #### Phase 2: Connectivity Verification
@@ -245,34 +246,34 @@ ansible-playbook -i ../../inventory playbooks/provision_network.yml --limit prox
 # Verify reachability between nodes before fabric finalization
 ansible-playbook -i ../../inventory playbooks/preflight_connectivity.yml
 
-# Check specific node connectivity
-ansible-playbook -i ../../inventory playbooks/preflight_connectivity.yml --limit proxmox-node-1
+# Limit to specific nodes
+ansible-playbook -i ../../inventory playbooks/preflight_connectivity.yml --limit pve-node1
 ```
 
 #### Phase 3: Fabric Finalization
 ```bash
-# Establish VNI mappings and finalize EVPN overlays
+# Establish VNI mappings and finalize EVPN overlays (uses sdn_vni_plan from group_vars)
 ansible-playbook -i ../../inventory playbooks/establish_fabric.yml
 
-# Apply to specific nodes only
-ansible-playbook -i ../../inventory playbooks/establish_fabric.yml --limit proxmox-node-1,proxmox-node-2
+# Limit to specific nodes
+ansible-playbook -i ../../inventory playbooks/establish_fabric.yml --limit pve-node1,pve-node2
 ```
 
 ### Complete SDN Provisioning with NFTables (`provision_complete_sdn.yml`)
-**Purpose**: Single-command complete SDN infrastructure setup with bridge access control.
+**Purpose**: Single-command, full SDN infrastructure setup with bridge access control.
 
 **What it does**:
-- **network_provision role**: Interface discovery, naming, pinning, and bridging
-- **vxlan role**: SDN controllers, zones, VNets, and bridge configuration  
-- **nftables role**: Bridge access control with tenant isolation
+- **network_provision role**: Interface discovery, naming, pinning, and bridging (from host_vars)
+- **vxlan role**: SDN controllers, zones, VNets, and bridge configuration (from group_vars and host_vars)
+- **nftables role**: Bridge access control with tenant isolation (from group_vars/host_vars)
 
 **Usage**:
 ```bash
-# Complete SDN setup with NFTables bridge access control
+# Complete SDN setup with NFTables bridge access control (uses canonical overlay/VNI plan)
 ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml
 
 # Limit to specific nodes
-ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml --limit proxmox-node-1
+ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml --limit pve-node1
 
 # Disable NFTables (just network + SDN setup)
 ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml -e "nftables_configure_bridges=false"
@@ -284,6 +285,23 @@ ansible-playbook -i ../../inventory playbooks/provision_complete_sdn.yml -e "nft
 - Gateway bridge (vmbr2): Restricted to management only (isolated from vmbr1)
 
 **📖 [Complete NFTables Role Documentation](../../roles/nftables/README.md)**
+
+---
+
+## 🛠️ Maintainers' Note: Inventory Structure & Overlay Management
+
+- **Canonical overlay/VNI plan**: Define all overlays, bridges, and VNI mappings in `group_vars/all.yml` under `sdn_vni_plan`. This is the single source of truth for the SDN fabric.
+- **Per-node instantiation**: In `host_vars/<node>.yml`, only include the subinterfaces and overlays actually present on that node. Do not copy the full plan—keep it minimal for auditability and rollback.
+- **Role-driven consumption**: All roles (`network_provision`, `vxlan`, `nftables`) consume these variables directly. No duplication or manual mapping is needed.
+- **Best practice**: When adding or removing overlays, update `group_vars/all.yml` first, then update only the affected nodes' `host_vars` to match the new plan.
+- **Documentation**: Keep diagrams and inventory in sync. Use the Mermaid diagrams and the `sdn_vni_plan` as your reference.
+
+This structure ensures:
+- Minimal, auditable, and rollback-friendly inventory
+- Easy extension for new overlays or nodes
+- Consistency between documentation, inventory, and deployed state
+
+For more, see the [VXLAN Role Documentation](../../roles/vxlan/README.md) and [NFTables Role Documentation](../../roles/nftables/README.md).
 
 ### Advanced Usage Examples
 

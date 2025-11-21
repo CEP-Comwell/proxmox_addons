@@ -13,7 +13,6 @@ bridges:
     fd: 0
 
   # Management bridge (diagram: vmbr99)
-
   - name: vmbr99
     type: ovs
     ports:
@@ -22,7 +21,6 @@ bridges:
     vlan_aware: true
 
   # VM bridge (diagram: vmbr1)
-
   - name: vmbr1
     type: ovs
     ports:
@@ -31,7 +29,6 @@ bridges:
     vlan_aware: true
 
   # External bridge (diagram: vmbr2)
-
   - name: vmbr2
     type: bridge
     ports:
@@ -48,15 +45,18 @@ subinterfaces:
       tag: 200
     - name: legacy-vlan100
       type: vlan
-      tag: 100
+      tag: 5
     - name: vxlan10031
       type: vxlan
       id: 10031
+      mtu: 1400
     - name: vxlan9003
       type: vxlan
       id: 9003
+      mtu: 1400
     - name: vxlan9006
       type: vxlan
       id: 9006
+      mtu: 1400
 
 # All referenced interfaces exist on the system. No eth0/eth3 present.

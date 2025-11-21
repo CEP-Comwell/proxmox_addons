@@ -19,17 +19,19 @@
     {% if item.name in existing_bridges | default([]) %}
     echo "Bridge {{ item.name }} already exists, skipping reconfiguration"
     {% else %}
-    pvesh create /nodes/localhost/network
-    -type bridge
-    -iface {{ item.name }}
-    -bridge_ports {{ item.interface }}
-    -bridge_vlan_aware 1
-    -autostart 1
+    pvesh create /nodes/localhost/network \
+      -type bridge \
+      -iface {{ item.name }} \
+      -bridge_ports {{ item.interface }} \
+      -bridge_vlan_aware 1 \
+      -autostart 1
     {% endif %}
+  environment:
+    ANSIBLE_SSH_ARGS: "-o ConnectTimeout=20"
   loop:
-    - { name: 'vmbr99', interface: 'eth0' }  # Management bridge
-    - { name: 'vmbr1', interface: 'eth1' }   # Tenant bridge
-    - { name: 'vmbr2', interface: 'eth2' }   # Gateway bridge
+    - { name: 'vmbr99', interface: 'eth2' }  # Management bridge (corrected)
+    - { name: 'vmbr1', interface: 'eth1' }   # Tenant bridge (correct)
+    - { name: 'vmbr2', interface: 'xg1' }    # Gateway bridge (corrected)
   register: bridge_creation
   changed_when: bridge_creation.rc == 0
 
