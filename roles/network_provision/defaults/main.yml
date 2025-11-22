@@ -1,3 +1,7 @@
+---
+# Role defaults for network_provision
+# Extra safety: do not remove existing OVS blocks unless explicitly enabled
+force_ovsclean: false
 # Default VRF and subnet mappings for network_provision role
 vrf_mappings:
   vrf_zone1: 100

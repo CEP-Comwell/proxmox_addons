@@ -1,3 +1,320 @@
+# Backup of original bridging.yml (created automatically)
+# This file contains the previous, more complex bridging orchestration. Keep
+# as reference while migrating to the simplified bridging flow.
+
+# Network provisioning tasks (bridging)
+#
+# Purpose
+# - Merge host- and role-level bridge declarations, normalize/validate them,
+#   and then apply two distinct flows:
+#     * OVS-managed bridges (kept in `/etc/network/interfaces` for visibility,
+#       but managed at runtime via `ovs-vsctl`), and
+#     * Linux bridges (provisioned via Proxmox API `pvesh` where possible).
+#
+# Design and safety notes for junior engineers
+# - This file focuses on orchestration only; heavy lifting (templates, shell
+#   normalization) is delegated to templates or an included task file.
+# - Destructive edits to `/etc/network/interfaces` are explicitly gated by
+#   `force_ovsclean: true` to avoid accidental removal of unrelated config.
+# - Writing the interfaces file is gated by `write_interfaces_file`.
+# - Live OVS operations (create/add-port/set) are gated by `ovs_create` to
+#   make it easy to preview changes without touching the host.
+
+- name: Load host-specific OVS vars (if any)
+  include_vars:
+    file: "{{ playbook_dir }}/../../host_vars/{{ inventory_hostname }}/bridges.yml"
+    name: ovs_host_vars
+  ignore_errors: true
+  tags:
+    - deploy_ovs_bridges
+
+- name: Load host-specific network vars (if any)
+  include_vars:
+    file: "{{ playbook_dir }}/../../host_vars/{{ inventory_hostname }}/network.yml"
+    name: net_host_vars
+  ignore_errors: true
+  tags:
+    - deploy_ovs_bridges
+
+- name: Merge bridges from host vars and role/group `bridges`
+  set_fact:
+    merged_bridges: >-
+      {{ (ovs_host_vars.bridges | default([])) + (net_host_vars.bridges | default([])) + (bridges | default([])) }}
+  tags:
+    - deploy_ovs_bridges
+
+- name: Initialize normalized_bridges
+  set_fact:
+    normalized_bridges: []
+  tags:
+    - deploy_ovs_bridges
+
+- name: Normalize each bridge entry (interface and type)
+  set_fact:
+    normalized_bridges: "{{ normalized_bridges + [ (item | combine({'interface': (item.ports[0] if (item.ports is defined and item.ports|length>0) else (item.parent|default(item.interface|default('')))), 'type': (item.type|default('bridge')|lower)})) ] }}"
+  loop: "{{ merged_bridges | default([]) }}"
+  loop_control:
+    label: "{{ item.name | default('unnamed') }}"
+  tags:
+    - deploy_ovs_bridges
+
+- name: Split into ovs_bridges and linux_bridges
+  set_fact:
+    ovs_bridges: "{{ normalized_bridges | selectattr('type','equalto','ovs') | list }}"
+    linux_bridges: "{{ normalized_bridges | selectattr('type','equalto','bridge') | list }}"
+  tags:
+    - deploy_ovs_bridges
+
+# OVS flow (tag: deploy_ovs_bridges)
+#
+# Overview:
+# - Render an `ovs_bridge_block` (the text to insert into
+#   `/etc/network/interfaces`).
+# - Optionally normalize existing OVS markers and backup the interfaces file
+#   (this happens only when `force_ovsclean` is true).
+# - Insert the block above the `source /etc/network/interfaces.d/*` include so
+#   the Proxmox GUI will surface these interfaces.
+# - Optionally run `ovs-vsctl` commands to create bridges and attach ports
+#   when `ovs_create` is true.
+- name: Create OVS bridges with ovs-vsctl (guarded by ovs_create)
+  become: true
+  shell: |
+    if ovs-vsctl br-exists {{ item.name }} >/dev/null 2>&1; then
+      echo EXISTS
+    else
+      ovs-vsctl add-br {{ item.name }} && ovs-vsctl --may-exist add-port {{ item.name }} {{ (item.interface|default('')) }} && echo CREATED
+    fi
+  args:
+    executable: /bin/sh
+  loop: "{{ ovs_bridges | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: ovs_creation
+  failed_when: false
+  changed_when: "ovs_creation is defined and (ovs_creation.results | map(attribute='stdout') | join('') | search('CREATED'))"
+  when: (ovs_create | default(true)) and (ovs_bridges | length > 0)
+  tags:
+    - deploy_ovs_bridges
+
+- name: Build OVS /etc/network/interfaces block
+  set_fact:
+    ovs_bridge_block: |-
+      {%- for b in ovs_bridges | default([]) -%}
+      auto {{ b.name }}
+      iface {{ b.name }} inet manual
+      {%- if b.interface is defined and b.interface != '' -%}
+      # OVS static port
+      pre-up /usr/bin/ovs-vsctl --may-exist add-br {{ b.name }}
+      pre-up /usr/bin/ovs-vsctl --may-exist add-port {{ b.name }} {{ b.interface }}
+      post-down /usr/bin/ovs-vsctl del-port {{ b.name }} {{ b.interface }}
+      post-down /usr/bin/ovs-vsctl del-br {{ b.name }}
+      {%- endif -%}
+
+      {%- endfor -%}
+  when: ovs_bridges | length > 0
+  changed_when: false
+  tags:
+    - deploy_ovs_bridges
+
+# Normalize any existing duplicate OVS markers and ensure spacing between iface stanzas
+ - name: Normalize existing OVS marker lines and ensure spacing
+  # NOTE: the actual normalization logic lives in `normalize_ovs.yml` so both
+  # simplified and compact flows share the same behavior and fixes propagate
+  # in a single place.
+  include_tasks: normalize_ovs.yml
+  tags:
+    - deploy_ovs_bridges
+
+- name: Insert OVS block into /etc/network/interfaces (above source include)
+  become: true
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} OVS BRIDGES"
+    block: "{{ ovs_bridge_block }}"
+    insertbefore: '^source /etc/network/interfaces.d/*'
+  notify: reload_network
+  when: ovs_bridges | length > 0
+  tags:
+    - deploy_ovs_bridges
+
+# Linux bridge flow (tag: deploy_linux_bridges)
+#
+# Overview:
+# - Render linux bridge stanzas from a template so the content is consistent.
+# - Prefer provisioning through the Proxmox API (`pvesh`) to be idempotent and
+#   avoid editing files when possible. The fallback (writing files under
+#   `/etc/network/interfaces.d/`) is used only when `write_interfaces_file` is
+#   true or pvesh is unavailable.
+- name: Render linux bridge stanzas from template
+  set_fact:
+    linux_bridge_stanzas: "{{ lookup('template', 'linux-bridges.j2') }}"
+  when: linux_bridges | length > 0
+  tags:
+    - deploy_linux_bridges
+
+- name: Create linux bridges via Proxmox API (best-effort)
+  shell: |
+    pvesh create /nodes/localhost/network -type bridge -iface {{ item.name }} -bridge_ports {{ (item.interface|default('')) }} -bridge_vlan_aware 1 -autostart 1
+  loop: "{{ linux_bridges | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: pvesh_bridge_create
+  failed_when: false
+  tags:
+    - deploy_linux_bridges
+
+- name: Insert Linux bridge stanzas into /etc/network/interfaces
+  become: true
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} LINUX BRIDGES"
+    block: "{{ linux_bridge_stanzas }}"
+    insertbefore: '^source /etc/network/interfaces.d/*'
+  notify: reload_network
+  when: linux_bridges | length > 0
+  tags:
+    - deploy_linux_bridges
+### Manual subinterfaces handling removed in simplified flow (rendering deferred)
+
+# Ensure source directive and validate
+- name: Ensure source directive at end of interfaces
+  become: true
+  lineinfile:
+    path: /etc/network/interfaces
+    line: "source /etc/network/interfaces.d/*"
+    insertafter: EOF
+
+- name: Validate /etc/network/interfaces via ifquery
+  command: ifquery --list
+  register: ifquery_result
+  failed_when: ifquery_result.rc != 0
+  changed_when: false
+
+- name: Insert Linux bridge stanzas into /etc/network/interfaces
+  become: true
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} LINUX BRIDGES"
+    block: "{{ linux_bridge_stanzas }}"
+    insertbefore: '^source /etc/network/interfaces.d/*'
+  when: linux_bridges | length > 0
+  register: linux_bridges_insert_result
+  tags:
+    - deploy_linux_bridges
+
+# --- Manual subinterface configuration ---
+- name: Collect manual subinterface snippets
+  set_fact:
+    manual_snippets: []
+
+- name: Add manual subinterface snippet for each subinterface not on a Linux bridge
+  set_fact:
+    manual_snippets: "{{ manual_snippets + [lookup('template', 'subinterface_manual_snippet.j2')] }}"
+  loop: "{{ manual_subinterfaces }}"
+  loop_control:
+    loop_var: sub
+  when: "sub.parent_bridge not in (linux_bridge_names | default([]))"
+
+- name: Backup /etc/network/interfaces before changes
+  become: true
+  copy:
+    src: /etc/network/interfaces
+    dest: /etc/network/interfaces.bak
+    remote_src: true
+
+- name: Deploy manual subinterface config to /etc/network/interfaces.d/manual-sdn.cfg
+  become: true
+  copy:
+    content: "{{ manual_snippets | join('\n\n') }}\n"
+    dest: /etc/network/interfaces.d/manual-sdn.cfg
+  notify: reload_network
+  register: manual_cfg_result
+
+# --- VRF device and route setup ---
+#
+# This section is now fully templated. All VRF names, table numbers, and subnets should be defined in host_vars or group_vars.
+# Example host_vars:
+#   vrf_name: vrf_zone1
+#   vrf_table: 100
+#   vrf_routes:
+#     - { subnet: 172.16.11.0/24, dev: vmbr2.11 }
+#     - { subnet: 10.10.31.0/24, dev: vxlan_vx10031 }
+#     ...
+
+- name: Add static routes to VRF (if any)
+  become: true
+  command: ip route add table {{ vrf_name }} {{ item.subnet }} dev {{ item.dev }}
+  loop: "{{ vrf_routes | default([]) }}"
+  ignore_errors: yes
+  when: vrf_routes is defined and vrf_routes | length > 0
+
+- name: Ensure IP routing table entry for VRF exists
+  become: true
+  lineinfile:
+    path: /etc/iproute2/rt_tables
+    line: "{{ vrf_table }} {{ vrf_name }}"
+    state: present
+    create: yes
+  changed_when: false
+  when: vrf_name is defined and vrf_table is defined
+
+- name: Check if VRF device exists
+  become: true
+  command: ip -d link show {{ vrf_name }}
+  register: vrf_check
+  failed_when: false
+  changed_when: false
+  when: vrf_name is defined
+
+  become: true
+  command: ip link add {{ vrf_name }} type vrf table {{ vrf_table }}
+  when: vrf_name is defined and vrf_table is defined and vrf_check.rc != 0
+  register: vrf_create_result
+  failed_when: false
+  changed_when: vrf_create_result.rc == 0
+
+  become: true
+  command: ip link set dev {{ vrf_name }} up
+  when: vrf_name is defined and (vrf_check.rc != 0 or (vrf_check is defined and 'state DOWN' in (vrf_check.stdout | default(''))))
+  failed_when: false
+  changed_when: false
+
+- name: Create VRF device if missing
+  become: true
+  command: ip link add {{ vrf_name }} type vrf table {{ vrf_table }}
+  when: vrf_name is defined and vrf_table is defined and vrf_check.rc != 0
+  register: vrf_create_result
+  failed_when: false
+  changed_when: vrf_create_result.rc == 0
+
+- name: Bring VRF device up if it is down
+  become: true
+  command: ip link set dev {{ vrf_name }} up
+  when: vrf_name is defined and (vrf_check.rc != 0 or (vrf_check is defined and 'state DOWN' in (vrf_check.stdout | default(''))))
+  failed_when: false
+  changed_when: false
+
+# --- Post-apply validation and cleanup ---
+- name: Show all bridges for verification
+  command: ip -br link show type bridge
+  register: bridge_summary_result
+
+# - name: Debug: print bridge summary
+#   debug:
+#     msg: "Bridge summary: {{ bridge_summary_result.stdout_lines }}"
+
+- name: Ensure source directive at end of interfaces (final)
+  become: true
+  lineinfile:
+    path: /etc/network/interfaces
+    line: "source /etc/network/interfaces.d/*"
+    insertafter: EOF
+
+- name: Validate /etc/network/interfaces syntax with ifquery
+  command: ifquery --list
+  register: ifquery_result
+  failed_when: ifquery_result.rc != 0
+  changed_when: false
 # ...existing code...
  # ...existing code...
 # Inventory-driven bridge configuration for Proxmox VE

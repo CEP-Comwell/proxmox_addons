@@ -1,0 +1,12 @@
+{% for b in ovs_bridges | default([]) %}
+auto {{ b.name }}
+iface {{ b.name }} inet manual
+    pre-up /usr/bin/ovs-vsctl --may-exist add-br {{ b.name }}
+    pre-up /usr/bin/ovs-vsctl --may-exist add-port {{ b.name }} {{ b.interface }}
+{% if b.mtu is defined and b.mtu | int > 0 %}
+    pre-up /usr/bin/ovs-vsctl set Interface {{ b.interface }} mtu_request={{ b.mtu }}
+{% endif %}
+    post-down /usr/bin/ovs-vsctl del-port {{ b.name }} {{ b.interface }}
+    post-down /usr/bin/ovs-vsctl del-br {{ b.name }}
+
+{% endfor %}

@@ -8,6 +8,13 @@
   gather_facts: false
   vars:
     # Optional overrides; set these with -e when running if you want to control behavior
+    # safety defaults for network provisioning (override with -e)
+    # - write_interfaces_file: when true, the role will write /etc/network/interfaces.d/*.cfg files
+    # - ovs_create: when true, the role will run ovs-vsctl live commands to create OVS runtime state
+    # - force_ovsclean: when true, the role will perform destructive normalization/cleanup of OVS blocks
+    write_interfaces_file: false
+    ovs_create: false
+    force_ovsclean: false
     # provision_confirm_before_apply: false
   roles:
     - prereqs           # Install prerequisite packages (jq, git, etc.)

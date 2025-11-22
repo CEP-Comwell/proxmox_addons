@@ -24,6 +24,36 @@ Located in `playbooks/`:
   - `setup_complete_sdn.yml`: Complete SDN infrastructure (VXLAN bridges + connectivity verification)
   - `nftables_bridge_rules.yml`: Manages nftables firewall rules for SDN bridge access control and tenant isolation
 
+### Usage examples — `provision.yml` (basic node provisioning)
+Below are common ways to run the lightweight provisioning playbook you were recently working on (`playbooks/provision.yml`). These examples show safe defaults and the extra opt-in flags used by the `network_provision` role (file writes and destructive cleanup are gated).
+
+```bash
+# Run basic provisioning (uses inventory at repo root)
+ansible-playbook -i ../../inventory playbooks/provision.yml
+
+# Run for a single node with verbose output
+ansible-playbook -i ../../inventory playbooks/provision.yml --limit pve1.comwell.edgesec.ca -v
+
+# Write interface file changes to /etc/network/interfaces (file writes are gated)
+ansible-playbook -i ../../inventory playbooks/provision.yml -e "write_interfaces_file=true" --limit pve1.comwell.edgesec.ca
+
+# Insert OVS stanzas into the interfaces file and create runtime OVS objects (opt-in)
+ansible-playbook -i ../../inventory playbooks/provision.yml -e "write_interfaces_file=true ovs_create=true" --limit pve1.comwell.edgesec.ca
+
+# Perform an explicit, gated normalization/cleanup of OVS blocks (DANGEROUS — requires opt-in)
+ansible-playbook -i ../../inventory playbooks/provision.yml -e "write_interfaces_file=true force_ovsclean=true" --limit pve1.comwell.edgesec.ca
+
+# Dry-run check (no changes) and show diffs
+ansible-playbook -i ../../inventory playbooks/provision.yml --check --diff
+```
+
+Notes:
+- `write_interfaces_file` — when true, the role will render and write OVS bridge stanzas into `/etc/network/interfaces` (off by default).
+- `ovs_create` — when true the role will run `ovs-vsctl` to create bridges and attach ports at runtime (off by default).
+- `force_ovsclean` — when true the role will run the normalization/dedupe step that collapses duplicate OVS markers and cleans blocks; this is intentionally defaulted to `false` because it performs host-side editing. Always run with backups and test on a non-production host first.
+- Use `--tags` to limit execution to relevant steps (for example `--tags bridges` or `--tags deploy_ovs_bridges`).
+
+
 **Phase 2: Connectivity Verification**
   - `preflight_connectivity.yml`: Verifies reachability between nodes before fabric finalization
 

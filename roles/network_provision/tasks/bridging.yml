@@ -115,7 +115,7 @@
   become: true
   shell: |
     for br in {{ ovs_bridges | map(attribute='name') | join(' ') }}; do
-      perl -0777 -i -pe "s/\nauto ${br}[\\s\\S]*?(?=\nauto |\n# BEGIN |\nsource )//g" /etc/network/interfaces || true
+      perl -0777 -i -pe "s/\nauto ${br}[\s\S]*?(?=\nauto |\n# BEGIN |\nsource )//g" /etc/network/interfaces || true
     done
   when: ovs_bridges | length > 0
   tags:
