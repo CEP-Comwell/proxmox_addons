@@ -8,12 +8,29 @@ bridges:
       - eth2
     mtu: 9000
     vlan_aware: true
+    subinterfaces:
+      - name: vxlan10031
+        type: vxlan
+        options:
+          id: 10031
+          mtu: 1400
   - name: vmbr1
     type: OVSBridge
     bridge_ports:
       - eth1
     mtu: 9000
     vlan_aware: true
+    subinterfaces:
+      - name: vxlan9006
+        type: vxlan
+        options:
+          id: 9006
+          mtu: 1400
+      - name: vxlan9003
+        type: vxlan
+        options:
+          id: 9003
+          mtu: 1400
   - name: vmbr2
     type: Bridge
     bridge_ports:
@@ -39,18 +56,5 @@ bridges:
         options:
           address: 10.10.31.20/24
           tag: 100
-      - name: vxlan10031
-        type: vxlan
-        options:
-          id: 10031
-          mtu: 1400
-      - name: vxlan9003
-        type: vxlan
-        options:
-          id: 9003
-          mtu: 1400
-      - name: vxlan9006
-        type: vxlan
-        options:
-          id: 9006
-          mtu: 1400
+      # VXLANs for tenant/fabric are instantiated on OVS bridges (vmbr99/vmbr1)
+      # and therefore are not declared as vmbr2 subinterfaces here.

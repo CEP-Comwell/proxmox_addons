@@ -28,21 +28,21 @@
         loop_var: tenant
 
     - name: Create VXLAN interfaces for overlays (idempotent)
-      include_tasks: create_vxlan.yml
+      include_tasks: "{{ 'create_vxlan.yml' if (sdn_available | default(false)) else 'create_vxlan_ovs.yml' }}"
       loop: "{{ tenants | map(attribute='overlays') | list | flatten(1) }}"
       loop_control:
         loop_var: overlay
       ignore_errors: true
 
     - name: Configure common service overlays (e.g., DNS) - idempotent
-      include_tasks: create_vxlan.yml
+      include_tasks: "{{ 'create_vxlan.yml' if (sdn_available | default(false)) else 'create_vxlan_ovs.yml' }}"
       loop: "{{ common_services | default([]) }}"
       loop_control:
         loop_var: overlay
       ignore_errors: true
 
     - name: Configure legacy overlays (e.g., Ceph) - idempotent
-      include_tasks: create_vxlan.yml
+      include_tasks: "{{ 'create_vxlan.yml' if (sdn_available | default(false)) else 'create_vxlan_ovs.yml' }}"
       loop: "{{ legacy_overlays | default([]) }}"
       loop_control:
         loop_var: overlay

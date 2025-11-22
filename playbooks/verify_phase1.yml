@@ -1,0 +1,65 @@
+---
+# Playbook: verify_phase1.yml
+# Purpose: run checks to verify Phase‑1 surface deployments (pvesh, ovs, veths)
+
+- name: Verify Phase-1 surface on Proxmox node
+  hosts: proxmox-hosts
+  become: true
+  gather_facts: false
+  vars:
+    vmbr_linux_gateway: "vmbr2"
+    vmbr_ovs_tenant: "vmbr1"
+    vmbr_ovs_mgmt: "vmbr99"
+    glue_vmbr1_veth_linux: "veth-linux-vmbr1"
+    glue_vmbr1_veth_ovs:   "veth-ovs-vmbr1"
+  tasks:
+    - name: Ensure pve_node_id
+      command: pvesh --noproxy get /nodes --output-format json
+      register: pvesh_nodes_raw
+      changed_when: false
+
+    - name: Set pve_node_id
+      set_fact:
+        pve_node_id: "{{ (pvesh_nodes_raw.stdout | from_json)[0].node }}"
+      when: pvesh_nodes_raw.stdout is defined
+
+    - name: Check Proxmox network objects
+      command: pvesh --noproxy get /nodes/{{ pve_node_id }}/network --output-format json
+      register: pvesh_networks_raw
+      changed_when: false
+
+    - name: Show vmbr info (filter)
+      debug:
+        msg: >-
+          {{ (pvesh_networks_raw.stdout | from_json) | selectattr('iface','in',[vmbr_linux_gateway, vmbr_ovs_tenant, vmbr_ovs_mgmt]) | list }}
+
+    - name: List OVS bridges
+      command: ovs-vsctl list-br
+      register: ovs_br
+      changed_when: false
+
+    - name: Show OVS ports for tenant bridge
+      command: ovs-vsctl list-ports {{ vmbr_ovs_tenant }}
+      register: ovs_ports_tenant
+      failed_when: false
+      changed_when: false
+
+    - name: Show OVS ports for mgmt bridge
+      command: ovs-vsctl list-ports {{ vmbr_ovs_mgmt }}
+      register: ovs_ports_mgmt
+      failed_when: false
+      changed_when: false
+
+    - name: Check glue veth presence
+      command: ip -d link show {{ glue_vmbr1_veth_linux }} || true
+      register: glue_check
+      changed_when: false
+      failed_when: false
+
+    - name: Print verification summary
+      debug:
+        msg:
+          - "OVS bridges: {{ ovs_br.stdout | default('n/a') }}"
+          - "OVS tenant ports: {{ ovs_ports_tenant.stdout | default('n/a') }}"
+          - "OVS mgmt ports: {{ ovs_ports_mgmt.stdout | default('n/a') }}"
+          - "Glue check: {{ glue_check.stdout | default('n/a') }}"

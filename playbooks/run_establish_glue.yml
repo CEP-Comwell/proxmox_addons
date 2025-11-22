@@ -1,0 +1,10 @@
+---
+# Run the establish_glue tasks directly (invokes the task file under the role)
+- name: Run establish_glue tasks directly
+  hosts: proxmox-hosts
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Include establish_glue tasks
+      include_tasks: ../roles/network_provision/tasks/establish_glue.yml
+      tags: [establish_glue]

@@ -6,4 +6,5 @@
 - import_tasks: discovery.yml
 - import_tasks: naming.yml
 - import_tasks: pinning.yml
+- import_tasks: preserve_manual_ifaces.yml
 - import_tasks: bridging_simple.yml

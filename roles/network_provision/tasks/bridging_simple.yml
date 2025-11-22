@@ -369,7 +369,7 @@
     _vlan_id: "{{ _opts['vlan-id'] | default(_opts.vlan_id | default(_opts.tag | default(None))) }}"
     _sub_id: "{{ _opts['id'] | default(_opts.id | default(_vlan_id)) }}"
     _vlan_raw: "{{ _opts['vlan-raw-device'] | default(_opts.vlan_raw_device | default(_opts['raw-device'] | default(_opts.raw_device | default(item.parent)))) }}"
-    _id_flag: "{{ '--vxlan-id' if (item.type | default('vlan')) == 'vxlan' else '--vlan-id' }}"
+    _id_flag: "{{ '--id' if (item.type | default('vlan')) == 'vxlan' else '--vlan-id' }}"
     _create_params: >-
       {{ ['--iface', item.name, '--type', item.type | default('vlan')]
          + ([ _id_flag ~ '=' ~ (_sub_id|string) ] if (_sub_id is defined and _sub_id is not none) else [])
@@ -399,7 +399,7 @@
     _vlan_id: "{{ _opts['vlan-id'] | default(_opts.vlan_id | default(_opts.tag | default(None))) }}"
     _sub_id: "{{ _opts['id'] | default(_opts.id | default(_vlan_id)) }}"
     _vlan_raw: "{{ _opts['vlan-raw-device'] | default(_opts.vlan_raw_device | default(_opts['raw-device'] | default(_opts.raw_device | default(item.parent)))) }}"
-    _id_flag: "{{ '--vxlan-id' if (item.type | default('vlan')) == 'vxlan' else '--vlan-id' }}"
+    _id_flag: "{{ '--id' if (item.type | default('vlan')) == 'vxlan' else '--vlan-id' }}"
     _set_params: >-
       {{ ['--type', item.type | default('vlan')]
         + ([ _id_flag ~ '=' ~ (_sub_id|string) ] if (_sub_id is defined and _sub_id is not none) else [])
@@ -430,7 +430,7 @@
     _vlan_id: "{{ _opts['vlan-id'] | default(_opts.vlan_id | default(_opts.tag | default(None))) }}"
     _sub_id: "{{ _opts['id'] | default(_opts.id | default(_vlan_id)) }}"
     _vlan_raw: "{{ _opts['vlan-raw-device'] | default(_opts.vlan_raw_device | default(_opts['raw-device'] | default(_opts.raw_device | default(item.parent)))) }}"
-    _id_flag: "{{ '--vxlan-id' if (item.type | default('vlan')) == 'vxlan' else '--vlan-id' }}"
+    _id_flag: "{{ '--id' if (item.type | default('vlan')) == 'vxlan' else '--vlan-id' }}"
     _set_params: >-
       {{ ['--type', item.type | default('vlan')]
         + ([_id_flag, _sub_id|string] if (_sub_id is defined and _sub_id is not none) else [])

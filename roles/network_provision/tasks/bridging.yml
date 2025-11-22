@@ -135,8 +135,24 @@
     marker: "# {mark} OVS BRIDGES"
     block: "{{ ovs_bridge_block }}"
     insertbefore: '^source /etc/network/interfaces.d/*'
-  notify: reload_network
   when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  tags:
+    - deploy_ovs_bridges
+
+- name: Validate /etc/network/interfaces after OVS block
+  become: true
+  command: ifquery --list
+  register: ifquery_after_ovs
+  failed_when: ifquery_after_ovs.rc != 0
+  changed_when: false
+  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  tags:
+    - deploy_ovs_bridges
+
+- name: Reload network (ifquery passed)
+  become: true
+  command: ifreload -a
+  when: (ifquery_after_ovs is defined) and (ifquery_after_ovs.rc == 0) and (write_interfaces_file | default(false))
   tags:
     - deploy_ovs_bridges
 
@@ -553,6 +569,7 @@
     owner: root
     group: root
     mode: '0644'
+  notify: reload_network
   loop: "{{ (linux_bridges_unique | default(linux_bridges) | default([])) }}"
   loop_control:
     label: "{{ item.name }}"
@@ -568,6 +585,11 @@
   register: ifquery_result
   failed_when: ifquery_result.rc != 0
   changed_when: false
+
+- name: Include glue tasks (create veth glue between Linux and OVS bridges)
+  include_tasks: establish_glue.yml
+  tags:
+    - establish_glue
 
 ---
 # Simplified bridging tasks (single-file orchestration)
@@ -692,6 +714,12 @@
     block: "{{ ovs_bridge_block }}"
     insertbefore: '^source /etc/network/interfaces.d/*'
   notify: reload_network
+  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  tags:
+    - deploy_ovs_bridges
+
+- name: Flush handlers after inserting OVS block (run reload if notified)
+  meta: flush_handlers
   when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
   tags:
     - deploy_ovs_bridges

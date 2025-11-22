@@ -1,0 +1,14 @@
+[Unit]
+Description=EdgeSec persistent veth glue ({{ vmbr_linux_gateway }} <-> {{ vmbr_ovs_tenant }} / {{ vmbr_ovs_mgmt }})
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/edgesec-glue
+ExecStop=/usr/local/sbin/edgesec-glue --stop
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -24,7 +24,15 @@ iface {{ sub.name }} inet {{ (sub.options.address is defined) | ternary('static'
 {% endif %}{% if sub.options.tag is defined %}    vlan-id {{ sub.options.tag }}
 {% elif sub.vlan_id is defined %}    vlan-id {{ sub.vlan_id }}
 {% endif %}
-    vlan-raw-device {{ bridge.name }}
+{# Emit vlan-raw-device only when a VLAN id or an explicit raw-device is present. #}
+{% set _opts = sub.options | default({}) %}
+{% set _vlan_id = (_opts.get('tag') if _opts.get('tag') is defined else (_opts.get('vlan-id') if _opts.get('vlan-id') is defined else (sub.vlan_id if sub.vlan_id is defined else None))) %}
+{# Prefer an explicit vlan-raw-device/raw-device option, then sub.parent_bridge, then bridge.name #}
+{% set _raw_dev = (_opts.get('vlan-raw-device') if _opts.get('vlan-raw-device') is defined else (_opts.get('raw-device') if _opts.get('raw-device') is defined else (sub.parent_bridge if sub.parent_bridge is defined else None))) %}
+{# Only emit vlan-raw-device when we actually have a non-empty raw device value. #}
+{% if _raw_dev is not none and (_raw_dev|string).strip() != '' %}
+    vlan-raw-device {{ _raw_dev }}
+{% endif %}
 {% if sub.options.mtu is defined %}    mtu {{ sub.options.mtu }}
 {% endif %}
 {% endfor %}

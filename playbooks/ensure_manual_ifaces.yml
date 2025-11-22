@@ -1,0 +1,13 @@
+---
+# Minimal playbook to run the single task that ensures manual iface stanzas
+# This uses include_role with tasks_from so it executes only the small task file
+# we added under the role.
+- name: Ensure manual iface stanzas are present
+  hosts: pve1.comwell.edgesec.ca
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Ensure manual iface stanzas (role task)
+      include_role:
+        name: network_provision
+        tasks_from: preserve_manual_ifaces.yml

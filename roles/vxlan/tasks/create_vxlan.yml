@@ -41,8 +41,8 @@
         --iface {{ vxlan_iface }} \
         --type vxlan \
         --bridge_ports {{ overlay.bridge }} \
-        --vxlan-id {{ overlay.vni }} \
-        {% if overlay.physdev is defined %}--vxlan-physdev {{ overlay.physdev }}{% endif %} \
+        --id={{ overlay.vni }} \
+        {% if overlay.physdev is defined %}--physdev={{ overlay.physdev }}{% endif %} \
         --autostart 1 && echo 'CREATED';
     fi
   args:

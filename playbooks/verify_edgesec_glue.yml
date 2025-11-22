@@ -1,0 +1,130 @@
+---
+# verify_edgesec_glue.yml - clean, single play verification
+
+- hosts: pve1.comwell.edgesec.ca
+  become: true
+  gather_facts: false
+  vars:
+    reboot_action: "none"   # none | immediate | delayed
+    delayed_reboot_mins: 1
+    wait_after_reboot: 120
+
+  tasks:
+    - name: OVS - list bridges
+      ansible.builtin.shell: ovs-vsctl list-br || true
+      register: ovs_br
+      changed_when: false
+
+    - name: OVS - show topology
+      ansible.builtin.shell: ovs-vsctl show || true
+      register: ovs_show
+      changed_when: false
+
+    - name: Check vmbr2 (runtime)
+      ansible.builtin.shell: ip -d link show vmbr2 || true
+      register: vmbr2
+      changed_when: false
+
+    - name: List veth devices
+      ansible.builtin.shell: ip -d link show type veth || true
+      register: veths
+      changed_when: false
+
+    - name: Check edgesec-glue status
+      ansible.builtin.shell: systemctl status edgesec-glue.service --no-pager -l || true
+      register: glue
+      changed_when: false
+
+    - name: Configured interfaces (ifquery)
+      ansible.builtin.shell: ifquery --list || true
+      register: ifs
+      changed_when: false
+
+    - name: Tail /etc/network/interfaces
+      ansible.builtin.shell: tail -n 80 /etc/network/interfaces || true
+      register: intf_tail
+      changed_when: false
+
+    - name: Concise summary
+      ansible.builtin.debug:
+        msg: |
+          ovs_bridges: {{ ovs_br.stdout_lines | default([]) }}
+          vmbr2_first: {{ (vmbr2.stdout | default('<absent>')) | trim }}
+          veth_count: {{ (veths.stdout_lines | default([])) | length }}
+          glue_head: {{ (glue.stdout_lines | default([]))[:6] }}
+          configured_ifaces: {{ ifs.stdout_lines | default([]) }}
+
+    - name: Show glue journal (short)
+      ansible.builtin.shell: journalctl -u edgesec-glue.service -n 120 --no-pager || true
+      register: glue_journal
+      changed_when: false
+
+    - name: Debug glue journal head
+      ansible.builtin.debug:
+        var: glue_journal.stdout_lines
+
+    - name: Report planned reboot action
+      ansible.builtin.debug:
+        msg: "reboot_action={{ reboot_action }}, delayed_reboot_mins={{ delayed_reboot_mins }}"
+
+    - name: Schedule delayed reboot (non-blocking)
+      ansible.builtin.shell: nohup shutdown -r +{{ delayed_reboot_mins }} "Reboot scheduled by verify_edgesec_glue.yml" >/dev/null 2>&1 &
+      when: reboot_action == 'delayed'
+
+    - name: Perform immediate reboot
+      ansible.builtin.reboot:
+        msg: "Reboot requested by verify_edgesec_glue.yml"
+        reboot_timeout: 600
+      when: reboot_action == 'immediate'
+
+    - name: Wait for scheduled-shutdown marker (delayed)
+      ansible.builtin.wait_for:
+        path: /run/systemd/shutdown/scheduled
+        timeout: 900
+      when: reboot_action == 'delayed'
+
+    - name: Wait for host to return after reboot
+      ansible.builtin.wait_for_connection:
+        delay: 5
+        timeout: "{{ wait_after_reboot }}"
+      when: reboot_action != 'none'
+
+    - name: Post - OVS list
+      ansible.builtin.shell: ovs-vsctl list-br || true
+      register: ovs_br_post
+      changed_when: false
+      when: reboot_action != 'none'
+
+    - name: Post - vmbr2
+      ansible.builtin.shell: ip -d link show vmbr2 || true
+      register: vmbr2_post
+      changed_when: false
+      when: reboot_action != 'none'
+
+    - name: Post - veths
+      ansible.builtin.shell: ip -d link show type veth || true
+      register: veths_post
+      changed_when: false
+      when: reboot_action != 'none'
+
+    - name: Post - glue status
+      ansible.builtin.shell: systemctl status edgesec-glue.service --no-pager -l || true
+      register: glue_post
+      changed_when: false
+      when: reboot_action != 'none'
+
+    - name: Post - ifquery
+      ansible.builtin.shell: ifquery --list || true
+      register: ifs_post
+      changed_when: false
+      when: reboot_action != 'none'
+
+    - name: Post - summary
+      ansible.builtin.debug:
+        msg: |
+          post_ovs: {{ ovs_br_post.stdout_lines | default([]) }}
+          post_vmbr2: {{ (vmbr2_post.stdout_lines | default(['<absent>']))[0] }}
+          post_veth_count: {{ veths_post.stdout_lines | length }}
+          post_glue_head: {{ glue_post.stdout_lines[:8] | default([]) }}
+          post_ifquery: {{ ifs_post.stdout_lines | default([]) }}
+      when: reboot_action != 'none'
