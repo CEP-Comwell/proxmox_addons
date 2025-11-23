@@ -1,12 +1,59 @@
 ---
 # Ensure operator-managed manual interface stanzas exist and are preserved.
-# Safer ordering to avoid duplicate insertion across multiple runs:
-# 1. Remove any existing ANSIBLE-managed manual-ifaces blocks from interface
-#    fragments and from the main interfaces file.
-# 2. Remove stray 'source /etc/network/interfaces.d/*' lines and ensure a single
-#    'source ...' line exists at EOF to provide a stable insertion point.
-# 3. Insert a single ANSIBLE-managed manual-ifaces block before that source
-#    include. Use backups when modifying the main interfaces file.
+# These stanzas are critical for bonding and dummy interfaces created/managed
+# outside of this role. We use blockinfile so the block is idempotent and
+# easily removable/identifiable later.
+
+- name: Ensure edgesec-managed block includes required manual ifaces
+  ansible.builtin.blockinfile:
+    path: /etc/network/interfaces
+    create: yes
+    marker: "# {mark} ANSIBLE edgesec manual-ifaces"
+    insertbefore: '^source /etc/network/interfaces.d/\*$'
+    block: |
+
+      iface bonding_masters inet manual
+
+      iface dummy_fab-core inet manual
+
+
+  become: true
+- name: Ensure a blank line exists after 'source /etc/network/interfaces.d/*' so the
+  # ANSIBLE block appears separated from PVE-managed content.
+  ansible.builtin.debug:
+    msg: "Block inserted before source; blank-line-after-source task removed."
+  when: false
+  become: true
+- name: Ensure a blank line exists after the ANSIBLE block end marker
+  ansible.builtin.lineinfile:
+    path: /etc/network/interfaces
+    insertafter: '^# END ANSIBLE edgesec manual-ifaces$'
+    line: ''
+    create: yes
+  become: true
+
+- name: Ensure 'source /etc/network/interfaces.d/*' exists after ANSIBLE block
+  ansible.builtin.lineinfile:
+    path: /etc/network/interfaces
+    insertafter: '^# END ANSIBLE edgesec manual-ifaces$'
+    line: 'source /etc/network/interfaces.d/*'
+    create: yes
+  become: true
+
+- name: Remove any existing 'source /etc/network/interfaces.d/*' lines elsewhere
+  ansible.builtin.lineinfile:
+    path: /etc/network/interfaces
+    regexp: '^source /etc/network/interfaces.d/\*$'
+    state: absent
+  become: true
+
+- name: Ensure single 'source /etc/network/interfaces.d/*' is at EOF
+  ansible.builtin.lineinfile:
+    path: /etc/network/interfaces
+    insertafter: EOF
+    line: 'source /etc/network/interfaces.d/*'
+    create: yes
+  become: true
 
 - name: Find interface fragment files in /etc/network/interfaces.d
   ansible.builtin.find:
@@ -25,49 +72,4 @@
   loop_control:
     label: "{{ item.path }}"
   when: iface_fragments.matched is defined and iface_fragments.matched > 0
-  become: true
-
-- name: Remove any existing ANSIBLE edgesec manual-ifaces block from main interfaces
-  ansible.builtin.blockinfile:
-    path: /etc/network/interfaces
-    marker: "# {mark} ANSIBLE edgesec manual-ifaces"
-    state: absent
-  become: true
-
-- name: Remove any existing 'source /etc/network/interfaces.d/*' lines elsewhere
-  ansible.builtin.lineinfile:
-    path: /etc/network/interfaces
-    regexp: '^source /etc/network/interfaces.d/\*$'
-    state: absent
-  become: true
-
-- name: Ensure single 'source /etc/network/interfaces.d/*' is at EOF
-  ansible.builtin.lineinfile:
-    path: /etc/network/interfaces
-    insertafter: EOF
-    line: 'source /etc/network/interfaces.d/*'
-    create: yes
-  become: true
-
-- name: Insert single ANSIBLE edgesec manual-ifaces block before the source include
-  ansible.builtin.blockinfile:
-    path: /etc/network/interfaces
-    create: yes
-    marker: "# {mark} ANSIBLE edgesec manual-ifaces"
-    insertbefore: '^source /etc/network/interfaces.d/\*$'
-    backup: yes
-    block: |
-
-      iface bonding_masters inet manual
-
-      iface dummy_fab-core inet manual
-
-  become: true
-
-- name: Ensure a blank line exists after the ANSIBLE block end marker
-  ansible.builtin.lineinfile:
-    path: /etc/network/interfaces
-    insertafter: '^# END ANSIBLE edgesec manual-ifaces$'
-    line: ''
-    create: yes
   become: true

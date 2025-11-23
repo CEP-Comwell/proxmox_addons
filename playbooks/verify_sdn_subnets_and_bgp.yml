@@ -6,7 +6,7 @@
 #   comma-separated list of inventory hostnames or use group `vyos`)
 
 - name: Verify SDN subnets and BGP/route reflection readiness
-  hosts: proxmox-hosts
+  hosts: proxmox
   gather_facts: yes
   vars:
     vyos_query_hosts: "{{ vyos_hosts | default('') }}"
@@ -24,23 +24,22 @@
         cidrs: "{{ sdn_vni_plan | map(attribute='cidr') | list }}"
       shell: |
         python3 - <<'PY'
-        import json,ipaddress,sys
-        # cidrs provided as a JSON array string; parse safely
-        cidrs = json.loads('''{{ cidrs | to_json }}''')
-        nets = [ipaddress.ip_network(c) for c in cidrs]
-        overlaps = []
-        for i,a in enumerate(nets):
-            for j,b in enumerate(nets):
-                if i>=j: continue
-                if a.overlaps(b):
-                    overlaps.append((str(a),str(b)))
-        if overlaps:
-            print('OVERLAP')
-            for a,b in overlaps:
-                print(f'{a} overlaps {b}')
-            sys.exit(2)
-        print('OK - no overlaps')
-        PY
+import ipaddress,sys,yaml
+cidrs = {{ cidrs | to_json }}
+nets = [ipaddress.ip_network(c) for c in cidrs]
+overlaps = []
+for i,a in enumerate(nets):
+    for j,b in enumerate(nets):
+        if i>=j: continue
+        if a.overlaps(b):
+            overlaps.append((str(a),str(b)))
+if overlaps:
+    print('OVERLAP')
+    for a,b in overlaps:
+        print(f'{a} overlaps {b}')
+    sys.exit(2)
+print('OK - no overlaps')
+PY
       register: cidr_check
       failed_when: cidr_check.rc not in [0]
 
