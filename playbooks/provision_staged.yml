@@ -1,0 +1,107 @@
+---
+# Helper playbook: provision_staged.yml
+# Runs a staged provisioning flow for a single target: (1) check-mode preview,
+# (2) apply if confirmed, (3) verify results. This wrapper runs on the control
+# host and invokes the ansible CLI to execute the real playbook and verification
+# commands. It prompts before the destructive apply stage so operators have
+# a manual gate.
+
+# Usage:
+# ansible-playbook playbooks/provision_staged.yml -e target=pve1.comwell.edgesec.ca
+
+# Variables you can override:
+# target                  - inventory host to operate on (default: pve1.comwell.edgesec.ca)
+# tags                    - comma-separated tags to pass to the underlying playbook
+# write_interfaces_file   - boolean passed to the playbook (default: true for staged flows)
+# ovs_create              - boolean passed to the playbook (default: true)
+# force_ovsclean          - boolean passed to the playbook (default: false)
+# reboot_action           - action string passed to the underlying playbook (default: none)
+
+hosts: localhost
+connection: local
+gather_facts: no
+vars:
+  target: "pve1.comwell.edgesec.ca"
+  tags: "deploy_linux_bridges,deploy_ovs_bridges,deploy_sdn_vxlan,establish_glue"
+  # Default to safer options: don't write interface files or create OVS objects
+  # unless operator explicitly requests it during a staged run.
+  write_interfaces_file: false
+  ovs_create: false
+  force_ovsclean: false
+  reboot_action: "none"
+
+tasks:
+  - name: Build extra-vars CLI string
+    set_fact:
+      extra_vars_cli: "write_interfaces_file={{ write_interfaces_file | ternary('true','false') }} ovs_create={{ ovs_create | ternary('true','false') }} force_ovsclean={{ force_ovsclean | ternary('true','false') }} reboot_action={{ reboot_action }}"
+
+  - name: Stage 1 — Run provision playbook in check-mode (preview)
+    command: >-
+      ansible-playbook -i inventory edgesec-sdn/playbooks/provision.yml
+      --limit {{ target }}
+      --tags "{{ tags }}"
+      -e "{{ extra_vars_cli }}"
+      --check --diff
+    register: check_result
+    ignore_errors: yes
+
+  - name: Show check-mode stdout
+    debug:
+      msg: "Check-mode return code={{ check_result.rc }}\n--- stdout ---\n{{ check_result.stdout }}\n--- stderr ---\n{{ check_result.stderr }}"
+
+  - name: Pause for operator confirmation before apply
+    pause:
+      prompt: "Review the check-mode output above. Press Enter to CONTINUE to apply on {{ target }}, or Ctrl+C to abort."
+
+  - name: Stage 2 — Apply provisioning to target (live)
+    command: >-
+      ansible-playbook -i inventory edgesec-sdn/playbooks/provision.yml
+      --limit {{ target }}
+      --tags "{{ tags }}"
+      -e "{{ extra_vars_cli }}"
+    register: apply_result
+    ignore_errors: no
+
+  - name: Show apply stdout
+    debug:
+      msg: "Apply return code={{ apply_result.rc }}\n--- stdout ---\n{{ apply_result.stdout }}\n--- stderr ---\n{{ apply_result.stderr }}"
+
+  - name: Stage 3 — Verification: print /etc/network/interfaces on target
+    command: ansible -i inventory -u cpadmin --limit {{ target }} -m shell -a "cat /etc/network/interfaces"
+    register: verify_if
+    ignore_errors: yes
+
+  - name: Show interfaces verify output
+    debug:
+      msg: "--- /etc/network/interfaces ---\n{{ verify_if.stdout }}"
+
+  - name: Verification: list /etc/network/interfaces.d fragments
+    command: ansible -i inventory -u cpadmin --limit {{ target }} -m shell -a "ls -l /etc/network/interfaces.d || true"
+    register: verify_frag
+    ignore_errors: yes
+
+  - name: Show interfaces.d listing
+    debug:
+      msg: "--- /etc/network/interfaces.d ---\n{{ verify_frag.stdout }}"
+
+  - name: Verification: show OVS state on target
+    command: ansible -i inventory -u cpadmin --limit {{ target }} -m shell -a "ovs-vsctl show || true"
+    register: verify_ovs
+    ignore_errors: yes
+
+  - name: Show OVS verify output
+    debug:
+      msg: "--- ovs-vsctl show ---\n{{ verify_ovs.stdout }}"
+
+  - name: Verification: check kernel netdevs for vxlan/veth/vnet
+    command: ansible -i inventory -u cpadmin --limit {{ target }} -m shell -a "ip -d link | egrep 'vxlan|veth|vnet' || true"
+    register: verify_netdevs
+    ignore_errors: yes
+
+  - name: Show netdevs verify
+    debug:
+      msg: "--- ip -d link (vxlan/veth/vnet) ---\n{{ verify_netdevs.stdout }}"
+
+  - name: Completion note
+    debug:
+      msg: "Staged provisioning complete for {{ target }}. Check outputs above and inspect /opt/backup on the host if you need to roll back."
