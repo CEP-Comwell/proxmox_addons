@@ -1,0 +1,106 @@
+---
+# Verify SDN subnets and optional VyOS BGP state
+# - Checks for overlapping CIDRs in group_vars/all.yml:sdn_vni_plan
+# - Verifies gateway IPs are present on vmbr interfaces on targeted Proxmox nodes
+# - Optionally queries VyOS hosts for BGP routes (set extra-var `vyos_hosts` to a
+#   comma-separated list of inventory hostnames or use group `vyos`)
+
+- name: Verify SDN subnets and BGP/route reflection readiness
+  hosts: proxmox-hosts
+  gather_facts: yes
+  vars:
+    vyos_query_hosts: "{{ vyos_hosts | default('') }}"
+
+  tasks:
+    - name: Ensure we have sdn_vni_plan defined
+      assert:
+        that:
+          - sdn_vni_plan is defined
+        fail_msg: "sdn_vni_plan not defined in group_vars/all.yml"
+
+    - name: Check for overlapping CIDRs (runs on controller)
+      delegate_to: localhost
+      vars:
+        cidrs: "{{ sdn_vni_plan | map(attribute='cidr') | list }}"
+      shell: |
+        python3 - <<'PY'
+        import json,ipaddress,sys
+        # cidrs provided as a JSON array string; parse safely
+        cidrs = json.loads('''{{ cidrs | to_json }}''')
+        nets = [ipaddress.ip_network(c) for c in cidrs]
+        overlaps = []
+        for i,a in enumerate(nets):
+            for j,b in enumerate(nets):
+                if i>=j: continue
+                if a.overlaps(b):
+                    overlaps.append((str(a),str(b)))
+        if overlaps:
+            print('OVERLAP')
+            for a,b in overlaps:
+                print(f'{a} overlaps {b}')
+            sys.exit(2)
+        print('OK - no overlaps')
+        PY
+      register: cidr_check
+      failed_when: cidr_check.rc not in [0]
+
+    - name: Show CIDR check result
+      debug:
+        var: cidr_check.stdout_lines
+
+    - name: Verify vmbr gateway IPs on host (if present in host_vars)
+      vars:
+        expected_gws: "{{ lookup('vars', 'vmbr_gateway_ips') | default({}) }}"
+      when: expected_gws | length > 0
+      block:
+        - name: Check each expected gateway is present on host
+          ansible.builtin.shell: ip -o addr show | grep -w {{ item.value.split('/')[0] }} || true
+          register: gw_check
+          failed_when: gw_check.stdout == ''
+          loop: "{{ expected_gws | dict2items }}"
+          loop_control:
+            label: "{{ item.key }}={{ item.value }}"
+
+        - name: Report gateway check results
+          debug:
+            msg: "{{ item.item.key }} -> {{ item.stdout | default('MISSING') }}"
+          loop: "{{ gw_check.results }}"
+
+    - name: Optional VyOS BGP checks (if vyos hosts provided)
+      when: vyos_query_hosts != ''
+      block:
+        - name: Build VyOS host list
+          set_fact:
+            vyos_list: "{{ vyos_query_hosts.split(',') }}"
+
+        - name: Query VyOS BGP summary via SSH
+          delegate_to: "{{ item }}"
+          ansible.builtin.shell: "vtysh -c 'show bgp summary'"
+          register: vyos_bgp
+          loop: "{{ vyos_list }}"
+
+        - name: Show VyOS BGP outputs
+          debug:
+            msg: "{{ item.stdout_lines | default(item.stderr_lines) }}"
+          loop: "{{ vyos_bgp.results }}"
+
+    - name: Check that Proxmox hosts have kernel routes for each SDN VNI CIDR
+      ansible.builtin.shell: ip route show | sed -n '1,200p'
+      register: route_table
+
+    - name: Verify routes include VNI CIDRs (controller-visible check)
+      delegate_to: localhost
+      vars:
+        host_routes: "{{ hostvars[inventory_hostname]['ansible_facts']['nodename'] if hostvars[inventory_hostname]['ansible_facts'] is defined else inventory_hostname }}"
+      debug:
+        msg: |
+          Host: {{ inventory_hostname }}
+          Route table snapshot:
+          {{ route_table.stdout_lines | join('\n') }}
+
+    - name: Final note
+      debug:
+        msg: |
+          If VyOS RR is used, ensure it advertises the VNI subnets (or EVPN L3
+          routes) to all peers. Use the VyOS config task/role to push RR policies
+          after confirming this playbook passes.

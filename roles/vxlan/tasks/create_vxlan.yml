@@ -40,9 +40,9 @@
       pvesh create /nodes/{{ inventory_hostname }}/network \
         --iface {{ vxlan_iface }} \
         --type vxlan \
-        --bridge {{ overlay.bridge }} \
-        --vni {{ overlay.vni }} \
-        {% if overlay.physdev is defined %}--vxlan-physdev {{ overlay.physdev }}{% endif %} \
+        --bridge_ports {{ overlay.bridge }} \
+        --id={{ overlay.vni }} \
+        {% if overlay.physdev is defined %}--physdev={{ overlay.physdev }}{% endif %} \
         --autostart 1 && echo 'CREATED';
     fi
   args:

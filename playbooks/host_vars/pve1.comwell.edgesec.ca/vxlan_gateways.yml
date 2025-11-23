@@ -1,0 +1,3 @@
+vmbr_gateway_ips:
+    vmbr1: 10.101.1.1/24
+    vmbr99: 10.102.1.1/24

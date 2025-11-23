@@ -1,0 +1,33 @@
+# Non-functional metadata for pve2 (generated from pve1 baseline)
+site_id: 2
+site_code: "YYZ-2"
+
+ipam_policy:
+  strategy: "per-site CIDR per VNI (no L2 stretch)"
+  cidr_increment_field: "third_octet"
+  svi_offset: 1
+
+vmbr_linux_gateway: "vmbr2"
+vmbr_ovs_tenant: "vmbr1"
+vmbr_ovs_mgmt: "vmbr99"
+
+mtu_linux_gateway: 1420
+mtu_ovs_default: 9000
+
+glue_vmbr1:
+  veth_linux: "veth-glue-1-lnx"
+  veth_ovs: "veth-glue-1-ovs"
+glue_vmbr99:
+  veth_linux: "veth-glue-99-lnx"
+  veth_ovs: "veth-glue-99-ovs"
+
+site_vni_plan_present: true
+
+services_local:
+  dhcp_vnis: []
+  dns_forwarders_v4: []
+  dns_forwarders_v6: []
+
+_template_note: >
+  pve2 host_vars generated from pve1 baseline. Verify physical NIC names and
+  any address assignments before applying network pinning or reloads.

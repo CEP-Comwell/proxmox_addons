@@ -1,0 +1,400 @@
+---
+# Establish glue between Linux bridges (vmbr2) and OVS bridges (vmbr1, vmbr99)
+# Idempotent veth creation, MTU clamping and OVS port attach.
+# Tags: establish_glue
+
+- name: "DRIFT GUARD: Print pinned one-sentence rule"
+  ansible.builtin.debug:
+    msg: >-
+      Use pvesh for node interfaces and SDN (EVPN/VXLAN), use ovs-vsctl only for
+      OVS-specific operations (mtu, patch/mirror, optional non-EVPN vxlan), and never
+      attempt node /network type=vxlan—the EVPN fabric is SDN-driven and renders as Linux
+      interfaces that FRR consumes; OVS is the access layer glued via veth.
+  tags: [establish_glue]
+
+- name: "Set glue variable defaults (early)"
+  set_fact:
+    vmbr_linux_gateway: "{{ vmbr_linux_gateway | default('vmbr2') }}"
+    vmbr_ovs_tenant: "{{ vmbr_ovs_tenant | default('vmbr1') }}"
+    vmbr_ovs_mgmt: "{{ vmbr_ovs_mgmt | default('vmbr99') }}"
+    mtu_linux_gateway: "{{ mtu_linux_gateway | default(1420) }}"
+    glue_to_mgmt: "{{ glue_to_mgmt | default(true) }}"
+    # Use short names (<=15 chars) to satisfy kernel/netlink limits
+    glue_vmbr1: "{{ glue_vmbr1 | default({'veth_linux':'vethl1','veth_ovs':'vetho1'}) }}"
+    glue_vmbr99: "{{ glue_vmbr99 | default({'veth_linux':'vethl99','veth_ovs':'vetho99'}) }}"
+  tags: [establish_glue]
+
+# -------------------------------
+# Cleanup: detect/fix malformed /etc/network/interfaces (idempotent)
+# -------------------------------
+- name: "Check for trailing garbage on the include line in /etc/network/interfaces"
+  ansible.builtin.shell: |
+    awk '/source \/etc\/network\/interfaces.d\/*/ { print NR ":" $0; exit }' /etc/network/interfaces || true
+  register: interfaces_include_line
+  changed_when: false
+  tags: [establish_glue]
+
+- name: "Mark interfaces file for cleanup if include line contains garbage"
+  set_fact:
+    interfaces_need_cleanup: "{{ interfaces_include_line.stdout is search('Error:|is garbage|duplicate') }}"
+  tags: [establish_glue]
+
+- name: "Backup /etc/network/interfaces before cleaning (only when needed)"
+  ansible.builtin.copy:
+    src: /etc/network/interfaces
+    dest: "/etc/network/interfaces.bak.{{ ansible_date_time.iso8601_basic }}"
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: interfaces_need_cleanup | default(false)
+  tags: [establish_glue]
+
+- name: "Strip trailing garbage from include directive (idempotent)"
+  ansible.builtin.replace:
+    path: /etc/network/interfaces
+    regexp: '^(source \/etc \/network \/interfaces\.d\/\*)(.*)$'
+    replace: 'source /etc/network/interfaces.d/*'
+    backup: yes
+  when: interfaces_need_cleanup | default(false) and not ansible_check_mode
+  tags: [establish_glue]
+
+- name: "Ensure /etc/network/interfaces ends with a single newline"
+  ansible.builtin.shell: |
+    # Ensure file ends with a single newline; safe no-op when already correct
+    perl -0777 -pe 's/\s+$/\n/s' /etc/network/interfaces > /tmp/interfaces.clean && mv /tmp/interfaces.clean /etc/network/interfaces
+  when: interfaces_need_cleanup | default(false) and not ansible_check_mode
+  args:
+    warn: false
+  tags: [establish_glue]
+
+# -------------------------------
+# Cleanup: remove half-orphan veths (idempotent)
+# If one peer exists and the other does not, delete the orphan so the play can create a clean pair.
+# -------------------------------
+
+# Ensure we have a pve_node_id (bridging.yml normally sets this earlier, but
+# include a local fallback so this task file can be run standalone).
+- name: "Ensure pve_node_id is defined (fallback)"
+  command: pvesh --noproxy get /nodes --output-format json
+  register: _pvesh_nodes_raw
+  changed_when: false
+  failed_when: false
+  when: pve_node_id is not defined
+  tags: [establish_glue]
+
+- name: "Set pve_node_id (fallback)"
+  set_fact:
+    pve_node_id: "{{ ( _pvesh_nodes_raw.stdout | from_json )[0].node }}"
+  when: (pve_node_id is not defined) and (_pvesh_nodes_raw.stdout is defined and (_pvesh_nodes_raw.stdout | trim) != '')
+  tags: [establish_glue]
+
+# Check that the target Linux and OVS bridges are present in Proxmox before
+# creating veths. Fail loudly (avoids orphan veths) unless running in check-mode.
+- name: "Check vmbr_linux_gateway exists via pvesh"
+  command: >-
+    pvesh --noproxy get /nodes/{{ pve_node_id }}/network/{{ vmbr_linux_gateway }} --output-format json
+  register: pvesh_check_vmbr_linux
+  changed_when: false
+  failed_when: false
+  when: pve_node_id is defined
+  tags: [establish_glue]
+
+- name: "Check vmbr_ovs_tenant exists via pvesh"
+  command: >-
+    pvesh --noproxy get /nodes/{{ pve_node_id }}/network/{{ vmbr_ovs_tenant }} --output-format json
+  register: pvesh_check_vmbr_ovs
+  changed_when: false
+  failed_when: false
+  when: pve_node_id is defined
+  tags: [establish_glue]
+
+- name: "Check vmbr_ovs_mgmt exists via pvesh (optional)"
+  command: >-
+    pvesh --noproxy get /nodes/{{ pve_node_id }}/network/{{ vmbr_ovs_mgmt }} --output-format json
+  register: pvesh_check_vmbr_ovs_mgmt
+  changed_when: false
+  failed_when: false
+  when: pve_node_id is defined and glue_to_mgmt
+  tags: [establish_glue]
+
+- name: "Fail if required bridges are missing (prevent orphan veths)"
+  ansible.builtin.fail:
+    msg: >-
+      Required bridge '{{ item.name }}' is missing on node '{{ pve_node_id }}'.
+      Create the bridge first (deploy_linux_bridges / deploy_ovs_bridges) or run in --check to simulate.
+  loop:
+    - { name: '{{ vmbr_linux_gateway }}', rc: '{{ pvesh_check_vmbr_linux.rc | default(1) }}' }
+    - { name: '{{ vmbr_ovs_tenant }}', rc: '{{ pvesh_check_vmbr_ovs.rc | default(1) }}' }
+  when: not ansible_check_mode and ( (pvesh_check_vmbr_linux is defined and (pvesh_check_vmbr_linux.rc | default(1)) != 0) or (pvesh_check_vmbr_ovs is defined and (pvesh_check_vmbr_ovs.rc | default(1)) != 0) )
+  tags: [establish_glue]
+
+- name: "Warn in check-mode if bridges would be missing"
+  ansible.builtin.debug:
+    msg: "Bridge {{ item.name }} would be missing: simulated creation would be blocked"
+  loop:
+    - { name: '{{ vmbr_linux_gateway }}', rc: '{{ pvesh_check_vmbr_linux.rc | default(1) }}' }
+    - { name: '{{ vmbr_ovs_tenant }}', rc: '{{ pvesh_check_vmbr_ovs.rc | default(1) }}' }
+  when: ansible_check_mode and ( (pvesh_check_vmbr_linux is defined and (pvesh_check_vmbr_linux.rc | default(1)) != 0) or (pvesh_check_vmbr_ovs is defined and (pvesh_check_vmbr_ovs.rc | default(1)) != 0) )
+  tags: [establish_glue]
+
+# Defaults/fallbacks are read via variables; callers should set host/group vars
+# vmbr_linux_gateway (eg vmbr2), vmbr_ovs_tenant (eg vmbr1), vmbr_ovs_mgmt (eg vmbr99)
+
+- name: "Set glue variable defaults"
+  set_fact:
+    vmbr_linux_gateway: "{{ vmbr_linux_gateway | default('vmbr2') }}"
+    vmbr_ovs_tenant: "{{ vmbr_ovs_tenant | default('vmbr1') }}"
+    vmbr_ovs_mgmt: "{{ vmbr_ovs_mgmt | default('vmbr99') }}"
+    mtu_linux_gateway: "{{ mtu_linux_gateway | default(1420) }}"
+    glue_to_mgmt: "{{ glue_to_mgmt | default(true) }}"
+    glue_vmbr1: "{{ glue_vmbr1 | default({'veth_linux':'veth-linux-vmbr1','veth_ovs':'veth-ovs-vmbr1'}) }}"
+    glue_vmbr99: "{{ glue_vmbr99 | default({'veth_linux':'veth-linux-vmbr99','veth_ovs':'veth-ovs-vmbr99'}) }}"
+  tags: [establish_glue]
+
+# -------------------------------
+# Helper: existence checks (sysfs)
+# -------------------------------
+- name: "Check if vmbr2↔vmbr1 veth (Linux end) exists"
+  ansible.builtin.stat:
+    path: "/sys/class/net/{{ glue_vmbr1.veth_linux }}"
+  register: glue_vmbr1_linux_stat
+  tags: [establish_glue]
+
+- name: "Check if vmbr2↔vmbr1 veth (OVS end) exists"
+  ansible.builtin.stat:
+    path: "/sys/class/net/{{ glue_vmbr1.veth_ovs }}"
+  register: glue_vmbr1_ovs_stat
+  tags: [establish_glue]
+
+- name: "Check if vmbr2↔vmbr99 veth (Linux end) exists"
+  ansible.builtin.stat:
+    path: "/sys/class/net/{{ glue_vmbr99.veth_linux }}"
+  register: glue_vmbr99_linux_stat
+  when: glue_to_mgmt
+  tags: [establish_glue]
+
+- name: "Check if vmbr2↔vmbr99 veth (OVS end) exists"
+  ansible.builtin.stat:
+    path: "/sys/class/net/{{ glue_vmbr99.veth_ovs }}"
+  register: glue_vmbr99_ovs_stat
+  when: glue_to_mgmt
+  tags: [establish_glue]
+
+- name: "Remove orphaned linux veth end for vmbr1 when ovs peer missing"
+  ansible.builtin.command:
+    cmd: ip link delete {{ glue_vmbr1.veth_linux }}
+  become: true
+  when: glue_vmbr1_linux_stat.stat.exists and (not glue_vmbr1_ovs_stat.stat.exists) and not ansible_check_mode
+  changed_when: true
+  failed_when: false
+  tags: [establish_glue]
+
+- name: "Remove orphaned ovs veth end for vmbr1 when linux peer missing"
+  ansible.builtin.command:
+    cmd: ip link delete {{ glue_vmbr1.veth_ovs }}
+  become: true
+  when: glue_vmbr1_ovs_stat.stat.exists and (not glue_vmbr1_linux_stat.stat.exists) and not ansible_check_mode
+  changed_when: true
+  failed_when: false
+  tags: [establish_glue]
+
+- name: "Remove orphaned linux veth end for vmbr99 when ovs peer missing"
+  ansible.builtin.command:
+    cmd: ip link delete {{ glue_vmbr99.veth_linux }}
+  become: true
+  when: glue_to_mgmt and glue_vmbr99_linux_stat.stat.exists and (not glue_vmbr99_ovs_stat.stat.exists) and not ansible_check_mode
+  changed_when: true
+  failed_when: false
+  tags: [establish_glue]
+
+- name: "Remove orphaned ovs veth end for vmbr99 when linux peer missing"
+  ansible.builtin.command:
+    cmd: ip link delete {{ glue_vmbr99.veth_ovs }}
+  become: true
+  when: glue_to_mgmt and glue_vmbr99_ovs_stat.stat.exists and (not glue_vmbr99_linux_stat.stat.exists) and not ansible_check_mode
+  changed_when: true
+  failed_when: false
+  tags: [establish_glue]
+
+# -------------------------------
+# Check-mode simulation
+# -------------------------------
+- name: "[CHECK] Simulate Glue creation plan"
+  ansible.builtin.debug:
+    msg:
+      - "Would create veth pair {{ glue_vmbr1.veth_linux }} <-> {{ glue_vmbr1.veth_ovs }}; MTU={{ mtu_linux_gateway }}"
+      - "Would enslave {{ glue_vmbr1.veth_linux }} to {{ vmbr_linux_gateway }} and add {{ glue_vmbr1.veth_ovs }} to {{ vmbr_ovs_tenant }}"
+      - "{{ glue_to_mgmt | ternary('Would also create vmbr2↔vmbr99 glue with same MTU','Mgmt glue disabled') }}"
+  when: ansible_check_mode
+  tags: [establish_glue]
+
+# -------------------------------
+# vmbr2 ↔ vmbr1 glue (create if missing)
+# -------------------------------
+- name: "Create veth pair vmbr2↔vmbr1"
+  ansible.builtin.command:
+    cmd: >-
+      ip link add {{ glue_vmbr1.veth_linux }} type veth peer name {{ glue_vmbr1.veth_ovs }}
+  when: not ansible_check_mode and (not glue_vmbr1_linux_stat.stat.exists) and (not glue_vmbr1_ovs_stat.stat.exists)
+  changed_when: true
+  tags: [establish_glue]
+
+- name: "Set MTU on vmbr2↔vmbr1 veth ends"
+  ansible.builtin.command:
+    cmd: ip link set dev {{ item }} mtu {{ mtu_linux_gateway }}
+  loop:
+    - "{{ glue_vmbr1.veth_linux }}"
+    - "{{ glue_vmbr1.veth_ovs }}"
+  when: not ansible_check_mode
+  changed_when: false
+  tags: [establish_glue]
+
+- name: "Enslave Linux end to {{ vmbr_linux_gateway }}"
+  ansible.builtin.command:
+    cmd: ip link set {{ glue_vmbr1.veth_linux }} master {{ vmbr_linux_gateway }}
+  when: not ansible_check_mode
+  changed_when: false
+  tags: [establish_glue]
+
+- name: "Bring up both veth ends (vmbr2↔vmbr1)"
+  ansible.builtin.command:
+    cmd: ip link set dev {{ item }} up
+  loop:
+    - "{{ glue_vmbr1.veth_linux }}"
+    - "{{ glue_vmbr1.veth_ovs }}"
+  when: not ansible_check_mode
+  changed_when: false
+  tags: [establish_glue]
+
+- name: "Add OVS port on {{ vmbr_ovs_tenant }} for {{ glue_vmbr1.veth_ovs }} (idempotent)"
+  ansible.builtin.command:
+    cmd: >-
+      ovs-vsctl --may-exist add-port {{ vmbr_ovs_tenant }} {{ glue_vmbr1.veth_ovs }}
+  when: not ansible_check_mode
+  changed_when: true
+  tags: [establish_glue]
+
+- name: "Request OVS MTU (port) = {{ mtu_linux_gateway }}"
+  ansible.builtin.command:
+    cmd: >-
+      ovs-vsctl set Interface {{ glue_vmbr1.veth_ovs }} mtu_request={{ mtu_linux_gateway }}
+  when: not ansible_check_mode
+  changed_when: false
+  tags: [establish_glue]
+
+# -------------------------------
+# vmbr2 ↔ vmbr99 glue (optional)
+# -------------------------------
+- name: "Create veth pair vmbr2↔vmbr99"
+  ansible.builtin.command:
+    cmd: >-
+      ip link add {{ glue_vmbr99.veth_linux }} type veth peer name {{ glue_vmbr99.veth_ovs }}
+  when: glue_to_mgmt and not ansible_check_mode and (not glue_vmbr99_linux_stat.stat.exists) and (not glue_vmbr99_ovs_stat.stat.exists)
+  changed_when: true
+  tags: [establish_glue]
+
+- name: "Set MTU on vmbr2↔vmbr99 veth ends"
+  ansible.builtin.command:
+    cmd: ip link set dev {{ item }} mtu {{ mtu_linux_gateway }}
+  loop:
+    - "{{ glue_vmbr99.veth_linux }}"
+    - "{{ glue_vmbr99.veth_ovs }}"
+  when: glue_to_mgmt and not ansible_check_mode
+  changed_when: false
+  tags: [establish_glue]
+
+- name: "Enslave Linux end to {{ vmbr_linux_gateway }} (vmbr2↔vmbr99)"
+  ansible.builtin.command:
+    cmd: ip link set {{ glue_vmbr99.veth_linux }} master {{ vmbr_linux_gateway }}
+  when: glue_to_mgmt and not ansible_check_mode
+  changed_when: false
+  tags: [establish_glue]
+
+- name: "Bring up both veth ends (vmbr2↔vmbr99)"
+  ansible.builtin.command:
+    cmd: ip link set dev {{ item }} up
+  loop:
+    - "{{ glue_vmbr99.veth_linux }}"
+    - "{{ glue_vmbr99.veth_ovs }}"
+  when: glue_to_mgmt and not ansible_check_mode
+  changed_when: false
+  tags: [establish_glue]
+
+- name: "Add OVS port on {{ vmbr_ovs_mgmt }} for {{ glue_vmbr99.veth_ovs }} (idempotent)"
+  ansible.builtin.command:
+    cmd: >-
+      ovs-vsctl --may-exist add-port {{ vmbr_ovs_mgmt }} {{ glue_vmbr99.veth_ovs }}
+  when: glue_to_mgmt and not ansible_check_mode
+  changed_when: true
+  tags: [establish_glue]
+
+- name: "Request OVS MTU (port) = {{ mtu_linux_gateway }} (vmbr99)"
+  ansible.builtin.command:
+    cmd: >-
+      ovs-vsctl set Interface {{ glue_vmbr99.veth_ovs }} mtu_request={{ mtu_linux_gateway }}
+  when: glue_to_mgmt and not ansible_check_mode
+  changed_when: false
+  tags: [establish_glue]
+
+# -------------------------------
+# Validation (non-disruptive)
+# -------------------------------
+- name: "Validate veth presence and bindings"
+  ansible.builtin.command: bash -lc "ip -d link show {{ glue_vmbr1.veth_linux }}; ip -d link show {{ glue_vmbr1.veth_ovs }}"
+  register: glue_vmbr1_validate
+  changed_when: false
+  failed_when: false
+  tags: [establish_glue]
+
+- name: "Validate OVS ports"
+  ansible.builtin.command: >-
+    ovs-vsctl list Interface {{ glue_vmbr1.veth_ovs }}
+  register: glue_vmbr1_ovs_iface
+  changed_when: false
+  failed_when: false
+  tags: [establish_glue]
+
+- name: "Print validation summaries"
+  ansible.builtin.debug:
+    msg:
+      - "vmbr2↔vmbr1 veth: {{ glue_vmbr1_validate.stdout | default('n/a') }}"
+      - "OVS iface (vmbr1): {{ glue_vmbr1_ovs_iface.stdout | default('n/a') }}"
+  when: not ansible_check_mode
+  tags: [establish_glue]
+
+
+# -------------------------------
+# Persist glue across reboot via a systemd oneshot service
+# -------------------------------
+- name: "Install edgesec glue helper script"
+  become: true
+  template:
+    src: "{{ playbook_dir }}/../roles/network_provision/templates/edgesec-glue.sh.j2"
+    dest: /usr/local/sbin/edgesec-glue
+    owner: root
+    group: root
+    mode: '0755'
+  when: not ansible_check_mode
+  tags: [establish_glue]
+
+- name: "Create systemd unit for persistent edgesec glue"
+  become: true
+  template:
+    src: "{{ playbook_dir }}/../roles/network_provision/templates/edgesec-glue.service.j2"
+    dest: /etc/systemd/system/edgesec-glue.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: not ansible_check_mode
+  tags: [establish_glue]
+
+- name: "Reload systemd and enable/start edgesec-glue.service"
+  become: true
+  ansible.builtin.systemd:
+    name: edgesec-glue.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: not ansible_check_mode
+  tags: [establish_glue]

@@ -1,0 +1,111 @@
+---
+# Playbook: explore_pve_interfaces.yml
+# Purpose: gather interface, OVS and link information from a Proxmox node
+# and write a discovery summary to the controller at
+# playbooks/host_discovery/<inventory_host>.yml
+
+- name: Discover network interfaces and OVS state on target host
+  hosts: all
+  gather_facts: yes
+  vars:
+    discovery_dir: "{{ playbook_dir }}/host_discovery"
+  tasks:
+    - name: Ensure discovery directory exists on controller
+      delegate_to: localhost
+      file:
+        path: "{{ discovery_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Capture ip -o link output
+      ansible.builtin.command: ip -o -d link
+      register: ip_link
+
+    - name: Capture ip -br addr output
+      ansible.builtin.command: ip -br addr
+      register: ip_addr
+
+    - name: Capture OVS state (if ovs-vsctl exists)
+      ansible.builtin.shell: |
+        if command -v ovs-vsctl >/dev/null 2>&1; then
+          ovs-vsctl --timeout=2 show || true
+        else
+          echo "no-ovs"
+        fi
+      register: ovs_state
+
+    - name: Capture list of /sys/class/net devices
+      ansible.builtin.command: ls -l /sys/class/net
+      register: sys_net
+
+    - name: Collect PCI mapping for each interface (readlink /sys/class/net/*/device)
+      ansible.builtin.command: |
+        if [ -e /sys/class/net/{{ item }}/device ]; then
+          readlink -f /sys/class/net/{{ item }}/device | xargs -n1 basename
+        else
+          echo "<none>"
+        fi
+      register: iface_pci
+      failed_when: false
+      changed_when: false
+      loop: "{{ ansible_facts.interfaces }}"
+
+    - name: Collect ethtool driver/bus info for each interface
+      ansible.builtin.shell: ethtool -i {{ item }} 2>/dev/null || true
+      register: iface_ethtool
+      failed_when: false
+      changed_when: false
+      loop: "{{ ansible_facts.interfaces }}"
+
+    - name: Collect udev properties for each interface
+      ansible.builtin.shell: udevadm info --query=property --path=/sys/class/net/{{ item }} 2>/dev/null || true
+      register: iface_udev
+      failed_when: false
+      changed_when: false
+      loop: "{{ ansible_facts.interfaces }}"
+
+    - name: Collect lspci summary for discovered PCI IDs (where present)
+      ansible.builtin.shell: |
+        if [ "{{ item }}" != "<none>" ]; then
+          lspci -s {{ item }} -mm || true
+        else
+          echo "<none>"
+        fi
+      register: iface_lspci
+      failed_when: false
+      changed_when: false
+      loop: "{{ iface_pci.results | map(attribute='stdout') | list }}"
+
+    - name: Build discovery summary
+      set_fact:
+        discovery_summary: |
+          hostname: {{ ansible_facts['nodename'] | default(inventory_hostname) }}
+          ansible_interfaces: |
+            {{ ansible_facts['interfaces'] | to_nice_yaml | indent(12) }}
+          ip_link: |
+            {{ ip_link.stdout | indent(12) }}
+          ip_addr: |
+            {{ ip_addr.stdout | indent(12) }}
+          ovs_state: |
+            {{ ovs_state.stdout | indent(12) }}
+          sys_class_net: |
+            {{ sys_net.stdout | indent(12) }}
+          iface_pci: |
+            {{ iface_pci.results | map(attribute='stdout') | list | to_nice_yaml | indent(12) }}
+          iface_ethtool: |
+            {{ iface_ethtool.results | map(attribute='stdout') | list | to_nice_yaml | indent(12) }}
+          iface_udev: |
+            {{ iface_udev.results | map(attribute='stdout') | list | to_nice_yaml | indent(12) }}
+          iface_lspci: |
+            {{ iface_lspci.results | map(attribute='stdout') | list | to_nice_yaml | indent(12) }}
+
+    - name: Write discovery summary to controller
+      delegate_to: localhost
+      copy:
+        content: "{{ discovery_summary }}\n"
+        dest: "{{ discovery_dir }}/{{ inventory_hostname }}_interfaces.yml"
+        mode: '0644'
+
+    - name: Show where discovery was written
+      debug:
+        msg: "Wrote discovery to {{ discovery_dir }}/{{ inventory_hostname }}_interfaces.yml"

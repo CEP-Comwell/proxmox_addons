@@ -1,0 +1,40 @@
+---
+# Create a VXLAN port on an OVS bridge as a fallback when Proxmox SDN is unavailable.
+# Expects `overlay` dict with at least `vni` and `bridge`.
+
+- name: Build vxlan iface name for OVS
+  set_fact:
+    vxlan_iface: "vxlan{{ overlay.vni }}"
+
+- name: Ensure OVS bridge exists (fallback assumes OVS bridge present)
+  ansible.builtin.command:
+    cmd: ovs-vsctl --may-exist add-br {{ overlay.bridge }}
+  changed_when: false
+  failed_when: false
+
+- name: Check if vxlan port already exists on OVS bridge
+  ansible.builtin.command:
+    cmd: ovs-vsctl list-ports {{ overlay.bridge }}
+  register: ovs_ports
+  changed_when: false
+  failed_when: false
+
+- name: Create OVS VXLAN port if missing
+  ansible.builtin.shell: >-
+    if echo "{{ ovs_ports.stdout | default('') }}" | grep -qx "{{ vxlan_iface }}"; then
+      echo 'EXISTS'
+    else
+      ovs-vsctl --may-exist add-port {{ overlay.bridge }} {{ vxlan_iface }} && \
+      ovs-vsctl set interface {{ vxlan_iface }} type=vxlan options:remote_ip=flow options:key={{ overlay.vni }} options:dst_port=4789 && \
+      echo 'CREATED'
+    fi
+  args:
+    executable: /bin/sh
+  register: ovs_vxlan_result
+  changed_when: "'CREATED' in ovs_vxlan_result.stdout"
+  failed_when: false
+
+- name: Debug OVS vxlan create result
+  debug:
+    var: ovs_vxlan_result
+  when: ovs_vxlan_result is defined

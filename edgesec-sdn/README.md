@@ -1,49 +1,202 @@
 # edgesec-SDN
-
 **Multi-site Deployment**
-  - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site**📖 [Detailed VXLAN Role Documentation]( ./../roles/vxlan/README.md)**
+  - `site1_bootstrap.yml`, `site2_bootstrap.yml`, `site3_bootstrap.yml`
 
+This README is a focused, practical guide showing the *safe, staged workflow* to run
+the Phase‑1 provisioning playbook (`playbooks/provision.yml`) against a single node
+(`pve1`) in this repository. It assumes you already explored the code and ran
+earlier experiments; follow the stages below to avoid surprises and preserve SSH.
 
+Prerequisites
+ - Clone of this repo and a working Python/Ansible environment
+ - Inventory file at the repo root (`inventory`) with `pve1.comwell.edgesec.ca`
+ - SSH access to `pve1` with sudo privileges
+ - IPMI/console access available as a fallback (recommended)
 
-### NFTables Role: Bridge Access Control bootstrap.yml`: Per-site bootstrap playbooks 
-<tr>
-    <td align="left" valign="top" style="min-width:240px;">
-      This directory contains playbooks, Docker Compose files, and documentation for the edgesec-SDN (Software Defined Networking) automation stack.
-    </td>
-    <td align="right" valign="top">
-      <img src="../blob/images/multi-site-sdn-fabric.png" alt="Multi-site Proxmox SDN Architecture" width="600" />
-    </td>
-  </tr>
-</table>
+Important safety defaults
+ - Backups of `/etc/network/interfaces` will be written to `/opt/backup` on the host.
+ - The project provides `scripts/guarded_ifreload.sh` to validate and rollback invalid
+   interface writes — handlers should call it where risk exists.
+ - The management bridge (`vmbr0`) and its IP are preserved by the playbooks — do not
+   remove or change them manually while running provisioning.
 
-## Playbooks
-Located in `playbooks/`:
+Staged workflow (recommended)
+1) Preflight locally (on your control host)
 
-**Phase 1: Single Node VXLAN Setup**
-  - `provision_network.yml`: Creates VLAN-aware bridges and SDN zones
-  - `setup_complete_sdn.yml`: Complete SDN infrastructure (VXLAN bridges + connectivity verification)
-  - `nftables_bridge_rules.yml`: Manages nftables firewall rules for SDN bridge access control and tenant isolation
+```bash
+# fetch latest repo changes
+git fetch origin && git checkout fix/pvesh-safety-and-params && git pull
 
-**Phase 2: Connectivity Verification**
-  - `preflight_connectivity.yml`: Verifies reachability between nodes before fabric finalization
+# Optional: ansible-lint and yamllint (install into your venv if missing)
+pip install -r requirements-dev.txt || true
+ansible-lint edgesec-sdn/playbooks/provision.yml || echo "ansible-lint issues (review)"
 
-**Phase 3: Fabric Finalization**
-  - `establish_fabric.yml`: Establishes VNI mappings and finalizes EVPN overlays
+# Syntax check the playbook
+ansible-playbook --syntax-check edgesec-sdn/playbooks/provision.yml
 
-**Complete SDN Provisioning**
-  - `provision_complete_sdn.yml`: **RECOMMENDED** - Full SDN setup with NFTables (network_provision → vxlan → nftables roles)
+# Quick inventory reachability check for pve1
+ansible -i inventory -m ping -u cpadmin --limit pve1.comwell.edgesec.ca
+```
 
-**Utilities**
-  - `provision.yml`: Basic node provisioning (prerequisites + network interface setup)
-  - `nftables_bridge_rules.yml`: Standalone NFTables bridge access control setup
+2) Stage 1 — dry-run check-mode (preview what will change on pve1)
 
+Use the same tags and extra-vars we use in live runs. This only previews changes.
 
-## Multi-Phase SDN Provisioning Process
+```bash
+ansible-playbook -i inventory edgesec-sdn/playbooks/provision.yml \
+  --limit pve1.comwell.edgesec.ca \
+  --tags "deploy_linux_bridges,deploy_ovs_bridges,deploy_sdn_vxlan,establish_glue" \
+  -e "write_interfaces_file=true ovs_create=true force_ovsclean=false reboot_action=none" \
+  --check --diff
+````markdown
+# edgesec-SDN — operational guide (focused)
 
-This SDN implementation follows a structured 3-phase approach using Proxmox VE 9's pvesh API for reliable SDN deployment:
+This file is a concise, practical operator guide for safely running the Phase‑1
+provisioning flows and the newer helper playbooks/scripts added in branch
+`fix/pvesh-safety-and-params`.
 
-### 🏗️ Phase 1: Single Node VXLAN Setup (`provision_network.yml`)
-**Purpose**: Provision local bridges and SDN infrastructure on individual nodes.
+Goal
+ - Provide a safety-first, staged workflow that preserves operator-managed iface
+   stanzas, validates interface files before reload, and falls back to OVS VXLAN
+   when the Proxmox SDN API cannot be used.
+
+Prerequisites
+ - Repo clone and active Python/Ansible environment (see `requirements-dev.txt`).
+ - Inventory at the repo root and SSH access to target nodes with sudo (example
+   host: `pve1.comwell.edgesec.ca`).
+ - Console/IPMI available as fallback when performing network reloads.
+
+Quick highlights (what changed)
+ - Guarded reload: `scripts/guarded_ifreload.sh` — backup, validate, reload, and
+   restore on failure. Handlers should call this script instead of unguarded
+   `ifreload -a` where possible.
+ - Templates fixed: avoid emitting empty `vlan-raw-device` lines that caused
+   `ifreload -a` parse errors.
+ - OVS VXLAN fallback: when pvesh/SDN API calls fail or are incompatible, the
+   playbooks will optionally create idempotent OVS vxlan ports as a fallback.
+ - New helper playbooks:
+   - `playbooks/persist_bridge_ips.yml` — write bridge gateway fragments to
+     `/etc/network/interfaces.d/` and optionally run guarded reload; persists
+     `host_vars/<host>/vxlan_gateways.yml` to keep the mapping in inventory.
+   - `playbooks/create_test_vms.yml` — clone a cloud-init template, inject
+     `ipconfigN` values and start test VMs for connectivity tests.
+   - `playbooks/provision_staged.yml` — helper for a check → apply → verify
+     staged run with conservative defaults.
+
+Backups & Recovery
+ - All interface writes and important changes are backed up to `/opt/backup` on
+   the target host. `scripts/guarded_ifreload.sh` attempts a restore when a
+   reload would leave the host with an invalid `/etc/network/interfaces`.
+ - Always keep console/IPMI available during reloads. The guarded script helps
+   but cannot recover from every possible failure without physical access.
+
+How to run (recommended staged flow)
+
+1) Preflight locally
+
+```bash
+# Checkout the branch with the safety improvements (example)
+git fetch origin && git checkout fix/pvesh-safety-and-params && git pull
+
+# Syntax check and lightweight lint (optional)
+ansible-playbook --syntax-check playbooks/provision.yml
+ansible -i inventory -m ping --limit pve1.comwell.edgesec.ca
+```
+
+2) Dry-run (preview)
+
+```bash
+ansible-playbook -i inventory playbooks/provision.yml \
+  --limit pve1.comwell.edgesec.ca \
+  --tags "deploy_linux_bridges,deploy_ovs_bridges,deploy_sdn_vxlan,establish_glue" \
+  -e "write_interfaces_file=true ovs_create=true force_ovsclean=false reboot_action=none" \
+  --check --diff
+```
+
+3) Apply (targeted)
+
+```bash
+ansible-playbook -i inventory playbooks/provision.yml \
+  --limit pve1.comwell.edgesec.ca \
+  --tags "deploy_linux_bridges,deploy_ovs_bridges,deploy_sdn_vxlan,establish_glue" \
+  -e "write_interfaces_file=true ovs_create=true force_ovsclean=false reboot_action=none"
+```
+
+Notes about flags
+ - `write_interfaces_file=true` — render and write fragments (gated by default).
+ - `ovs_create=true` — create OVS bridges/ports at runtime (opt-in).
+ - `force_ovsclean=false` — do not perform aggressive host-side OVS cleanup
+   unless you understand the effect and have console fallback.
+
+4) Verification
+
+```bash
+ansible -i inventory -u cpadmin --limit pve1.comwell.edgesec.ca -m shell -a "cat /etc/network/interfaces"
+ansible -i inventory -u cpadmin --limit pve1.comwell.edgesec.ca -m shell -a "ls -l /etc/network/interfaces.d"
+ansible -i inventory -u cpadmin --limit pve1.comwell.edgesec.ca -m shell -a "ovs-vsctl show"
+```
+
+Persisting bridge gateway IPs (helper)
+ - To write a small interfaces.d fragment with bridge gateway addresses and
+   optionally reload networking use `playbooks/persist_bridge_ips.yml`.
+
+Example (persist and guarded reload):
+
+```bash
+ansible-playbook -i inventory playbooks/persist_bridge_ips.yml \
+  -e "target=pve1.comwell.edgesec.ca" -e do_reload=true
+```
+
+This playbook will also write `host_vars/pve1.comwell.edgesec.ca/vxlan_gateways.yml`
+on the controller so future runs are idempotent and the mapping is preserved in
+inventory.
+
+Create test VMs (helper)
+ - Use `playbooks/create_test_vms.yml` to clone a cloud-init template and inject
+   static `ipconfigN` values for quick in-host verification of VXLAN/OVS bridging.
+
+Example:
+
+```bash
+ansible-playbook -i inventory playbooks/create_test_vms.yml --limit pve1.comwell.edgesec.ca \
+  -e "template_vmid=8000 vm_base=200 vm_count=3"
+```
+
+Safety notes
+ - Console/IPMI must be available for nodes when running `do_reload=true`.
+ - Backups live under `/opt/backup` on the target host; inspect them if a
+   guarded reload reports an error.
+ - If you discover `ifreload -a` parse errors after a change, inspect the
+   offending fragment for empty `vlan-raw-device` lines; the templates in this
+   branch avoid producing those lines.
+
+Files of interest
+ - scripts/guarded_ifreload.sh — guarded interface reload with backup/restore
+ - scripts/remove_veths_prep.sh — runtime cleanup helper used before reloads
+ - playbooks/persist_bridge_ips.yml — persist bridge gateway IPs + guarded reload
+ - playbooks/create_test_vms.yml — clone cloud-init template + inject ipconfigN
+ - playbooks/provision_staged.yml — convenience wrapper for check → apply → verify
+ - roles/network_provision/templates/linux_bridges_interfaces.j2 — template fixed
+   to omit empty `vlan-raw-device` lines
+
+Branch / changelog
+ - The safety and guard improvements are in branch `fix/pvesh-safety-and-params`.
+ - Changes include: guarded-ifreload, templates fix, OVS fallback for VXLAN
+   creation, test VM playbook, and the persist-bridge-ips helper.
+
+If you'd like, I can also:
+ - Replace any remaining direct `ifreload -a` handlers with calls to
+   `scripts/guarded_ifreload.sh` across all roles (low-risk automation).
+ - Add a small verification playbook that consumes `host_vars/*/vxlan_gateways.yml`
+   to automatically verify host↔VM adjacency after writes.
+
+---
+
+Maintainers: keep the older, more detailed SDN documentation in
+`edgesec-sdn/README.md.bak` and update this operational guide for on-call and
+day-to-day provisioning tasks.
+
+````
 
 **Key Actions**:
 - Create VLAN-aware SDN bridges (vmbr99: Management, vmbr1: Tenant, vmbr2: Gateway)
@@ -571,3 +724,110 @@ The edgesec-SDN automation platform is designed for seamless integration with or
 - Consistent, policy-compliant automation across the organization.
 - Rapid adaptation to changing org needs—update logic in edgesec-REST, not in every playbook.
 - Full auditability and security for all automated actions.
+
+## Generating fresh host_vars for a new node (example: pve3)
+
+The steps below show a safe, repeatable way to wipe any existing `host_vars` for
+`pve3`, run the local discovery play to capture the host's current network state,
+and create a minimal starter `host_vars/pve3.comwell.edgesec.ca/bridges.yml` you
+can edit before running the provisioning playbooks.
+
+Warning: these steps remove or rename existing `host_vars` for the target host
+— back them up first if you want to preserve history.
+
+1) Prepare your environment on the controller
+
+```bash
+# activate venv (if used by your workflow)
+source .venv/bin/activate
+
+# optional: ensure you're on the branch with safety changes
+git fetch origin && git checkout chore/generate-pve2-hostvars
+
+# sanity check ansible connectivity (replace inventory path if needed)
+ansible -i inventory --limit pve3.comwell.edgesec.ca -m ping
+```
+
+2) Backup / wipe any existing host_vars for pve3
+
+```bash
+# keep a timestamped backup if a directory or file exists
+ts=$(date +%Y%m%dT%H%M%S)
+if [ -d "host_vars/pve3.comwell.edgesec.ca" ]; then
+  mv host_vars/pve3.comwell.edgesec.ca host_vars/pve3.comwell.edgesec.ca.bak.$ts
+fi
+if [ -f "host_vars/pve3.comwell.edgesec.ca.yml" ]; then
+  mv host_vars/pve3.comwell.edgesec.ca.yml host_vars/pve3.comwell.edgesec.ca.yml.bak.$ts
+fi
+
+# now create a fresh directory to populate
+mkdir -p host_vars/pve3.comwell.edgesec.ca
+```
+
+3) Run the discovery playbook to capture the node's interfaces
+
+The repository contains a controller-side discovery helper used earlier in this
+project — run it against `pve3` and write the output to `playbooks/host_discovery/`.
+
+```bash
+# example: produce a discovery snapshot for pve3
+ansible-playbook -i inventory playbooks/explore_pve_interfaces.yml \
+  --limit pve3.comwell.edgesec.ca \
+  -e "discovery_out_dir=playbooks/host_discovery"
+
+# after the run you should see a file like:
+# playbooks/host_discovery/pve3.comwell.edgesec.ca_interfaces.yml
+```
+
+4) Create a minimal starter `bridges.yml` from the discovery snapshot
+
+This file is intentionally minimal — it provides a starting point that you
+should edit to reflect the logical bridges and ports the node should expose.
+
+Create `host_vars/pve3.comwell.edgesec.ca/bridges.yml` with the following
+starter content and then edit it to match your design:
+
+```yaml
+# host_vars/pve3.comwell.edgesec.ca/bridges.yml
+bridges:
+  - name: vmbr99
+    type: ovs        # or linux
+    ports: [ xg1 ]   # physical port(s) on the host
+  - name: vmbr1
+    type: ovs
+    ports: [ eth2 ]
+  - name: vmbr2
+    type: ovs
+    ports: [ eth4 ]
+
+# Optional: per-node vxlan/gateway map (can be generated by persist_bridge_ips)
+vxlan_gateways: {}
+```
+
+5) Run the provisioning play in check-mode first, then apply
+
+```bash
+# dry-run first (preview changes)
+ansible-playbook -i inventory playbooks/provision.yml \
+  --limit pve3.comwell.edgesec.ca \
+  -e "write_interfaces_file=true ovs_create=true force_ovsclean=false reboot_action=none" \
+  --check --diff
+
+# when satisfied, run for real
+ansible-playbook -i inventory playbooks/provision.yml \
+  --limit pve3.comwell.edgesec.ca \
+  -e "write_interfaces_file=true ovs_create=true force_ovsclean=false reboot_action=none"
+```
+
+Notes and troubleshooting
+- If you used a different discovery playname or variables, adapt the commands
+  above to the parameters your branch provides (the discovery play in this
+  repository accepts an output directory variable as shown above).
+- If the provisioning play reports duplicate iface warnings, inspect
+  `/etc/network/interfaces` and `/etc/network/interfaces.d/` on the host and
+  ensure the `host_vars` you created doesn't include stale device names.
+- When in doubt, use the controller-side discovery snapshot in
+  `playbooks/host_discovery/pve3.comwell.edgesec.ca_interfaces.yml` as the
+  authoritative record of what the host currently reports.
+
+If you'd like, I can proceed now and create a fresh `host_vars/pve3.comwell.edgesec.ca/bridges.yml` in the repo and run the discovery against the physical/virtual `pve3` host — tell me to proceed and provide the exact inventory host name to target if it differs from `pve3.comwell.edgesec.ca`.

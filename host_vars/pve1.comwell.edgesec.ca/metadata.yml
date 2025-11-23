@@ -1,0 +1,42 @@
+# Non-functional baseline metadata for cloning/automation (pve1 = baseline)
+# This file contains only metadata and hints; it MUST NOT change runtime CIDRs
+# or bridge names. It exists to make pve1 an explicit template for other sites.
+site_id: 1
+site_code: "YYZ"
+
+ipam_policy:
+  strategy: "per-site CIDR per VNI (no L2 stretch)"
+  cidr_increment_field: "third_octet"
+  svi_offset: 1
+
+# Helpful role-normalized keys (informational defaults only)
+vmbr_linux_gateway: "vmbr2"
+vmbr_ovs_tenant: "vmbr1"
+vmbr_ovs_mgmt: "vmbr99"
+
+mtu_linux_gateway: 1420
+mtu_ovs_default: 9000
+
+# Glue names used by roles (informational - keep consistent across sites)
+glue_vmbr1:
+  veth_linux: "veth-glue-1-lnx"
+  veth_ovs: "veth-glue-1-ovs"
+glue_vmbr99:
+  veth_linux: "veth-glue-99-lnx"
+  veth_ovs: "veth-glue-99-ovs"
+
+# Presence marker: the authoritative site_vni_plan remains in group_vars/all.yml
+site_vni_plan_present: true
+
+# Local services guidance (informational)
+services_local:
+  dhcp_vnis: []
+  dns_forwarders_v4: []
+  dns_forwarders_v6: []
+
+# Source-of-truth note for operators and automation
+_template_note: >
+  pve1 is the baseline template for multi-site expansion.
+  This file contains only metadata and hints; it must not change runtime CIDRs
+  or bridge names. Use this file as a scaffold when generating `host_vars` for
+  additional sites (pve2, pve3, ...).

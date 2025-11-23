@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+
+if [ "$1" = "--stop" ]; then
+  # cleanup
+  ovs-vsctl --if-exists del-port {{ vmbr_ovs_tenant }} {{ glue_vmbr1.veth_ovs }} || true
+  ip link del {{ glue_vmbr1.veth_linux }} || true
+  {% if glue_to_mgmt %}
+  ovs-vsctl --if-exists del-port {{ vmbr_ovs_mgmt }} {{ glue_vmbr99.veth_ovs }} || true
+  ip link del {{ glue_vmbr99.veth_linux }} || true
+  {% endif %}
+  exit 0
+fi
+
+# create/start glue
+if ! ip link show {{ glue_vmbr1.veth_linux }} >/dev/null 2>&1; then
+  ip link add {{ glue_vmbr1.veth_linux }} type veth peer name {{ glue_vmbr1.veth_ovs }}
+fi
+ip link set {{ glue_vmbr1.veth_linux }} master {{ vmbr_linux_gateway }} || true
+ip link set {{ glue_vmbr1.veth_linux }} up || true
+ip link set {{ glue_vmbr1.veth_ovs }} up || true
+ovs-vsctl --may-exist add-port {{ vmbr_ovs_tenant }} {{ glue_vmbr1.veth_ovs }} || true
+ovs-vsctl set Interface {{ glue_vmbr1.veth_ovs }} mtu_request={{ mtu_linux_gateway }} || true
+
+{% if glue_to_mgmt %}
+if ! ip link show {{ glue_vmbr99.veth_linux }} >/dev/null 2>&1; then
+  ip link add {{ glue_vmbr99.veth_linux }} type veth peer name {{ glue_vmbr99.veth_ovs }}
+fi
+ip link set {{ glue_vmbr99.veth_linux }} master {{ vmbr_linux_gateway }} || true
+ip link set {{ glue_vmbr99.veth_linux }} up || true
+ip link set {{ glue_vmbr99.veth_ovs }} up || true
+ovs-vsctl --may-exist add-port {{ vmbr_ovs_mgmt }} {{ glue_vmbr99.veth_ovs }} || true
+ovs-vsctl set Interface {{ glue_vmbr99.veth_ovs }} mtu_request={{ mtu_linux_gateway }} || true
+{% endif %}
+
+exit 0

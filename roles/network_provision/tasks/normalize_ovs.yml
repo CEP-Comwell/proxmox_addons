@@ -1,0 +1,45 @@
+# ---
+# normalize_ovs.yml
+# Shared normalization task for `/etc/network/interfaces`.
+#
+# Purpose:
+# - Collapse duplicate "# BEGIN OVS BRIDGES" markers (idempotent).
+# - Remove any existing content between a BEGIN/END OVS block so a single
+#   normalized block can be (re)inserted by the calling role.
+# - Ensure there is a blank line before each `auto ...` stanza for readability.
+#
+# Safety and behavior notes for maintainers:
+# - The task makes a backup copy of `/etc/network/interfaces` to
+#   `/etc/network/interfaces.pre-ovsclean` before making any changes.
+# - This task only runs when explicitly enabled by the caller via
+#   `force_ovsclean: true` to prevent accidental destructive edits.
+# - The task itself performs text-level normalization (shell + perl + awk).
+#   If we later decide the logic is too brittle, consider reimplementing in
+#   a small Python helper module and calling it from Ansible.
+- name: Normalize /etc/network/interfaces OVS markers (dedupe + normalize)
+  become: true
+  shell: |
+    set -e
+    SRC=/etc/network/interfaces
+    BAK=${SRC}.pre-ovsclean
+    TMP=${SRC}.ovsclean.tmp
+    cp -a "$SRC" "$BAK"
+    # collapse duplicate BEGIN markers safely (idempotent)
+    perl -0777 -pe 's/(?m)^(# BEGIN OVS BRIDGES\n)+/# BEGIN OVS BRIDGES\n/g' "$SRC" > "${SRC}.dedup.tmp" && mv "${SRC}.dedup.tmp" "$SRC" || true
+    # Only remove content between '# BEGIN OVS BRIDGES' and '# END OVS BRIDGES' (non-greedy)
+    if grep -q '^# BEGIN OVS BRIDGES' "$SRC"; then
+      perl -0777 -pe 's/(?s)# BEGIN OVS BRIDGES\n.*?# END OVS BRIDGES\n?/\n/g' "$SRC" > "$TMP"
+      # ensure a blank line before each 'auto' stanza
+      awk 'BEGIN{prev=""} { if (/^auto / && prev!="") print ""; print; prev=$0 }' "$TMP" > "${TMP}.2"
+      mv "${TMP}.2" "$SRC"
+    else
+      echo "no-ovs-markers-found"
+    fi
+  args:
+    executable: /bin/sh
+  register: ovsclean_result
+  failed_when: ovsclean_result.rc != 0
+  changed_when: false
+  when: (ovs_bridges | length > 0) and (force_ovsclean | default(false))
+  tags:
+    - deploy_ovs_bridges

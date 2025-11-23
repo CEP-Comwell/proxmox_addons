@@ -1,0 +1,13 @@
+---
+# Minimal test playbook to run the provisioning playbook in check mode
+- name: Dry-run provisioning (check mode)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Run provisioning playbook in check mode
+      command: >-
+        ansible-playbook -i inventory edgesec-sdn/playbooks/provision.yml --check -e "write_interfaces_file=false ovs_create=false force_ovsclean=false"
+      register: result
+      failed_when: result.rc != 0
+      changed_when: false

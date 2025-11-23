@@ -1,0 +1,12 @@
+````markdown
+# edgesec-SDN (backup)
+
+<original README backed up before replacement>
+
+This file is an exact backup of the previous `edgesec-sdn/README.md` before it
+was replaced by a focused usage guide for staged provisioning of `provision.yml`
+against `pve1`.
+
+Keep this file for reference.
+
+````

@@ -1,0 +1,117 @@
+---
+# Playbook: create_test_vms.yml
+# Purpose: create VM test endpoints on a Proxmox host by cloning an existing
+# template VM, attach multiple bridge-backed NICs (for different VXLAN/bridges),
+# set static IPs via Proxmox cloud-init options (ipconfigN), start VMs, and
+# perform basic reachability checks (ping from the Proxmox host to each VM IP).
+#
+# Requirements and notes:
+# - This playbook runs on the Proxmox node (target host in inventory) and uses
+#   the `qm` CLI. Ensure `qm` is available and you have sudo privileges.
+# - You must supply a working VM template ID (a prepared cloud-init-enabled VM)
+#   via the `template_vmid` extra-var.
+# - The VMs will be cloned with the specified vmids; pick unused vmids.
+# - This playbook sets static IPs using Proxmox cloud-init `ipconfigN` options.
+#   The template should have cloud-init enabled (guest-agent installed or cloud-init)
+#   so it picks up the injected settings.
+# - Inter-VM command execution (e.g., remote ping from VM to VM) requires either
+#   SSH access into the VM or qemu-guest-agent; this playbook performs host->VM pings
+#   as a primary verification. You can enable SSH/key injection via template
+#   configuration if you want full end-to-end tests.
+#
+# Usage example:
+# ansible-playbook -i inventory playbooks/create_test_vms.yml -e "target=pve1.comwell.edgesec.ca template_vmid=9000 vms='[{"vmid":110,"name":"test-vm1","networks":[{"bridge":"vmbr1","ip":"10.101.1.10/24","gw":"10.101.1.1"},{"bridge":"vmbr99","ip":"10.102.1.10/24","gw":"10.102.1.1"}]},{"vmid":111,"name":"test-vm2","networks":[{"bridge":"vmbr1","ip":"10.101.1.11/24","gw":"10.101.1.1"},{"bridge":"vmbr99","ip":"10.102.1.11/24","gw":"10.102.1.1"}]}]'"
+#
+# Variables:
+# - target: inventory host to run on (default: pve1.comwell.edgesec.ca)
+# - template_vmid: numeric VMID of an existing template VM to clone
+# - vms: list of VM specs to create. Each entry: { vmid: <int>, name: <str>, networks: [ { bridge: vmbr1, ip: 10.0.0.2/24, gw: 10.0.0.1 }, ... ] }
+# - clone_full: boolean, whether to clone with --full (default: true)
+
+- hosts: "{{ target | default('pve1.comwell.edgesec.ca') }}"
+  become: yes
+  gather_facts: no
+
+  vars:
+    template_vmid: ""   # REQUIRED: set via -e template_vmid=<id>
+    clone_full: true
+    vms: []
+
+  tasks:
+    - name: Validate qm CLI exists
+      shell: command -v qm
+      register: qm_path
+      failed_when: qm_path.rc != 0
+
+    - name: Fail if template_vmid not provided
+      fail:
+        msg: "You must provide template_vmid as an extra-var, e.g. -e template_vmid=9000"
+      when: template_vmid == ""
+
+    - name: Ensure vms list provided
+      fail:
+        msg: "Provide a 'vms' list variable with VM specifications to create."
+      when: vms | length == 0
+
+    - name: Loop VMs - check VMID not already in use
+      shell: qm list | awk '{print $1" " $2}' | grep -E "^{{ item.vmid }}\b" || true
+      register: vmid_check
+      loop: "{{ vms }}"
+      loop_control:
+        label: "{{ item.vmid }}"
+
+    - name: Fail if any vmid already exists
+      fail:
+        msg: "VMID {{ item.item.vmid }} already exists on host; pick another vmid or remove the VM first."
+      when: item.stdout != ''
+      loop: "{{ vmid_check.results }}"
+      loop_control:
+        label: "{{ item.item.vmid }}"
+
+    - name: Clone template for each VM
+      shell: >-
+        qm clone {{ template_vmid }} {{ item.vmid }} --name {{ item.name }} {{ clone_full | ternary('--full', '') }}
+      register: clone_out
+      loop: "{{ vms }}"
+      loop_control:
+        label: "{{ item.name }} ({{ item.vmid }})"
+
+    - name: Apply network and cloud-init settings via qm set (per VM)
+      shell: |
+        net_cli=""
+        {% for net in item.networks %}
+        net_cli="$net_cli --net{{ loop.index0 }} virtio,bridge={{ net.bridge }} --ipconfig{{ loop.index0 }} ip={{ net.ip }},gw={{ net.gw }}"
+        {% endfor %}
+        qm set {{ item.vmid }} $net_cli
+      loop: "{{ vms }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: item.networks is defined
+
+    - name: Start VMs
+      shell: qm start {{ item.vmid }}
+      loop: "{{ vms }}"
+      loop_control:
+        label: "{{ item.vmid }}"
+      register: start_out
+
+    - name: Wait for short time for cloud-init/apply
+      pause:
+        seconds: 15
+
+    - name: Ping each VM from host to verify reachability
+      shell: ping -c 3 {{ net.ip.split('/')[0] }}
+      loop: "{{ vms }}"
+      loop_control:
+        label: "{{ item.vmid }}"
+      vars:
+        net: "{{ item.networks[0] }}"
+      register: ping_results
+      ignore_errors: yes
+
+    - name: Show ping results summary
+      debug:
+        msg: "VM {{ item.item.vmid }} ({{ item.item.name }}): rc={{ item.rc }} stdout={{ item.stdout_lines | join('\n') }}"
+      loop: "{{ ping_results.results }}"
+      loop_control:
+        label: "{{ item.item.vmid }}"

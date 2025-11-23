@@ -1,3 +1,56 @@
+---
+# Guarded network reload handler for network_provision role
+# - Validates /etc/network/interfaces with ifquery
+# - Backs up the file before attempting reload
+# - Runs ifreload -a (guarded) and waits for SSH
+# - Restarts edgesec-glue.service to re-attach veth glue
+# - On failure, restores the backup and fails with diagnostics
+
+- name: reload_network
+  block:
+    - name: Check interfaces file parses
+      command: ifquery --list
+      register: ifquery_out
+      changed_when: false
+      failed_when: false
+
+    - name: Backup /etc/network/interfaces before reload
+      copy:
+        src: /etc/network/interfaces
+        dest: "/etc/network/interfaces.bak.{{ ansible_date_time.epoch }}"
+        remote_src: yes
+      register: interfaces_backup
+      when: ifquery_out.rc == 0
+
+    - name: Run guarded reload
+      command: ifreload -a
+      register: reload_out
+      failed_when: reload_out.rc != 0
+      when: ifquery_out.rc == 0
+
+    - name: Wait for SSH to return after reload
+      wait_for_connection:
+        timeout: 60
+      when: reload_out is defined and reload_out.rc == 0
+
+    - name: Restart edgesec-glue.service (recreate/attach veths)
+      systemd:
+        name: edgesec-glue.service
+        state: restarted
+      when: reload_out is defined and reload_out.rc == 0
+
+  rescue:
+    - name: Restore interfaces on reload failure
+      copy:
+        src: "{{ interfaces_backup.dest | default('/etc/network/interfaces') }}"
+        dest: /etc/network/interfaces
+        remote_src: yes
+
+    - name: Fail with diagnostic message
+      fail:
+        msg: >-
+          Guarded network reload failed; /etc/network/interfaces was restored
+          from backup. Inspect the file and run the role again when fixed.
 # NEW: Handlers for network_provision role - consolidated from nic_pinning
 - name: update initramfs
   shell: update-initramfs -u -k all
