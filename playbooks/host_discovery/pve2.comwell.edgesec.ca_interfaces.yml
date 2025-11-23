@@ -1,0 +1,1956 @@
+hostname: pve2.comwell.edgesec.ca
+ansible_interfaces: |
+  - vxlan_vx9003
+            - vxlan_vx10102
+            - vrf_zone1
+            - vx10032
+            - eth2
+            - vx10102
+            - vmbr2.100
+            - vrfbr_zone1
+            - vmbr2.11
+            - vxlan_vx9000
+            - vx10110
+            - xg1
+            - vx9003
+            - vrfvx_zone2
+            - vxlan_vnet2
+            - vrfbr_zone2
+            - vxlan_vnet1
+            - ovs-system
+            - vxlan_vx10110
+            - vxlan_vx10100
+            - vrf_zone2
+            - xg2
+            - eth1
+            - lo
+            - vx9006
+            - vmbr99
+            - eth4
+            - eth3
+            - vx10120
+            - dummy_fab-core
+            - vmbr1
+            - vmbr0
+            - vxlan_vx9006
+            - vxlan_vx10120
+            - vx10101
+            - vx10100
+            - vx9000
+            - vxlan_vx10032
+            - vnet2
+            - vxlan_vx10031
+            - vnet1
+            - gateway2
+            - vrfvx_zone1
+            - vxlan_vx10101
+            - nic1
+            - vx10031
+            - vmbr2
+
+ip_link: |
+  1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000\    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00 promiscuity 0 allmulti 0 minmtu 0 maxmtu 0 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 524280 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            2: eth4: <BROADCAST,MULTICAST> mtu 9000 qdisc noop master ovs-system state DOWN mode DEFAULT group default qlen 1000\    link/ether 08:94:ef:12:f4:60 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 0 minmtu 60 maxmtu 9000 \    openvswitch_slave addrgenmode eui64 numtxqueues 5 numrxqueues 5 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:1c:00.0 \    altname enp28s0f0\    altname enx0894ef12f460
+            3: xg1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq master vmbr0 state UP mode DEFAULT group default qlen 1000\    link/ether 98:b7:85:1e:d8:53 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 9710 \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning on flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.98:b7:85:1e:d8:53 designated_root 8000.98:b7:85:1e:d8:53 hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 1 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress off neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 64 numrxqueues 64 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:06:00.0 \    altname enp6s0f0\    altname enx98b7851ed853
+            4: nic1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000\    link/ether 08:94:ef:12:f4:61 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 60 maxmtu 9000 addrgenmode eui64 numtxqueues 5 numrxqueues 5 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:1c:00.1 \    altname enp28s0f1\    altname enx0894ef12f461
+            5: eth3: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000\    link/ether 08:94:ef:12:f4:62 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 60 maxmtu 9000 addrgenmode eui64 numtxqueues 5 numrxqueues 5 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:1c:00.2 \    altname enp28s0f2\    altname enx0894ef12f462
+            6: xg2: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000\    link/ether 98:b7:85:1e:d8:54 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 9710 addrgenmode eui64 numtxqueues 64 numrxqueues 64 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:06:00.1 \    altname enp6s0f1\    altname enx98b7851ed854
+            7: eth2: <BROADCAST,MULTICAST> mtu 9000 qdisc noop master ovs-system state DOWN mode DEFAULT group default qlen 1000\    link/ether 08:94:ef:12:f4:63 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 0 minmtu 60 maxmtu 9000 \    openvswitch_slave addrgenmode eui64 numtxqueues 5 numrxqueues 5 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:1c:00.3 \    altname enp28s0f3\    altname enx0894ef12f463
+            8: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel master vmbr2 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 0a:94:ef:12:f4:67 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 0 maxmtu 65535 \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning on flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.a:94:ef:12:f4:67 designated_root 8000.a:94:ef:12:f4:67 hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 1 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress off neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus usb parentdev 3-13.5:1.0 
+            9: vmbr0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc prio state UP mode DEFAULT group default qlen 1000\    link/ether 98:b7:85:1e:d8:53 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.98:b7:85:1e:d8:53 designated_root 8000.98:b7:85:1e:d8:53 root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   81.54 fdb_n_learned 6 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            10: ovs-system: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000\    link/ether 2e:47:08:a9:3f:d1 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 0 minmtu 68 maxmtu 65535 \    openvswitch addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            11: vmbr99: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 08:94:ef:12:f4:60 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 0 minmtu 68 maxmtu 65535 \    openvswitch addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            12: vmbr1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 08:94:ef:12:f4:63 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 0 minmtu 68 maxmtu 65535 \    openvswitch addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            13: dummy_fab-core: <BROADCAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 46:57:94:cc:2a:ab brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 0 maxmtu 0 \    dummy addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            14: vmbr2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1420 qdisc noqueue state UP mode DEFAULT group default qlen 1000\    link/ether 0a:94:ef:12:f4:67 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.a:94:ef:12:f4:67 designated_root 8000.a:94:ef:12:f4:67 root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   40.77 fdb_n_learned 1 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            15: vmbr2.11@vmbr2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1420 qdisc noqueue state UP mode DEFAULT group default qlen 1000\    link/ether 0a:94:ef:12:f4:67 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 0 maxmtu 65535 \    vlan protocol 802.1Q id 11 <REORDER_HDR> addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            16: vmbr2.100@vmbr2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1420 qdisc noqueue state UP mode DEFAULT group default qlen 1000\    link/ether 0a:94:ef:12:f4:67 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 0 maxmtu 65535 \    vlan protocol 802.1Q id 100 <REORDER_HDR> addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            17: gateway2@vmbr2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1420 qdisc noqueue state UP mode DEFAULT group default qlen 1000\    link/ether 0a:94:ef:12:f4:67 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 0 maxmtu 65535 \    vlan protocol 802.1Q id 200 <REORDER_HDR> addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            18: vxlan_vnet1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vnet1 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 56:4c:7e:25:9b:1e brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 10 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            19: vnet1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   40.98 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            20: vrf_zone1: <NOARP,MASTER,UP,LOWER_UP> mtu 65575 qdisc noqueue state UP mode DEFAULT group default qlen 1000\    link/ether d2:3d:39:9b:1d:94 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 1280 maxmtu 65575 \    vrf table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            21: vrfvx_zone1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrfbr_zone1 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 9e:17:be:14:fe:a0 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 100 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.9e:17:be:14:fe:a0 designated_root 8000.9e:17:be:14:fe:a0 hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            22: vrfbr_zone1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether 9e:17:be:14:fe:a0 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.9e:17:be:14:fe:a0 designated_root 8000.9e:17:be:14:fe:a0 root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.00 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            23: vxlan_vx10031: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx10031 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 86:11:5a:9d:3e:4a brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 10031 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            24: vx10031: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.04 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            25: vxlan_vx10032: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx10032 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 1e:39:59:05:c2:4f brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 10032 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            26: vx10032: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.08 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            27: vxlan_vx10100: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx10100 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 6e:3d:f4:cd:95:fe brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 10100 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            28: vx10100: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.12 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            29: vxlan_vx10101: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx10101 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 62:f9:f8:da:41:ee brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 10101 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            30: vx10101: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.15 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            31: vxlan_vx10102: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx10102 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether ea:f4:8e:c6:af:14 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 10102 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            32: vx10102: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.18 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            33: vxlan_vx10110: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx10110 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 0e:e2:2e:8b:b4:fe brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 10110 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            34: vx10110: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.21 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            35: vxlan_vx10120: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx10120 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 4e:4b:12:06:e3:42 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 10120 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            36: vx10120: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.24 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            37: vxlan_vx9000: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx9000 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 6e:59:7a:10:68:ff brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 9000 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            38: vx9000: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.28 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            39: vxlan_vx9003: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx9003 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 36:67:60:57:05:c7 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 9003 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            40: vx9003: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.31 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            41: vxlan_vx9006: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vx9006 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether 4a:26:66:b8:01:04 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 9006 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            42: vx9006: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone1 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:d0:c7:8e brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:d0:c7:8e designated_root 8000.bc:24:11:d0:c7:8e root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.34 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1001 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            43: vxlan_vnet2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vnet2 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether aa:38:c7:52:18:2b brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 20 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.bc:24:11:f6:1e:41 designated_root 8000.bc:24:11:f6:1e:41 hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            44: vnet2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone2 state UP mode DEFAULT group default qlen 1000\    link/ether bc:24:11:f6:1e:41 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.bc:24:11:f6:1e:41 designated_root 8000.bc:24:11:f6:1e:41 root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.39 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1002 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            45: vrf_zone2: <NOARP,MASTER,UP,LOWER_UP> mtu 65575 qdisc noqueue state UP mode DEFAULT group default qlen 1000\    link/ether 06:f2:de:66:f2:a8 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 1280 maxmtu 65575 \    vrf table 1002 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            46: vrfvx_zone2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrfbr_zone2 state UNKNOWN mode DEFAULT group default qlen 1000\    link/ether ce:55:b5:9d:65:39 brd ff:ff:ff:ff:ff:ff promiscuity 1 allmulti 1 minmtu 68 maxmtu 65535 \    vxlan id 200 local 10.255.0.2 srcport 0 0 dstport 4789 ttl auto ageing 300 reserved_bits 0xf7ffffff000000ff nolearning \    bridge_slave state forwarding priority 32 cost 100 hairpin off guard off root_block off fastleave off learning off flood on port_id 0x8001 port_no 0x1 designated_port 32769 designated_cost 0 designated_bridge 8000.ce:55:b5:9d:65:39 designated_root 8000.ce:55:b5:9d:65:39 hold_timer    0.00 message_age_timer    0.00 forward_delay_timer    0.00 topology_change_ack 0 config_pending 0 proxy_arp off proxy_arp_wifi off mcast_router 2 mcast_fast_leave off mcast_flood on bcast_flood on mcast_to_unicast off neigh_suppress on neigh_vlan_suppress off group_fwd_mask 0 group_fwd_mask_str 0x0 vlan_tunnel off isolated off locked off mab off addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+            47: vrfbr_zone2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc noqueue master vrf_zone2 state UP mode DEFAULT group default qlen 1000\    link/ether ce:55:b5:9d:65:39 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 \    bridge forward_delay 0 hello_time 200 max_age 2000 ageing_time 30000 stp_state 0 priority 32768 vlan_filtering 0 vlan_protocol 802.1Q bridge_id 8000.ce:55:b5:9d:65:39 designated_root 8000.ce:55:b5:9d:65:39 root_port 0 root_path_cost 0 topology_change 0 topology_change_detected 0 hello_timer    0.00 tcn_timer    0.00 topology_change_timer    0.00 gc_timer   41.42 fdb_n_learned 0 fdb_max_learned 0 vlan_default_pvid 1 vlan_stats_enabled 0 vlan_stats_per_port 0 group_fwd_mask 0 group_address 01:80:c2:00:00:00 mcast_snooping 1 no_linklocal_learn 0 mcast_vlan_snooping 0 mst_enabled 0 mcast_router 1 mcast_query_use_ifaddr 0 mcast_querier 0 mcast_hash_elasticity 16 mcast_hash_max 512 mcast_last_member_count 2 mcast_startup_query_count 2 mcast_last_member_interval 100 mcast_membership_interval 26000 mcast_querier_interval 25500 mcast_query_interval 12500 mcast_query_response_interval 1000 mcast_startup_query_interval 3125 mcast_stats_enabled 0 mcast_igmp_version 2 mcast_mld_version 1 nf_call_iptables 0 nf_call_ip6tables 0 nf_call_arptables 0 \    vrf_slave table 1002 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+ip_addr: |
+  lo               UNKNOWN        127.0.0.1/8 ::1/128 
+            eth4             DOWN           
+            xg1              UP             
+            nic1             DOWN           
+            eth3             DOWN           
+            xg2              DOWN           
+            eth2             DOWN           
+            eth1             UNKNOWN        
+            vmbr0            UP             172.16.10.23/24 fe80::9ab7:85ff:fe1e:d853/64 
+            ovs-system       DOWN           
+            vmbr99           UNKNOWN        fe80::a94:efff:fe12:f460/64 
+            vmbr1            UNKNOWN        fe80::a94:efff:fe12:f463/64 
+            dummy_fab-core   UNKNOWN        10.255.0.2/32 fd00::2/128 fe80::4457:94ff:fecc:2aab/64 
+            vmbr2            UP             fe80::894:efff:fe12:f467/64 
+            vmbr2.11@vmbr2   UP             172.16.12.20/24 fe80::894:efff:fe12:f467/64 
+            vmbr2.100@vmbr2  UP             10.10.32.20/24 fe80::894:efff:fe12:f467/64 
+            gateway2@vmbr2   UP             fe80::894:efff:fe12:f467/64 
+            vxlan_vnet1      UNKNOWN        
+            vnet1            UP             fe80::be24:11ff:fed0:c78e/64 
+            vrf_zone1        UP             
+            vrfvx_zone1      UNKNOWN        
+            vrfbr_zone1      UP             fe80::9c17:beff:fe14:fea0/64 
+            vxlan_vx10031    UNKNOWN        
+            vx10031          UP             fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vx10032    UNKNOWN        
+            vx10032          UP             fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vx10100    UNKNOWN        
+            vx10100          UP             fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vx10101    UNKNOWN        
+            vx10101          UP             fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vx10102    UNKNOWN        
+            vx10102          UP             fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vx10110    UNKNOWN        
+            vx10110          UP             10.110.10.1/24 fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vx10120    UNKNOWN        
+            vx10120          UP             fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vx9000     UNKNOWN        
+            vx9000           UP             fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vx9003     UNKNOWN        
+            vx9003           UP             fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vx9006     UNKNOWN        
+            vx9006           UP             fe80::be24:11ff:fed0:c78e/64 
+            vxlan_vnet2      UNKNOWN        
+            vnet2            UP             fe80::be24:11ff:fef6:1e41/64 
+            vrf_zone2        UP             
+            vrfvx_zone2      UNKNOWN        
+            vrfbr_zone2      UP             fe80::cc55:b5ff:fe9d:6539/64 
+ovs_state: |
+  977905d4-89ef-4b44-98e9-2cc2f16d5f70
+                Bridge vmbr99
+                    Port vxlan9000
+                        Interface vxlan9000
+                            type: vxlan
+                            options: {dst_port="4789", key="9000", remote_ip=flow}
+                            error: "could not add network device vxlan9000 to ofproto (Address already in use)"
+                    Port vxlan9001
+                        Interface vxlan9001
+                            type: vxlan
+                            options: {dst_port="4789", key="9001", remote_ip=flow}
+                            error: "could not add network device vxlan9001 to ofproto (Address already in use)"
+                    Port vxlan10031
+                        Interface vxlan10031
+                            type: vxlan
+                            options: {dst_port="4789", key="10031", remote_ip=flow}
+                            error: "could not add network device vxlan10031 to ofproto (Address already in use)"
+                    Port vxlan10030
+                        Interface vxlan10030
+                            type: vxlan
+                            options: {dst_port="4789", key="10030", remote_ip=flow}
+                            error: "could not add network device vxlan10030 to ofproto (Address already in use)"
+                    Port vxlan10100
+                        Interface vxlan10100
+                            type: vxlan
+                            options: {dst_port="4789", key="10100", remote_ip=flow}
+                            error: "could not add network device vxlan10100 to ofproto (Address already in use)"
+                    Port vxlan10200
+                        Interface vxlan10200
+                            type: vxlan
+                            options: {dst_port="4789", key="10200", remote_ip=flow}
+                            error: "could not add network device vxlan10200 to ofproto (Address already in use)"
+                    Port eth4
+                        Interface eth4
+                    Port vmbr99
+                        Interface vmbr99
+                            type: internal
+                Bridge vmbr1
+                    Port vxlan9002
+                        Interface vxlan9002
+                            type: vxlan
+                            options: {dst_port="4789", key="9002", remote_ip=flow}
+                            error: "could not add network device vxlan9002 to ofproto (Address already in use)"
+                    Port vxlan10210
+                        Interface vxlan10210
+                            type: vxlan
+                            options: {dst_port="4789", key="10210", remote_ip=flow}
+                            error: "could not add network device vxlan10210 to ofproto (Address already in use)"
+                    Port eth2
+                        Interface eth2
+                    Port vxlan10110
+                        Interface vxlan10110
+                            type: vxlan
+                            options: {dst_port="4789", key="10110", remote_ip=flow}
+                            error: "could not add network device vxlan10110 to ofproto (Address already in use)"
+                    Port vmbr1
+                        Interface vmbr1
+                            type: internal
+                Bridge vmbr2
+                    Port vxlan10220
+                        Interface vxlan10220
+                            type: vxlan
+                            options: {dst_port="4789", key="10220", remote_ip=flow}
+                            error: "could not add network device vxlan10220 to ofproto (Address already in use)"
+                    Port vxlan9003
+                        Interface vxlan9003
+                            type: vxlan
+                            options: {dst_port="4789", key="9003", remote_ip=flow}
+                            error: "could not add network device vxlan9003 to ofproto (Address already in use)"
+                    Port vxlan10120
+                        Interface vxlan10120
+                            type: vxlan
+                            options: {dst_port="4789", key="10120", remote_ip=flow}
+                            error: "could not add network device vxlan10120 to ofproto (Address already in use)"
+                    Port vxlan9005
+                        Interface vxlan9005
+                            type: vxlan
+                            options: {dst_port="4789", key="9005", remote_ip=flow}
+                            error: "could not add network device vxlan9005 to ofproto (Address already in use)"
+                    Port vxlan9006
+                        Interface vxlan9006
+                            type: vxlan
+                            options: {dst_port="4789", key="9006", remote_ip=flow}
+                            error: "could not add network device vxlan9006 to ofproto (Address already in use)"
+                    Port vxlan9004
+                        Interface vxlan9004
+                            type: vxlan
+                            options: {dst_port="4789", key="9004", remote_ip=flow}
+                            error: "could not add network device vxlan9004 to ofproto (Address already in use)"
+                    Port vmbr2
+                        Interface vmbr2
+                            type: internal
+                            error: "could not add network device vmbr2 to ofproto (File exists)"
+                ovs_version: "3.5.0"
+sys_class_net: |
+  total 0
+            -rw-r--r-- 1 root root 4096 Nov 22 21:24 bonding_masters
+            lrwxrwxrwx 1 root root    0 Nov 22 21:30 dummy_fab-core -> ../../devices/virtual/net/dummy_fab-core
+            lrwxrwxrwx 1 root root    0 Nov 22 21:24 eth1 -> ../../devices/pci0000:00/0000:00:14.0/usb3/3-13/3-13.5/3-13.5:1.0/net/eth1
+            lrwxrwxrwx 1 root root    0 Nov 22 21:24 eth2 -> ../../devices/pci0000:00/0000:00:1c.4/0000:1c:00.3/net/eth2
+            lrwxrwxrwx 1 root root    0 Nov 22 21:24 eth3 -> ../../devices/pci0000:00/0000:00:1c.4/0000:1c:00.2/net/eth3
+            lrwxrwxrwx 1 root root    0 Nov 22 21:24 eth4 -> ../../devices/pci0000:00/0000:00:1c.4/0000:1c:00.0/net/eth4
+            lrwxrwxrwx 1 root root    0 Nov 22 21:30 gateway2 -> ../../devices/virtual/net/gateway2
+            lrwxrwxrwx 1 root root    0 Nov 22 21:24 lo -> ../../devices/virtual/net/lo
+            lrwxrwxrwx 1 root root    0 Nov 22 21:24 nic1 -> ../../devices/pci0000:00/0000:00:1c.4/0000:1c:00.1/net/nic1
+            lrwxrwxrwx 1 root root    0 Nov 22 21:30 ovs-system -> ../../devices/virtual/net/ovs-system
+            lrwxrwxrwx 1 root root    0 Nov 22 21:24 vmbr0 -> ../../devices/virtual/net/vmbr0
+            lrwxrwxrwx 1 root root    0 Nov 22 21:30 vmbr1 -> ../../devices/virtual/net/vmbr1
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vmbr2 -> ../../devices/virtual/net/vmbr2
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vmbr2.100 -> ../../devices/virtual/net/vmbr2.100
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vmbr2.11 -> ../../devices/virtual/net/vmbr2.11
+            lrwxrwxrwx 1 root root    0 Nov 22 21:30 vmbr99 -> ../../devices/virtual/net/vmbr99
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vnet1 -> ../../devices/virtual/net/vnet1
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vnet2 -> ../../devices/virtual/net/vnet2
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vrfbr_zone1 -> ../../devices/virtual/net/vrfbr_zone1
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vrfbr_zone2 -> ../../devices/virtual/net/vrfbr_zone2
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vrfvx_zone1 -> ../../devices/virtual/net/vrfvx_zone1
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vrfvx_zone2 -> ../../devices/virtual/net/vrfvx_zone2
+            lrwxrwxrwx 1 root root    0 Nov 22 21:28 vrf_zone1 -> ../../devices/virtual/net/vrf_zone1
+            lrwxrwxrwx 1 root root    0 Nov 22 21:28 vrf_zone2 -> ../../devices/virtual/net/vrf_zone2
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx10031 -> ../../devices/virtual/net/vx10031
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx10032 -> ../../devices/virtual/net/vx10032
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx10100 -> ../../devices/virtual/net/vx10100
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx10101 -> ../../devices/virtual/net/vx10101
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx10102 -> ../../devices/virtual/net/vx10102
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx10110 -> ../../devices/virtual/net/vx10110
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx10120 -> ../../devices/virtual/net/vx10120
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx9000 -> ../../devices/virtual/net/vx9000
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx9003 -> ../../devices/virtual/net/vx9003
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vx9006 -> ../../devices/virtual/net/vx9006
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vnet1 -> ../../devices/virtual/net/vxlan_vnet1
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vnet2 -> ../../devices/virtual/net/vxlan_vnet2
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx10031 -> ../../devices/virtual/net/vxlan_vx10031
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx10032 -> ../../devices/virtual/net/vxlan_vx10032
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx10100 -> ../../devices/virtual/net/vxlan_vx10100
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx10101 -> ../../devices/virtual/net/vxlan_vx10101
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx10102 -> ../../devices/virtual/net/vxlan_vx10102
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx10110 -> ../../devices/virtual/net/vxlan_vx10110
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx10120 -> ../../devices/virtual/net/vxlan_vx10120
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx9000 -> ../../devices/virtual/net/vxlan_vx9000
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx9003 -> ../../devices/virtual/net/vxlan_vx9003
+            lrwxrwxrwx 1 root root    0 Nov 22 21:26 vxlan_vx9006 -> ../../devices/virtual/net/vxlan_vx9006
+            lrwxrwxrwx 1 root root    0 Nov 22 21:24 xg1 -> ../../devices/pci0000:00/0000:00:02.0/0000:06:00.0/net/xg1
+            lrwxrwxrwx 1 root root    0 Nov 22 21:24 xg2 -> ../../devices/pci0000:00/0000:00:02.0/0000:06:00.1/net/xg2
+iface_pci: |
+  - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+
+iface_ethtool: |
+  - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vrf\nversion: 1.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: tg3\nversion: 6.14.11-4-pve\nfirmware-version: 5719-v1.43 NCSI v1.3.12.0\nexpansion-rom-version:
+                \nbus-info: 0000:1c:00.3\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access:
+                yes\nsupports-register-dump: yes\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: 802.1Q VLAN Support\nversion: 1.8\nfirmware-version: N/A\nexpansion-rom-version:
+                \nbus-info: \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access:
+                no\nsupports-register-dump: no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: 802.1Q VLAN Support\nversion: 1.8\nfirmware-version: N/A\nexpansion-rom-version:
+                \nbus-info: \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access:
+                no\nsupports-register-dump: no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: ixgbe\nversion: 6.14.11-4-pve\nfirmware-version: 0x800006d1, 1.2960.0\nexpansion-rom-version:
+                \nbus-info: 0000:06:00.0\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access:
+                yes\nsupports-register-dump: yes\nsupports-priv-flags: yes"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: openvswitch\nversion: 6.14.11-4-pve\nfirmware-version: \nexpansion-rom-version:
+                \nbus-info: \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access:
+                no\nsupports-register-dump: no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vrf\nversion: 1.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: ixgbe\nversion: 6.14.11-4-pve\nfirmware-version: 0x800006d1, 1.2960.0\nexpansion-rom-version:
+                \nbus-info: 0000:06:00.1\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access:
+                yes\nsupports-register-dump: yes\nsupports-priv-flags: yes"
+            - "driver: cdc_ether\nversion: 6.14.11-4-pve\nfirmware-version: CDC Ethernet Device\nexpansion-rom-version:
+                \nbus-info: usb-0000:00:14.0-13.5\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access:
+                no\nsupports-register-dump: no\nsupports-priv-flags: no"
+            - ''
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: openvswitch\nversion: 6.14.11-4-pve\nfirmware-version: \nexpansion-rom-version:
+                \nbus-info: \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access:
+                no\nsupports-register-dump: no\nsupports-priv-flags: no"
+            - "driver: tg3\nversion: 6.14.11-4-pve\nfirmware-version: 5719-v1.43 NCSI v1.3.12.0\nexpansion-rom-version:
+                \nbus-info: 0000:1c:00.0\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access:
+                yes\nsupports-register-dump: yes\nsupports-priv-flags: no"
+            - "driver: tg3\nversion: 6.14.11-4-pve\nfirmware-version: 5719-v1.43 NCSI v1.3.12.0\nexpansion-rom-version:
+                \nbus-info: 0000:1c:00.2\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access:
+                yes\nsupports-register-dump: yes\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: dummy\nversion: 6.14.11-4-pve\nfirmware-version: \nexpansion-rom-version:
+                \nbus-info: \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access:
+                no\nsupports-register-dump: no\nsupports-priv-flags: no"
+            - "driver: openvswitch\nversion: 6.14.11-4-pve\nfirmware-version: \nexpansion-rom-version:
+                \nbus-info: \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access:
+                no\nsupports-register-dump: no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: 802.1Q VLAN Support\nversion: 1.8\nfirmware-version: N/A\nexpansion-rom-version:
+                \nbus-info: \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access:
+                no\nsupports-register-dump: no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: vxlan\nversion: 0.1\nfirmware-version: \nexpansion-rom-version: \nbus-info:
+                \nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: tg3\nversion: 6.14.11-4-pve\nfirmware-version: 5719-v1.43 NCSI v1.3.12.0\nexpansion-rom-version:
+                \nbus-info: 0000:1c:00.1\nsupports-statistics: yes\nsupports-test: yes\nsupports-eeprom-access:
+                yes\nsupports-register-dump: yes\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+            - "driver: bridge\nversion: 2.3\nfirmware-version: N/A\nexpansion-rom-version: \nbus-info:
+                N/A\nsupports-statistics: no\nsupports-test: no\nsupports-eeprom-access: no\nsupports-register-dump:
+                no\nsupports-priv-flags: no"
+
+iface_udev: |
+  - 'DEVPATH=/devices/virtual/net/vxlan_vx9003
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx9003
+
+                IFINDEX=39
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228104396
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx9003
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx9003
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vx10102
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx10102
+
+                IFINDEX=31
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227976501
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx10102
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx10102
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vrf_zone1
+
+                INTERFACE=vrf_zone1
+
+                IFINDEX=20
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227781491
+
+                ID_NET_DRIVER=vrf
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vrf_zone1
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vrf_zone1
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vx10032
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx10032
+
+                IFINDEX=26
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227878796
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx10032
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx10032
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/pci0000:00/0000:00:1c.4/0000:1c:00.3/net/eth2
+
+                INTERFACE=eth2
+
+                IFINDEX=7
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=2856235
+
+                ID_NET_DRIVER=tg3
+
+                ID_BUS=pci
+
+                ID_VENDOR_ID=0x14e4
+
+                ID_MODEL_ID=0x1657
+
+                ID_PCI_CLASS_FROM_DATABASE=Network controller
+
+                ID_PCI_SUBCLASS_FROM_DATABASE=Ethernet controller
+
+                ID_VENDOR_FROM_DATABASE=Broadcom Inc. and subsidiaries
+
+                ID_MODEL_FROM_DATABASE=NetXtreme BCM5719 Gigabit Ethernet PCIe
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_NAME_MAC=enx0894ef12f463
+
+                ID_OUI_FROM_DATABASE=Wistron Infocomm (Zhongshan) Corporation
+
+                ID_NET_LABEL_ONBOARD=em4
+
+                ID_NET_NAME_ONBOARD=eno4
+
+                ID_NET_NAME_PATH=enp28s0f3
+
+                ID_PATH=pci-0000:1c:00.3
+
+                ID_PATH_TAG=pci-0000_1c_00_3
+
+                ID_NET_LINK_FILE=/usr/local/lib/systemd/network/50-pve-eth2.link
+
+                ID_NET_NAME=eth2
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/eth2
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vx10102
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx10102
+
+                IFINDEX=32
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227985920
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx10102
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx10102
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vmbr2.100
+
+                DEVTYPE=vlan
+
+                INTERFACE=vmbr2.100
+
+                IFINDEX=16
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227720141
+
+                ID_NET_DRIVER=802.1Q VLAN Support
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vmbr2.100
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vmbr2.100
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vrfbr_zone1
+
+                DEVTYPE=bridge
+
+                INTERFACE=vrfbr_zone1
+
+                IFINDEX=22
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227816285
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vrfbr_zone1
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vrfbr_zone1
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vmbr2.11
+
+                DEVTYPE=vlan
+
+                INTERFACE=vmbr2.11
+
+                IFINDEX=15
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227709708
+
+                ID_NET_DRIVER=802.1Q VLAN Support
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vmbr2.11
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vmbr2.11
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vx9000
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx9000
+
+                IFINDEX=37
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228072609
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx9000
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx9000
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vx10110
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx10110
+
+                IFINDEX=34
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228017121
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx10110
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx10110
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/pci0000:00/0000:00:02.0/0000:06:00.0/net/xg1
+
+                INTERFACE=xg1
+
+                IFINDEX=3
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=2629556
+
+                ID_NET_DRIVER=ixgbe
+
+                ID_BUS=pci
+
+                ID_VENDOR_ID=0x8086
+
+                ID_MODEL_ID=0x10fb
+
+                ID_PCI_CLASS_FROM_DATABASE=Network controller
+
+                ID_PCI_SUBCLASS_FROM_DATABASE=Ethernet controller
+
+                ID_VENDOR_FROM_DATABASE=Intel Corporation
+
+                ID_MODEL_FROM_DATABASE=82599ES 10-Gigabit SFI/SFP+ Network Connection
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_NAME_MAC=enx98b7851ed853
+
+                ID_OUI_FROM_DATABASE=Shenzhen 10Gtek Transceivers Co., Limited
+
+                ID_NET_NAME_PATH=enp6s0f0
+
+                ID_NET_NAME_SLOT=ens1f0
+
+                ID_PATH=pci-0000:06:00.0
+
+                ID_PATH_TAG=pci-0000_06_00_0
+
+                ID_NET_LINK_FILE=/usr/local/lib/systemd/network/50-pve-xg1.link
+
+                ID_NET_NAME=xg1
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/xg1
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vx9003
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx9003
+
+                IFINDEX=40
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228114638
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx9003
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx9003
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vrfvx_zone2
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vrfvx_zone2
+
+                IFINDEX=46
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228217352
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vrfvx_zone2
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vrfvx_zone2
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vnet2
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vnet2
+
+                IFINDEX=43
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228177960
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vnet2
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vnet2
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vrfbr_zone2
+
+                DEVTYPE=bridge
+
+                INTERFACE=vrfbr_zone2
+
+                IFINDEX=47
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228227541
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vrfbr_zone2
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vrfbr_zone2
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vnet1
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vnet1
+
+                IFINDEX=18
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227757520
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vnet1
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vnet1
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/ovs-system
+
+                INTERFACE=ovs-system
+
+                IFINDEX=10
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=199175210
+
+                ID_NET_DRIVER=openvswitch
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=ovs-system
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/ovs-system
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vx10110
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx10110
+
+                IFINDEX=33
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228007899
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx10110
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx10110
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vx10100
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx10100
+
+                IFINDEX=27
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227906486
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx10100
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx10100
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vrf_zone2
+
+                INTERFACE=vrf_zone2
+
+                IFINDEX=45
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228199766
+
+                ID_NET_DRIVER=vrf
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vrf_zone2
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vrf_zone2
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/pci0000:00/0000:00:02.0/0000:06:00.1/net/xg2
+
+                INTERFACE=xg2
+
+                IFINDEX=6
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=2833639
+
+                ID_NET_DRIVER=ixgbe
+
+                ID_BUS=pci
+
+                ID_VENDOR_ID=0x8086
+
+                ID_MODEL_ID=0x10fb
+
+                ID_PCI_CLASS_FROM_DATABASE=Network controller
+
+                ID_PCI_SUBCLASS_FROM_DATABASE=Ethernet controller
+
+                ID_VENDOR_FROM_DATABASE=Intel Corporation
+
+                ID_MODEL_FROM_DATABASE=82599ES 10-Gigabit SFI/SFP+ Network Connection
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_NAME_MAC=enx98b7851ed854
+
+                ID_OUI_FROM_DATABASE=Shenzhen 10Gtek Transceivers Co., Limited
+
+                ID_NET_NAME_PATH=enp6s0f1
+
+                ID_NET_NAME_SLOT=ens1f1
+
+                ID_PATH=pci-0000:06:00.1
+
+                ID_PATH_TAG=pci-0000_06_00_1
+
+                ID_NET_LINK_FILE=/usr/local/lib/systemd/network/50-pve-xg2.link
+
+                ID_NET_NAME=xg2
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/xg2
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/pci0000:00/0000:00:14.0/usb3/3-13/3-13.5/3-13.5:1.0/net/eth1
+
+                INTERFACE=eth1
+
+                IFINDEX=8
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=5240609
+
+                ID_NET_DRIVER=cdc_ether
+
+                ID_BUS=usb
+
+                ID_MODEL=RNDIS_Ethernet_Gadget
+
+                ID_MODEL_ENC=RNDIS\x2fEthernet\x20Gadget
+
+                ID_MODEL_ID=4010
+
+                ID_SERIAL=IBM_RNDIS_Ethernet_Gadget
+
+                ID_VENDOR=IBM
+
+                ID_VENDOR_ENC=IBM
+
+                ID_VENDOR_ID=04b3
+
+                ID_REVISION=0325
+
+                ID_TYPE=generic
+
+                ID_USB_MODEL=RNDIS_Ethernet_Gadget
+
+                ID_USB_MODEL_ENC=RNDIS\x2fEthernet\x20Gadget
+
+                ID_USB_MODEL_ID=4010
+
+                ID_USB_SERIAL=IBM_RNDIS_Ethernet_Gadget
+
+                ID_USB_VENDOR=IBM
+
+                ID_USB_VENDOR_ENC=IBM
+
+                ID_USB_VENDOR_ID=04b3
+
+                ID_USB_REVISION=0325
+
+                ID_USB_TYPE=generic
+
+                ID_USB_INTERFACES=:0202ff:0a0000:020600:
+
+                ID_USB_INTERFACE_NUM=00
+
+                ID_USB_DRIVER=cdc_ether
+
+                ID_USB_CLASS_FROM_DATABASE=Communications
+
+                ID_VENDOR_FROM_DATABASE=IBM Corp.
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_NAME_MAC=enx0a94ef12f467
+
+                ID_NET_NAME_PATH=enp0s20u13u5
+
+                ID_PATH_WITH_USB_REVISION=pci-0000:00:14.0-usbv2-0:13.5:1.0
+
+                ID_PATH=pci-0000:00:14.0-usb-0:13.5:1.0
+
+                ID_PATH_TAG=pci-0000_00_14_0-usb-0_13_5_1_0
+
+                ID_NET_LINK_FILE=/usr/local/lib/systemd/network/50-pve-eth1.link
+
+                ID_NET_NAME=eth1
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/eth1
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/lo
+
+                INTERFACE=lo
+
+                IFINDEX=1
+
+                SUBSYSTEM=net'
+            - 'DEVPATH=/devices/virtual/net/vx9006
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx9006
+
+                IFINDEX=42
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228145863
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx9006
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx9006
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vmbr99
+
+                INTERFACE=vmbr99
+
+                IFINDEX=11
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=199210162
+
+                ID_NET_DRIVER=openvswitch
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vmbr99
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vmbr99
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/pci0000:00/0000:00:1c.4/0000:1c:00.0/net/eth4
+
+                INTERFACE=eth4
+
+                IFINDEX=2
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=2354210
+
+                ID_NET_DRIVER=tg3
+
+                ID_BUS=pci
+
+                ID_VENDOR_ID=0x14e4
+
+                ID_MODEL_ID=0x1657
+
+                ID_PCI_CLASS_FROM_DATABASE=Network controller
+
+                ID_PCI_SUBCLASS_FROM_DATABASE=Ethernet controller
+
+                ID_VENDOR_FROM_DATABASE=Broadcom Inc. and subsidiaries
+
+                ID_MODEL_FROM_DATABASE=NetXtreme BCM5719 Gigabit Ethernet PCIe
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_NAME_MAC=enx0894ef12f460
+
+                ID_OUI_FROM_DATABASE=Wistron Infocomm (Zhongshan) Corporation
+
+                ID_NET_LABEL_ONBOARD=em1
+
+                ID_NET_NAME_ONBOARD=eno1
+
+                ID_NET_NAME_PATH=enp28s0f0
+
+                ID_PATH=pci-0000:1c:00.0
+
+                ID_PATH_TAG=pci-0000_1c_00_0
+
+                ID_NET_LINK_FILE=/usr/local/lib/systemd/network/50-pve-eth4.link
+
+                ID_NET_NAME=eth4
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/eth4
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/pci0000:00/0000:00:1c.4/0000:1c:00.2/net/eth3
+
+                INTERFACE=eth3
+
+                IFINDEX=5
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=2768192
+
+                ID_NET_DRIVER=tg3
+
+                ID_BUS=pci
+
+                ID_VENDOR_ID=0x14e4
+
+                ID_MODEL_ID=0x1657
+
+                ID_PCI_CLASS_FROM_DATABASE=Network controller
+
+                ID_PCI_SUBCLASS_FROM_DATABASE=Ethernet controller
+
+                ID_VENDOR_FROM_DATABASE=Broadcom Inc. and subsidiaries
+
+                ID_MODEL_FROM_DATABASE=NetXtreme BCM5719 Gigabit Ethernet PCIe
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_NAME_MAC=enx0894ef12f462
+
+                ID_OUI_FROM_DATABASE=Wistron Infocomm (Zhongshan) Corporation
+
+                ID_NET_LABEL_ONBOARD=em3
+
+                ID_NET_NAME_ONBOARD=eno3
+
+                ID_NET_NAME_PATH=enp28s0f2
+
+                ID_PATH=pci-0000:1c:00.2
+
+                ID_PATH_TAG=pci-0000_1c_00_2
+
+                ID_NET_LINK_FILE=/usr/local/lib/systemd/network/50-pve-eth3.link
+
+                ID_NET_NAME=eth3
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/eth3
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vx10120
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx10120
+
+                IFINDEX=36
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228048684
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx10120
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx10120
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/dummy_fab-core
+
+                INTERFACE=dummy_fab-core
+
+                IFINDEX=13
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227601451
+
+                ID_NET_DRIVER=dummy
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=dummy_fab-core
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/dummy_fab-core
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vmbr1
+
+                INTERFACE=vmbr1
+
+                IFINDEX=12
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=199624206
+
+                ID_NET_DRIVER=openvswitch
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vmbr1
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vmbr1
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vmbr0
+
+                DEVTYPE=bridge
+
+                INTERFACE=vmbr0
+
+                IFINDEX=9
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=10482639
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vmbr0
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vmbr0
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vx9006
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx9006
+
+                IFINDEX=41
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228136619
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx9006
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx9006
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vx10120
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx10120
+
+                IFINDEX=35
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228039371
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx10120
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx10120
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vx10101
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx10101
+
+                IFINDEX=30
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227951706
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx10101
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx10101
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vx10100
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx10100
+
+                IFINDEX=28
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227916658
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx10100
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx10100
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vx9000
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx9000
+
+                IFINDEX=38
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228082421
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx9000
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx9000
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vx10032
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx10032
+
+                IFINDEX=25
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227867526
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx10032
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx10032
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vnet2
+
+                DEVTYPE=bridge
+
+                INTERFACE=vnet2
+
+                IFINDEX=44
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=228186700
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vnet2
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vnet2
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vx10031
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx10031
+
+                IFINDEX=23
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227835711
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx10031
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx10031
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vnet1
+
+                DEVTYPE=bridge
+
+                INTERFACE=vnet1
+
+                IFINDEX=19
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227766569
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vnet1
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vnet1
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/gateway2
+
+                DEVTYPE=vlan
+
+                INTERFACE=gateway2
+
+                IFINDEX=17
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227737445
+
+                ID_NET_DRIVER=802.1Q VLAN Support
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=gateway2
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/gateway2
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vrfvx_zone1
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vrfvx_zone1
+
+                IFINDEX=21
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227806858
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vrfvx_zone1
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vrfvx_zone1
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vxlan_vx10101
+
+                DEVTYPE=vxlan
+
+                INTERFACE=vxlan_vx10101
+
+                IFINDEX=29
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227941227
+
+                ID_NET_DRIVER=vxlan
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vxlan_vx10101
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vxlan_vx10101
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/pci0000:00/0000:00:1c.4/0000:1c:00.1/net/nic1
+
+                INTERFACE=nic1
+
+                IFINDEX=4
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=2724864
+
+                ID_NET_DRIVER=tg3
+
+                ID_BUS=pci
+
+                ID_VENDOR_ID=0x14e4
+
+                ID_MODEL_ID=0x1657
+
+                ID_PCI_CLASS_FROM_DATABASE=Network controller
+
+                ID_PCI_SUBCLASS_FROM_DATABASE=Ethernet controller
+
+                ID_VENDOR_FROM_DATABASE=Broadcom Inc. and subsidiaries
+
+                ID_MODEL_FROM_DATABASE=NetXtreme BCM5719 Gigabit Ethernet PCIe
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_NAME_MAC=enx0894ef12f461
+
+                ID_OUI_FROM_DATABASE=Wistron Infocomm (Zhongshan) Corporation
+
+                ID_NET_LABEL_ONBOARD=em2
+
+                ID_NET_NAME_ONBOARD=eno2
+
+                ID_NET_NAME_PATH=enp28s0f1
+
+                ID_PATH=pci-0000:1c:00.1
+
+                ID_PATH_TAG=pci-0000_1c_00_1
+
+                ID_NET_LINK_FILE=/usr/local/lib/systemd/network/50-pve-nic1.link
+
+                ID_NET_NAME=nic1
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/nic1
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vx10031
+
+                DEVTYPE=bridge
+
+                INTERFACE=vx10031
+
+                IFINDEX=24
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227845070
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vx10031
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vx10031
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+            - 'DEVPATH=/devices/virtual/net/vmbr2
+
+                DEVTYPE=bridge
+
+                INTERFACE=vmbr2
+
+                IFINDEX=14
+
+                SUBSYSTEM=net
+
+                USEC_INITIALIZED=227679631
+
+                ID_NET_DRIVER=bridge
+
+                ID_NET_NAMING_SCHEME=v257
+
+                ID_NET_LINK_FILE=/usr/lib/systemd/network/99-default.link
+
+                ID_NET_LINK_FILE_DROPINS=/usr/lib/systemd/network/99-default.link.d/proxmox-mac-address-policy.conf
+
+                ID_NET_NAME=vmbr2
+
+                SYSTEMD_ALIAS=/sys/subsystem/net/devices/vmbr2
+
+                TAGS=:systemd:
+
+                CURRENT_TAGS=:systemd:'
+
+iface_lspci: |
+  - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
+            - ''
