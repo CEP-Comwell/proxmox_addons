@@ -1,21 +1,40 @@
 # vmbr definitions for pve2.comwell.edgesec.ca
+# Derived from pve1.comwell.edgesec.ca as a template — verify physical
+# interface names and addresses on pve2 before applying network pinning.
 bridges:
   - name: vmbr99
     type: OVSBridge
     bridge_ports:
-      - ens2f0
+      - ens2f0   # verify: physical NIC on pve2 for management
     mtu: 9000
     vlan_aware: true
+    subinterfaces:
+      - name: vxlan10031
+        type: vxlan
+        options:
+          id: 10031
+          mtu: 1400
   - name: vmbr1
     type: OVSBridge
     bridge_ports:
-      - eth1
+      - eth1     # verify: tenant NIC on pve2
     mtu: 9000
     vlan_aware: true
+    subinterfaces:
+      - name: vxlan9006
+        type: vxlan
+        options:
+          id: 9006
+          mtu: 1400
+      - name: vxlan9003
+        type: vxlan
+        options:
+          id: 9003
+          mtu: 1400
   - name: vmbr2
-    type: bridge
+    type: Bridge
     bridge_ports:
-      - xg1
+      - xg1      # verify: uplink/gateway NIC on pve2
     mtu: 1420
     subinterfaces:
       - name: gateway1
@@ -26,18 +45,13 @@ bridges:
         type: vlan
         options:
           tag: 200
-      - name: vxlan10031
-        type: vxlan
+      - name: vmbr2.11
+        type: vlan
         options:
-          vxlan-id: 10031
-          vxlan-local-tunnel-ip: 10.90.0.11
-      - name: vxlan9003
-        type: vxlan
+          tag: 11
+          address: 172.16.11.21/24   # TODO: adjust for pve2
+      - name: vmbr2.100
+        type: vlan
         options:
-          vxlan-id: 9003
-          vxlan-local-tunnel-ip: 10.90.0.11
-      - name: vxlan9006
-        type: vxlan
-        options:
-          vxlan-id: 9006
-          vxlan-local-tunnel-ip: 10.90.0.11
+          tag: 100
+          address: 10.10.31.21/24    # TODO: adjust for pve2

@@ -1,0 +1,6 @@
+```yaml
+vmbr_gateway_ips:
+  vmbr1: 10.101.1.2/24
+  vmbr99: 10.102.1.2/24
+
+```
