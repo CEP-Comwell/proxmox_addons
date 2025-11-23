@@ -1,5 +1,6 @@
-# vmbr definitions for pve2.comwell.edgesec.ca
-# Generated from pve1 baseline. Verify physical interface names on pve2
+# Clean vmbr definitions for pve2.comwell.edgesec.ca
+# Generated from pve1 baseline and cleaned. Verify physical interface names
+# and address assignments before applying.
 bridges:
   - name: vmbr99
     type: OVSBridge
@@ -13,6 +14,7 @@ bridges:
         options:
           id: 10031
           mtu: 1400
+
   - name: vmbr1
     type: OVSBridge
     bridge_ports:
@@ -30,6 +32,7 @@ bridges:
         options:
           id: 9003
           mtu: 1400
+
   - name: vmbr2
     type: Bridge
     bridge_ports:
@@ -48,12 +51,13 @@ bridges:
         type: vlan
         options:
           inet: static
-          address: 172.16.12.20/24    # adjusted from pve1 (11 -> 12)
+          address: 172.16.12.20/24    # pve2 site adjustment (third octet = 12)
           tag: 11
       - name: vmbr2.100
         type: vlan
         options:
-          address: 10.10.32.20/24     # adjusted from pve1 (31 -> 32)
+          address: 10.10.32.20/24     # pve2 site adjustment
+          tag: 100
           tag: 100
 # vmbr definitions for pve2.comwell.edgesec.ca
 # Derived from pve1.comwell.edgesec.ca as a template — verify physical
