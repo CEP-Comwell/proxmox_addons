@@ -1,4 +1,30 @@
-```yaml
+# Host-specific network for pve2 (generated from pve1 baseline)
+
+bridges:
+  - name: vmbr2
+    type: Bridge
+    parent: xg1
+    mtu: 1420
+    vlans:
+      - id: 11
+      - id: 100
+      - id: 200
+    subinterfaces:
+      - name: vmbr2.11
+        type: vlan
+        vlan_id: 11
+        address: 172.16.12.20/24   # adjusted from pve1 (11 -> 12)
+      - name: vmbr2.100
+        type: vlan
+        vlan_id: 100
+        address: 10.10.32.20/24    # adjusted from pve1 (31 -> 32)
+
+# VRF configuration (optional, per host)
+vrf_name: vrf_zone1
+vrf_table: 100
+vrf_routes:
+  - { subnet: 172.16.12.0/24, dev: vmbr2.11 }
+  - { subnet: 10.10.32.0/24, dev: vmbr2.100 }
 # Host-specific network example for pve2 (derived from pve1)
 
 bridges:
@@ -27,4 +53,3 @@ vrf_routes:
   - { subnet: 172.16.11.0/24, dev: vmbr2.11 }
   - { subnet: 10.10.31.0/24, dev: vmbr2.100 }
 
-```

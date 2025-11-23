@@ -1,4 +1,61 @@
 # vmbr definitions for pve2.comwell.edgesec.ca
+# Generated from pve1 baseline. Verify physical interface names on pve2
+bridges:
+  - name: vmbr99
+    type: OVSBridge
+    bridge_ports:
+      - eth2
+    mtu: 9000
+    vlan_aware: true
+    subinterfaces:
+      - name: vxlan10031
+        type: vxlan
+        options:
+          id: 10031
+          mtu: 1400
+  - name: vmbr1
+    type: OVSBridge
+    bridge_ports:
+      - eth1
+    mtu: 9000
+    vlan_aware: true
+    subinterfaces:
+      - name: vxlan9006
+        type: vxlan
+        options:
+          id: 9006
+          mtu: 1400
+      - name: vxlan9003
+        type: vxlan
+        options:
+          id: 9003
+          mtu: 1400
+  - name: vmbr2
+    type: Bridge
+    bridge_ports:
+      - xg1
+    mtu: 1420
+    subinterfaces:
+      - name: gateway1
+        type: vlan
+        options:
+          tag: 100
+      - name: gateway2
+        type: vlan
+        options:
+          tag: 200
+      - name: vmbr2.11
+        type: vlan
+        options:
+          inet: static
+          address: 172.16.12.20/24    # adjusted from pve1 (11 -> 12)
+          tag: 11
+      - name: vmbr2.100
+        type: vlan
+        options:
+          address: 10.10.32.20/24     # adjusted from pve1 (31 -> 32)
+          tag: 100
+# vmbr definitions for pve2.comwell.edgesec.ca
 # Derived from pve1.comwell.edgesec.ca as a template — verify physical
 # interface names and addresses on pve2 before applying network pinning.
 bridges:
