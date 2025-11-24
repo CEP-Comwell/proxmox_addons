@@ -6,12 +6,16 @@ MgmtBridge["vmbr99 (OVSBridge)\nports: eth2, mtu: 9000, vlan_aware: true"]
 VMBridge["vmbr1 (OVSBridge)\nports: eth1, mtu: 9000, vlan_aware: true"]
 ExtBridge["vmbr2 (Linux bridge)\nports: xg1, mtu: 1420, VyOS uplink"]
 
+%% Explicit stitching (veth glue)
+veth_mgmt_ext["veth-mgmt-ext\nvmbr99 <-> vmbr2"]
+veth_vm_ext["veth-vm-ext\nvmbr1 <-> vmbr2"]
+
 %% vmbr2 subinterfaces
 Gateway1["gateway1 (vlan 100)"]
 Gateway2["gateway2 (vlan 200)"]
-VX10031["VX10031 (ceph_cluster)"]
-VX9003["VX9003 (proxy_ext)"]
-VX9006["VX9006 (edgesec_vault)"]
+%% Note: VX10031 / VX9003 / VX9006 are declared later under the "VXLANs and Gateway"
+%% section to include multi-line labels; removed the earlier single-line duplicates
+%% to avoid duplicate node IDs in the diagram.
 
 %% VXLANs and Gateway
 VX10100["VX10100\n(tenant1_mgmt)"]
@@ -19,11 +23,11 @@ VX10101["VX10101\n(tenant1_engineering)"]
 VX10102["VX10102\n(tenant1_support)"]
 VX10031["VX10031\n(ceph_cluster)"]
 VX10032["VX10032\n(core_services)"]
+VX9003["VX9003\n(proxy_ext)"]
+VX10120["VX10120\n(tenant1_ext)"]
 VX10110["VX10110\n(tenant1_services)"]
 VX9000["VX9000\n(shared_services)"]
 VX9006["VX9006\n(edgesec_vault)"]
-VX9003["VX9003\n(proxy_ext)"]
-VX10120["VX10120\n(tenant1_ext)"]
 edgesecGW{{"edgesec-gw-rr-yyz-01\nedgesec-SDN Global Fabric Gateway"}}
 
 %% Bridge to VNI relationships
@@ -41,6 +45,10 @@ ExtBridge --> VX10120
 ExtBridge --> VX9003
 ExtBridge --> Gateway1
 ExtBridge --> Gateway2
+
+%% Stitching links (veth glue)
+MgmtBridge --- veth_mgmt_ext --- ExtBridge
+VMBridge --- veth_vm_ext --- ExtBridge
 
 %% vmbr2 subinterfaces feeding Gateway / SDN fabric
 Gateway1 --> edgesecGW

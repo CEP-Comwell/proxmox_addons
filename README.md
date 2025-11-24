@@ -21,31 +21,34 @@ A modular Ansible role and playbook collection for deploying, managing, and moni
 graph LR
 
 %% Bridges
-ProxmoxBridge["vmbr0 (Linux bridge) ports: ens2f0 (Proxmox default)"]
-MgmtBridge["vmbr99 (OVSBridge) ports: eth2, mtu: 9000, vlan_aware: true"]
-VMBridge["vmbr1 (OVSBridge) ports: eth1, mtu: 9000, vlan_aware: true"]
-ExtBridge["vmbr2 (Linux bridge) ports: xg1, mtu: 1420, VyOS uplink"]
+ProxmoxBridge["vmbr0 (Linux bridge)\nports: ens2f0 (Proxmox default)"]
+MgmtBridge["vmbr99 (OVSBridge)\nports: eth2, mtu: 9000, vlan_aware: true"]
+VMBridge["vmbr1 (OVSBridge)\nports: eth1, mtu: 9000, vlan_aware: true"]
+ExtBridge["vmbr2 (Linux bridge)\nports: xg1, mtu: 1420, VyOS uplink"]
+
+%% Explicit stitching (veth glue)
+veth_mgmt_ext["veth-mgmt-ext\nvmbr99 <-> vmbr2"]
+veth_vm_ext["veth-vm-ext\nvmbr1 <-> vmbr2"]
 
 %% vmbr2 subinterfaces
 Gateway1["gateway1 (vlan 100)"]
 Gateway2["gateway2 (vlan 200)"]
-LegacyVLAN["legacy-vlan100 (vlan 100)"]
-VX10031Ifc["vxlan10031 (vxlan id 10031)"]
-VX9003Ifc["vxlan9003 (vxlan id 9003)"]
-VX9006Ifc["vxlan9006 (vxlan id 9006)"]
+%% Note: VX10031 / VX9003 / VX9006 are declared later under the "VXLANs and Gateway"
+%% section to include multi-line labels; removed the earlier single-line duplicates
+%% to avoid duplicate node IDs in the diagram.
 
 %% VXLANs and Gateway
-VX10100["vxlan10100 tenant1_mgmt"]
-VX10101["vxlan10101 tenant1_engineering"]
-VX10102["vxlan10102 tenant1_support"]
-VX10031["vxlan10031 ceph_cluster"]
-VX10032["vxlan10032 core_services"]
-VX10110["vxlan10110 tenant1_services"]
-VX9000["vxlan9000 shared_services"]
-VX9006["vxlan9006 edgesec_vault"]
-VX9003["vxlan9003 proxy_ext"]
-VX10120["vxlan10120 tenant1_ext"]
-edgesecGW{{"edgesec-gw-rr-yyz-01 edgesec-SDN Global Fabric Gateway"}}
+VX10100["VX10100\n(tenant1_mgmt)"]
+VX10101["VX10101\n(tenant1_engineering)"]
+VX10102["VX10102\n(tenant1_support)"]
+VX10031["VX10031\n(ceph_cluster)"]
+VX10032["VX10032\n(core_services)"]
+VX10110["VX10110\n(tenant1_services)"]
+VX9000["VX9000\n(shared_services)"]
+VX9006["VX9006\n(edgesec_vault)"]
+VX9003["VX9003\n(proxy_ext)"]
+VX10120["VX10120\n(tenant1_ext)"]
+edgesecGW{{"edgesec-gw-rr-yyz-01\nedgesec-SDN Global Fabric Gateway"}}
 
 %% Bridge to VNI relationships
 MgmtBridge --> VX10100
@@ -59,20 +62,21 @@ VMBridge --> VX9000
 VMBridge --> VX9006
 
 ExtBridge --> VX10120
-ExtBridge --> VX9003Ifc
-ExtBridge --> VX9006Ifc
-ExtBridge --> VX10031Ifc
+ExtBridge --> VX9003
 ExtBridge --> Gateway1
 ExtBridge --> Gateway2
-ExtBridge --> LegacyVLAN
+
+%% Stitching links (veth glue)
+MgmtBridge --- veth_mgmt_ext --- ExtBridge
+VMBridge --- veth_vm_ext --- ExtBridge
 
 %% vmbr2 subinterfaces feeding Gateway / SDN fabric
 Gateway1 --> edgesecGW
 Gateway2 --> edgesecGW
-LegacyVLAN --> edgesecGW
-VX10031Ifc --> edgesecGW
-VX9003Ifc --> edgesecGW
-VX9006Ifc --> edgesecGW
+VX10031 --> edgesecGW
+VX9003 --> edgesecGW
+VX9006 --> edgesecGW
+
 
 %% SDN fabric VNIs terminate on Gateway
 VX10100 --> edgesecGW
@@ -81,19 +85,26 @@ VX10102 --> edgesecGW
 VX10110 --> edgesecGW
 VX9000 --> edgesecGW
 VX9006 --> edgesecGW
-VX9003 --> edgesecGW
-VX10120 --> edgesecGW
 VX10031 --> edgesecGW
 VX10032 --> edgesecGW
+
+%% Peered overlays (remote VTEP connectivity)
+PEERED((🌐 Peered Overlay))
+VX10031 -. "edgesec-peer-tenant1-van-cal-vx10031" .-> PEERED
+VX10032 -. "edgesec-peer-tenant1-van-cal-vx10032" .-> PEERED
+VX10110 -. "edgesec-peer-tenant1-van-cal-vx10110" .-> PEERED
+VX9006 -. "edgesec-peer-tenant1-van-cal-vx9006" .-> PEERED
 
 %% Color coding
 classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
 classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
 classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
-class ProxmoxBridge mgmt;
+classDef legacy fill:#eeeeee,stroke:#888888,stroke-width:2px,stroke-dasharray: 5 5;
+class ProxmoxBridge legacy;
 class MgmtBridge,VX10100,VX10101,VX10102,VX10031,VX10032 mgmt;
 class VMBridge,VX10110,VX9000,VX9006 vm;
-class ExtBridge,Gateway1,Gateway2,LegacyVLAN,VX10031Ifc,VX9003Ifc,VX9006Ifc,VX9003,VX10120,edgesecGW ext;
+class ExtBridge,Gateway1,Gateway2,VX9003,VX10120,edgesecGW ext;
+
 ```
 </details>
 
@@ -508,24 +519,7 @@ proxmox_addons/
 **Key Integration Hub:**  
 - `edgesec-rest/` is the central API and automation hub, integrating with all other subprojects (Vault, SDN, TAPx, RADIUS) and external systems (NetBox, Datto RMM, NetBird, etc).
 
-
----
-
-## 🛠️ Maintainers: Inventory & Overlay Structure
-
-- **Canonical overlay/VNI plan**: Define all overlays, bridges, and VNI mappings in `group_vars/all.yml` under `sdn_vni_plan`. This is the single source of truth for the SDN fabric.
-- **Per-node instantiation**: In `host_vars/<node>.yml`, only include the subinterfaces and overlays actually present on that node. Do not copy the full plan—keep it minimal for auditability and rollback.
-- **Role-driven consumption**: All roles (`network_provision`, `vxlan`, `nftables`) consume these variables directly. No duplication or manual mapping is needed.
-- **Best practice**: When adding or removing overlays, update `group_vars/all.yml` first, then update only the affected nodes' `host_vars` to match the new plan.
-- **Peering naming**: For inter-site VXLAN peering, use the convention `edgesec-peer-[tenant]-[srcsite]-[dstsite]-vx[VNI]` (e.g., `edgesec-peer-tenant1-van-cal-vx10031`).
-- **Documentation**: Keep diagrams and inventory in sync. Use the Mermaid diagrams and the `sdn_vni_plan` as your reference.
-
-This structure ensures:
-- Minimal, auditable, and rollback-friendly inventory
-- Easy extension for new overlays or nodes
-- Consistency between documentation, inventory, and deployed state
-
-For more, see the [edgesec-SDN README](edgesec-sdn/README.md) and the [VXLAN Role Documentation](roles/vxlan/README.md).
+**Each subproject** has its own `README.md` and quick start, with roles and playbooks organized for modular use and cross-integration.
 
 ---
 
