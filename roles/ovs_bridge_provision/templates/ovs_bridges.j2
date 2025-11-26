@@ -1,0 +1,53 @@
+{# Build and emit physical OVSPort iface stanzas only. Logical vxlan names
+   will be referenced in the bridge's ovs_ports line but will NOT receive
+   per-vx persistent iface stanzas here (keeps persistent fragments declarative).
+   include_logical_ports_in_interfaces controls whether vx names are listed in
+   ovs_ports. #}
+{% set include_logical = include_logical_ports_in_interfaces | default(false) | bool %}
+{%- set _physical = [] -%}
+{%- for _b in (ovs_bridges | default([])) -%}
+{%-   set _p = _b.ports | default(_b.bridge_ports | default([])) -%}
+{%-   set _physical = _physical + (_p | list) -%}
+{%- endfor -%}
+{%- set physical_ports = (_physical | default([])) | unique | sort | list -%}
+{%- set logical_ports = ((ovs_bridges | map(attribute='subinterfaces') | sum(start=[])) | default([])) | selectattr('type','equalto','vxlan') | map(attribute='name') | unique | sort | list -%}
+
+{% for p in physical_ports %}
+auto {{ p }}
+iface {{ p }} inet manual
+    ovs_type OVSPort
+{% for b in ovs_bridges | default([]) %}
+{%   set _pb = (b.ports | default(b.bridge_ports | default([]))) | list %}
+{%   if p in _pb %}
+    ovs_bridge {{ b.name }}
+{%   endif %}
+{% endfor %}
+
+{% endfor %}
+
+{% for b in ovs_bridges | default([]) %}
+auto {{ b.name }}
+{% if b.address is defined and b.address | length > 0 %}
+iface {{ b.name }} inet static
+    address {{ b.address }}
+{% else %}
+iface {{ b.name }} inet manual
+{% endif %}
+    ovs_type OVSBridge
+    {# Render ovs_ports: filter out logical vx* unless include_logical true #}
+    {%- set phys = (b.ports | default(b.bridge_ports | default([]))) | list -%}
+    {%- set vxs = (b.subinterfaces | default([])) | selectattr('type','equalto','vxlan') | map(attribute='name') | list -%}
+    {%- if include_logical -%}
+    {%-   set ports_for_bridge = ((phys + vxs) | unique | sort) -%}
+    {%- else -%}
+    {%-   set ports_for_bridge = (phys | unique | sort) -%}
+    {%- endif -%}
+    ovs_ports {{ ports_for_bridge | join(' ') }}
+{% if b.ovs_options is defined and b.ovs_options | length > 0 %}
+    ovs_options {{ b.ovs_options }}
+{% endif %}
+{% if b.mtu is defined and b.mtu | int > 0 %}
+    mtu {{ b.mtu }}
+{% endif %}
+
+{% endfor %}

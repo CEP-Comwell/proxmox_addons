@@ -5,6 +5,13 @@
     vx: "{{ item }}"
     port_name: "{{ item.name | default('vx' ~ (item.vni | string)) }}"
 
+- name: "Validate vxlan port name length for {{ port_name }}"
+  assert:
+    that:
+      - (port_name | length) <= 8
+    fail_msg: "VXLAN port name '{{ port_name }}' is longer than 8 characters; shorten to <=8 per project policy."
+  when: port_name is defined
+
 - name: "Check if OVS interface {{ port_name }} exists"
   command: "ovs-vsctl --timeout=10 --bare --no-heading --columns=name list Interface {{ port_name }}"
   register: ovs_iface_check
@@ -24,10 +31,13 @@
 - name: "Create OVS port {{ port_name }} on bridge {{ vx.bridge }}"
   command: >-
     ovs-vsctl --may-exist add-port {{ vx.bridge }} {{ port_name }} -- \
-      set interface {{ port_name }} type=vxlan options:key={{ vx.vni }} {% if vx.remote_ip is defined %}options:remote_ip={{ vx.remote_ip }}{% endif %} {% if vx.dst_port is defined %}options:dst_port={{ vx.dst_port }}{% endif %}
+      set interface {{ port_name }} type=vxlan \
+      options:key="{{ vx.vni }}" {% if vx.remote_ip is defined %}options:remote_ip="{{ vx.remote_ip }}"{% endif %} {% if vx.dst_port is defined %}options:dst_port="{{ vx.dst_port }}"{% endif %}
   register: ovs_add_result
+  become: true
   when: (ovs_iface_check.stdout | default('') == '') and (not ansible_check_mode)
   changed_when: ovs_add_result.rc == 0
+  failed_when: ovs_add_result.rc != 0
 
 - name: "Ensure MTU for {{ port_name }} is set"
   become: true

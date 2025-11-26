@@ -73,16 +73,16 @@ bridges:
     subinterfaces:
       # gateway VLANs are defined as vlan subinterfaces elsewhere (vmbr2.11, vmbr2.100)
       # so the explicit gateway1/gateway2 entries are removed to avoid duplication.
-      - name: vx9003
-        type: vxlan
-        options:
-          id: 9003
-          mtu: 1400
-      - name: vx10120
-        type: vxlan
-        options:
-          id: 10120
-          mtu: 1400
+      # - name: vx9003
+      #   type: vxlan
+      #   options:
+      #     id: 9003
+      #     mtu: 1400
+      # - name: vx10120
+      #   type: vxlan
+      #   options:
+      #     id: 10120
+      #     mtu: 1400
       - name: vmbr2.11
         type: vlan
         options:

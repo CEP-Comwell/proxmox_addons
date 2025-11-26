@@ -9,9 +9,47 @@
     name: host_ovs_vxlan
   ignore_errors: true
 
-- name: "Build effective vxlan ports list"
+- name: "Load host bridge definitions (optional)"
+  include_vars:
+    file: "{{ playbook_dir }}/../../host_vars/{{ inventory_hostname }}/bridges.yml"
+    name: host_bridges
+  ignore_errors: true
+
+- name: "Discover existing OVS bridge names on the host"
+  command: ovs-vsctl --bare --no-heading list-br
+  register: ovs_br_names
+  failed_when: false
+  changed_when: false
+
+- name: "Set effective_ovs_bridges from runtime OVS list"
   set_fact:
-    effective_ovs_vxlan_ports: "{{ (host_ovs_vxlan.ovs_vxlan_ports | default([])) + (ovs_vxlan_ports | default([])) }}"
+    effective_ovs_bridges: "{{ ovs_br_names.stdout_lines | default([]) }}"
+
+- name: "Collect OVS bridge names from role/host vars (if present)"
+  set_fact:
+    effective_ovs_bridges: "{{ effective_ovs_bridges + [ item.name ] }}"
+  loop: "{{ host_bridges.bridges | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: (item.name is defined) and (item.type is defined) and ('ovs' in (item.type | lower))
+
+  # Build effective vxlan ports list
+  # Build filtered list by iterating and appending only ports whose parent bridge
+  # is in the computed list of OVS bridges. Using a loop avoids unsupported
+  # lambda expressions in some Jinja/Ansible combinations.
+- name: "Initialize tmp vxlan ports list"
+  set_fact:
+    tmp_ovs_vxlan_ports: []
+
+- name: "Collect vxlan ports that target OVS bridges"
+  set_fact:
+    tmp_ovs_vxlan_ports: "{{ tmp_ovs_vxlan_ports + [ item ] }}"
+  loop: "{{ (host_ovs_vxlan.ovs_vxlan_ports | default([])) + (ovs_vxlan_ports | default([])) }}"
+  when: (item.bridge is defined) and (item.bridge in (effective_ovs_bridges | default([])))
+
+- name: "Set effective vxlan ports list from tmp"
+  set_fact:
+    effective_ovs_vxlan_ports: "{{ tmp_ovs_vxlan_ports }}"
 
 - name: "Skip OVS VXLAN provisioning when no ports defined"
   debug:

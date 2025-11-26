@@ -33,7 +33,7 @@
     marker: "# {mark} OVS BRIDGES"
     block: "{{ ovs_bridge_block }}"
     insertbefore: '^source /etc/network/interfaces.d/*'
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  when: false
   tags: [deploy_ovs_bridges]
 
 - name: Preview OVS block (no write)
@@ -140,7 +140,7 @@
 - name: Build OVS /etc/network/interfaces block
   set_fact:
     ovs_bridge_block: "{{ lookup('template', playbook_dir + '/../../roles/network_provision/templates/ovs_bridges.j2') }}"
-  when: ovs_bridges | length > 0
+  when: false
   changed_when: false
   tags:
     - deploy_ovs_bridges
@@ -169,7 +169,7 @@
     marker: "# {mark} OVS BRIDGES"
     block: "{{ ovs_bridge_block }}"
     insertbefore: '^source /etc/network/interfaces.d/*'
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  when: false
   tags:
     - deploy_ovs_bridges
 
@@ -513,7 +513,7 @@
     block: "{{ ovs_bridge_block }}"
     insertbefore: '^source /etc/network/interfaces.d/*'
   # notify: reload_network
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  when: false
   tags:
     - deploy_ovs_bridges
 
@@ -536,27 +536,13 @@
   loop: "{{ ovs_bridges | default([]) }}"
   loop_control:
     label: "{{ item.name }}"
-  when: (ovs_create | default(false)) and (ovs_bridges | length > 0) and not (ansible_check_mode | default(false)) and not (write_interfaces_file | default(false))
+  when: false
   tags:
     - deploy_ovs_bridges
 
-- name: Add ports to OVS bridges (live) when requested
-  become: true
-  command: "/usr/bin/ovs-vsctl --may-exist add-port {{ item.name }} {{ item.interface }}"
-  loop: "{{ ovs_bridges | default([]) }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: (ovs_create | default(false)) and (ovs_bridges | length > 0) and (item.interface is defined and item.interface != '') and not (ansible_check_mode | default(false)) and not (write_interfaces_file | default(false))
-  tags:
-    - deploy_ovs_bridges
-
-- name: Set OVS port MTU (live) when requested
-  become: true
-  command: "/usr/bin/ovs-vsctl set Interface {{ item.interface }} mtu_request={{ item.mtu }}"
-  loop: "{{ ovs_bridges | default([]) }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: (ovs_create | default(false)) and (ovs_bridges | length > 0) and (item.mtu is defined and item.mtu | int > 0) and (item.interface is defined and item.interface != '') and not (ansible_check_mode | default(false)) and not (write_interfaces_file | default(false))
+- name: Inform: OVS runtime actions removed from `network_provision`
+  debug:
+    msg: "Runtime OVS bridge/port creation has been removed from the `network_provision` role. Use `ovs_vxlan_provision` (gated by ovs_create) to perform runtime ovs-vsctl operations."
   tags:
     - deploy_ovs_bridges
 

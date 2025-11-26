@@ -119,7 +119,7 @@
     marker: "# {mark} OVS BRIDGES"
     block: "{{ ovs_bridge_block }}"
     insertbefore: '^source /etc/network/interfaces.d/*'
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false)) and not (perform_reload | default(false))
+  when: false
   tags:
     - deploy_ovs_bridges
 
@@ -131,7 +131,7 @@
     block: "{{ ovs_bridge_block }}"
     insertbefore: '^source /etc/network/interfaces.d/*'
   notify: reload_network
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false)) and (perform_reload | default(false))
+  when: false
   tags:
     - deploy_ovs_bridges
 
@@ -148,7 +148,7 @@
   loop: "{{ ovs_bridges | default([]) }}"
   loop_control:
     label: "{{ item.name }}"
-  when: (ovs_create | default(false)) and (ovs_bridges | length > 0)
+  when: false
   tags:
     - deploy_ovs_bridges
 
@@ -158,7 +158,7 @@
   loop: "{{ ovs_bridges | default([]) }}"
   loop_control:
     label: "{{ item.name }}"
-  when: (ovs_create | default(false)) and (ovs_bridges | length > 0) and (item.interface is defined and item.interface != '')
+  when: false
   tags:
     - deploy_ovs_bridges
 
@@ -168,7 +168,13 @@
   loop: "{{ ovs_bridges | default([]) }}"
   loop_control:
     label: "{{ item.name }}"
-  when: (ovs_create | default(false)) and (ovs_bridges | length > 0) and (item.mtu is defined and item.mtu | int > 0) and (item.interface is defined and item.interface != '')
+  when: false
+  tags:
+    - deploy_ovs_bridges
+
+- name: "Inform: OVS runtime actions removed from `network_provision` (bridging_simple)"
+  debug:
+    msg: "Runtime OVS bridge/port/mtu creation disabled in `bridging_simple.yml`. Use `ovs_vxlan_provision` (gated by ovs_create) to perform runtime ovs-vsctl operations."
   tags:
     - deploy_ovs_bridges
 
