@@ -21,3 +21,101 @@
     - network_provision  # Streamlined single role for interface naming and bridge creation
     - vxlan              # Create and configure VXLAN overlays on node(s)
     - sdn_fabric_provision  # Provisions SDN fabric, VNETs, subnets, ports (never touches vmbr0)
+  post_tasks:
+    - name: Write OVS/VXLAN meta-prompt markdown to docs on controller
+      copy:
+        dest: "{{ playbook_dir }}/../../docs/ovs_vxlan_meta_prompt.md"
+        mode: '0644'
+        content: |
+          # Managing OVS Bridges and VXLAN Tunnels
+
+          ## 1. Persistent OVS Bridge via `/etc/network/interfaces`
+
+          To ensure the OVS bridge comes up at boot with its IP and MTU, define it in `/etc/network/interfaces`:
+
+          ```bash
+          auto vmbr1
+          iface vmbr1 inet static
+              address 10.255.0.18/28
+              ovs_type OVSBridge
+              ovs_ports "eth1 vx1001"
+              ovs_options fail_mode=standalone
+              mtu 9000
+          ```
+
+          **Explanation:**
+
+          *   `auto vmbr1` → bring up the bridge at boot.
+          *   `ovs_ports` → physical NIC (`eth1`) and VXLAN port (`vx1001`).
+          *   `mtu 9000` → jumbo frames for overlay traffic.
+
+          Apply changes:
+
+          ```bash
+          ifreload -a
+          ```
+
+          ## 2. Dynamic VXLAN Creation with `ovs-vsctl`
+
+          You can attach VXLAN tunnels to the OVS bridge without editing `/etc/network/interfaces`:
+
+          ```bash
+          ovs-vsctl add-port vmbr1 vx1001 -- \
+              set interface vx1001 type=vxlan \
+              options:key=1001 options:remote_ip=10.255.0.3 \
+              options:dst_port=4789
+          ```
+
+          **Explanation:**
+
+          *   `type=vxlan` → defines the tunnel type.
+          *   `options:key=1001` → VXLAN VNI.
+          *   `options:remote_ip=10.255.0.3` → peer underlay IP.
+          *   `options:dst_port=4789` → VXLAN UDP port (default).
+
+          Set MTU:
+
+          ```bash
+          ip link set vmbr1 mtu 9000
+          ip link set vx1001 mtu 9000
+          ```
+
+          ## 3. Verification
+
+          Check OVS state:
+
+          ```bash
+          ovs-vsctl show
+          ovs-vsctl list Interface vx1001
+          ```
+
+          Expected output:
+
+              type: vxlan
+              options: { key=1001, remote_ip="10.255.0.3", dst_port="4789" }
+
+          ## 4. Persistence for VXLAN Ports
+
+          OVS database persists ports across reboots if `openvswitch-switch` is enabled, but IP and MTU must be reapplied. Options:
+
+          *   Export OVS config:
+
+          ```bash
+          ovs-vsctl show > /etc/openvswitch/initial.conf
+          ```
+
+          Restore:
+
+          ```bash
+          ovs-vsctl --no-wait --restore < /etc/openvswitch/initial.conf
+          ```
+
+          *   Or create a **systemd unit** to reapply VXLAN ports at boot.
+
+          ## 5. Best Practices
+
+          *   Use short interface names (≤15 chars) like `vx1001`.
+          *   Align MTU across underlay and overlay.
+          *   For multi-node fabrics, consider Proxmox SDN zones for cluster-wide VXLAN orchestration.
+      delegate_to: localhost
+      run_once: true
