@@ -1,0 +1,32 @@
+---
+# Idempotent creation of OVS VXLAN ports using ovs-vsctl
+# This task file is intentionally conservative: it only runs when
+# the global `ovs_create` is true and the chosen method is `ovs-vsctl`.
+
+- name: "Load host-specific ovs vxlan ports vars (optional)"
+  include_vars:
+    file: "{{ playbook_dir }}/../../host_vars/{{ inventory_hostname }}/ovs_vxlan_ports.yml"
+    name: host_ovs_vxlan
+  ignore_errors: true
+
+- name: "Build effective vxlan ports list"
+  set_fact:
+    effective_ovs_vxlan_ports: "{{ (host_ovs_vxlan.ovs_vxlan_ports | default([])) + (ovs_vxlan_ports | default([])) }}"
+
+- name: "Skip OVS VXLAN provisioning when no ports defined"
+  debug:
+    msg: "No ovs_vxlan_ports defined; skipping OVS vxlan creation"
+  when: (effective_ovs_vxlan_ports | length) == 0
+
+- name: "Ensure each VXLAN port exists (ovs-vsctl)"
+  when: (ovs_create | default(false)) and (ovs_vxlan_method == 'ovs-vsctl') and (effective_ovs_vxlan_ports | length > 0)
+  block:
+    - name: "Include per-port tasks for VXLAN creation"
+      include_tasks: each_port.yml
+      loop: "{{ effective_ovs_vxlan_ports }}"
+      loop_control:
+        label: "{{ (item.name | default('vx' ~ (item.vni | string))) }}@{{ item.bridge | default('vmbr1') }}"
+  rescue:
+    - name: "Fail: building OVS vxlan ports encountered an error"
+      fail:
+        msg: "An error occurred while creating OVS VXLAN ports; check OVS status and the inputs"

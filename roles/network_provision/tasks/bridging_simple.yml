@@ -119,8 +119,19 @@
     marker: "# {mark} OVS BRIDGES"
     block: "{{ ovs_bridge_block }}"
     insertbefore: '^source /etc/network/interfaces.d/*'
+  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false)) and not (perform_reload | default(false))
+  tags:
+    - deploy_ovs_bridges
+
+- name: Insert OVS block into /etc/network/interfaces and notify guarded reload
+  become: true
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} OVS BRIDGES"
+    block: "{{ ovs_bridge_block }}"
+    insertbefore: '^source /etc/network/interfaces.d/*'
   notify: reload_network
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false)) and (perform_reload | default(false))
   tags:
     - deploy_ovs_bridges
 

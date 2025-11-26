@@ -1,0 +1,20 @@
+---
+# Test play to run ovs_vxlan_provision role in check mode (safe unit test)
+- name: Test OVS VXLAN provisioning (check mode)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    ovs_create: true
+    ovs_vxlan_method: "ovs-vsctl"
+    ovs_vxlan_ports:
+      - name: vx1001
+        bridge: vmbr1
+        vni: 1001
+        remote_ip: 127.0.0.1
+        dst_port: 4789
+        mtu: 9000
+  tasks:
+    - name: Include ovs_vxlan_provision role (check-mode safe)
+      include_role:
+        name: ovs_vxlan_provision

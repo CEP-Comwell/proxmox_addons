@@ -2,6 +2,11 @@
 # Role defaults for network_provision
 # Extra safety: do not remove existing OVS blocks unless explicitly enabled
 force_ovsclean: false
+# If true, include logical VXLAN port names (vx...) in the persistent
+# `/etc/network/interfaces` fragments. Default false to keep runtime objects
+# separate; set true for your experimental hybrid workflow if you want the
+# vx* names present in the interfaces file.
+include_logical_ports_in_interfaces: false
 # Default VRF and subnet mappings for network_provision role
 vrf_mappings:
   vrf_zone1: 100

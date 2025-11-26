@@ -1,3 +1,12 @@
+---
+# Backup of original bridging.yml (preserved before rewrite)
+#
+# This file is an exact backup of the prior `bridging.yml` task file. It
+# contains both OVS and Linux bridge orchestration (pvesh, ovs-vsctl, fallbacks),
+# and was saved before replacing the live `bridging.yml` with a simplified,
+# OVS-only, persistent-only flow per the project's `import/ovs-vxlan-prompt.md`.
+#
+{{ lookup('file', playbook_dir + '/../../roles/network_provision/tasks/bridging.yml') }}
 # Backup of original bridging.yml (created automatically)
 # This file contains the previous, more complex bridging orchestration. Keep
 # as reference while migrating to the simplified bridging flow.

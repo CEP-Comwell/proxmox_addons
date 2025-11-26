@@ -1,0 +1,56 @@
+---
+# Tasks to ensure a single VXLAN port (expects 'item' from loop in caller)
+- name: "Set vx and port_name variables for item"
+  set_fact:
+    vx: "{{ item }}"
+    port_name: "{{ item.name | default('vx' ~ (item.vni | string)) }}"
+
+- name: "Check if OVS interface {{ port_name }} exists"
+  command: "ovs-vsctl --timeout=10 --bare --no-heading --columns=name list Interface {{ port_name }}"
+  register: ovs_iface_check
+  failed_when: false
+  changed_when: false
+
+- name: "Wait for bridge {{ vx.bridge }} to exist before creating {{ port_name }}"
+  command: "ovs-vsctl --timeout=10 br-exists {{ vx.bridge }}"
+  register: br_exists
+  failed_when: false
+  changed_when: false
+  until: br_exists.rc == 0
+  retries: 6
+  delay: 2
+  when: (not ansible_check_mode) and (vx.bridge is defined)
+
+- name: "Create OVS port {{ port_name }} on bridge {{ vx.bridge }}"
+  command: >-
+    ovs-vsctl --may-exist add-port {{ vx.bridge }} {{ port_name }} -- \
+      set interface {{ port_name }} type=vxlan options:key={{ vx.vni }} {% if vx.remote_ip is defined %}options:remote_ip={{ vx.remote_ip }}{% endif %} {% if vx.dst_port is defined %}options:dst_port={{ vx.dst_port }}{% endif %}
+  register: ovs_add_result
+  when: (ovs_iface_check.stdout | default('') == '') and (not ansible_check_mode)
+  changed_when: ovs_add_result.rc == 0
+
+- name: "Ensure MTU for {{ port_name }} is set"
+  become: true
+  block:
+    - name: "Set link MTU on {{ port_name }}"
+      command: "ip link set {{ port_name }} mtu {{ vx.mtu | default(9000) }}"
+      failed_when: false
+      changed_when: false
+
+    - name: "Request OVS port MTU via ovs-vsctl for {{ port_name }}"
+      command: "ovs-vsctl set Interface {{ port_name }} mtu_request={{ vx.mtu | default(9000) }}"
+      failed_when: false
+      changed_when: false
+  when: not ansible_check_mode
+
+- name: "Debug: show interface details for {{ port_name }}"
+  command: "ovs-vsctl --columns=name,type,options list Interface {{ port_name }}"
+  register: ovs_iface_show
+  changed_when: false
+
+- name: "Debug: show result"
+  debug:
+    msg:
+      - "port={{ port_name }} check.stdout={{ ovs_iface_check.stdout }}"
+      - "add_result={{ ovs_add_result.stdout | default('n/a') }}"
+      - "iface_show={{ ovs_iface_show.stdout | default('n/a') }}"

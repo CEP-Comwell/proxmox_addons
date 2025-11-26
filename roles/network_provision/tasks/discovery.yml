@@ -84,6 +84,7 @@
   loop: "{{ all_interfaces }}"
   register: mac_results
   changed_when: false
+  failed_when: false
   check_mode: no
 
 # Build macs map (interface -> MAC address)

@@ -43,3 +43,17 @@
   when: (ovs_bridges | length > 0) and (force_ovsclean | default(false))
   tags:
     - deploy_ovs_bridges
+
+- name: Deduplicate repeated OVS BEGIN markers (non-destructive)
+  become: true
+  shell: |
+    SRC=/etc/network/interfaces
+    if [ -f "$SRC" ] && grep -q '^# BEGIN OVS BRIDGES' "$SRC"; then
+      perl -0777 -pe 's/(?m)^(# BEGIN OVS BRIDGES\n)+/# BEGIN OVS BRIDGES\n/g' "$SRC" > "${SRC}.dedup.tmp" && mv "${SRC}.dedup.tmp" "$SRC" || true
+    fi
+  args:
+    executable: /bin/sh
+  changed_when: false
+  when: write_interfaces_file | default(false)
+  tags:
+    - deploy_ovs_bridges

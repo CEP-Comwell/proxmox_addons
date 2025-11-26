@@ -1,0 +1,15 @@
+---
+# Defaults for ovs_vxlan_provision
+# A list of VXLAN ports to manage via ovs-vsctl when `ovs_create` is true.
+# Example:
+# ovs_vxlan_ports:
+#   - name: vx1001
+#     bridge: vmbr1
+#     vni: 1001
+#     remote_ip: 10.255.0.3
+#     dst_port: 4789
+#     mtu: 9000
+
+ovs_vxlan_method: "ovs-vsctl"      # supported: ovs-vsctl (default)
+ovs_vxlan_persistent: false          # if true, install a small systemd unit to reapply at boot
+ovs_vxlan_ports: []
