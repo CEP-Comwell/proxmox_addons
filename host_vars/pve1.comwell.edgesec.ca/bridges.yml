@@ -14,6 +14,11 @@ bridges:
         options:
           id: 10031
           mtu: 1400
+      - name: vxlan10032
+        type: vxlan
+        options:
+          id: 10032
+          mtu: 1400
   - name: vmbr1
     type: OVSBridge
     bridge_ports:
@@ -26,25 +31,19 @@ bridges:
         options:
           id: 9006
           mtu: 1400
-      - name: vxlan9003
-        type: vxlan
-        options:
-          id: 9003
-          mtu: 1400
   - name: vmbr2
     type: Bridge
     bridge_ports:
       - xg1
     mtu: 1420
     subinterfaces:
-      - name: gateway1
-        type: vlan
+      # gateway VLANs are defined as vlan subinterfaces elsewhere (vmbr2.11, vmbr2.100)
+      # so the explicit gateway1/gateway2 entries are removed to avoid duplication.
+      - name: vxlan9003
+        type: vxlan
         options:
-          tag: 100
-      - name: gateway2
-        type: vlan
-        options:
-          tag: 200
+          id: 9003
+          mtu: 1400
       - name: vmbr2.11
         type: vlan
         options:
@@ -56,5 +55,6 @@ bridges:
         options:
           address: 10.10.31.20/24
           tag: 100
-      # VXLANs for tenant/fabric are instantiated on OVS bridges (vmbr99/vmbr1)
-      # and therefore are not declared as vmbr2 subinterfaces here.
+      # Note: vxlan9003 is an external proxy ingress attached to vmbr2 on this host.
+      # Other VXLANs for tenant/fabric are typically instantiated on OVS bridges
+      # (vmbr99/vmbr1) and therefore are not declared as vmbr2 subinterfaces here.
