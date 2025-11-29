@@ -82,7 +82,8 @@
     pvesh create /cluster/sdn/zones \
       -zone {{ ovs_sdn_zone_name }} \
       -type vxlan \
-      -mtu {{ vxlan_zone_mtu | default(1450) }}
+      -mtu {{ vxlan_zone_mtu | default(1450) }} \
+      -peers {{ (ovs_sdn_zone_peers | default([ansible_default_ipv4.address])) | join(',') }}
   register: _ovs_sdn_zone_create
   failed_when: false
   changed_when: _ovs_sdn_zone_create.rc == 0
@@ -123,3 +124,27 @@
     - name: "Fail: building OVS vxlan ports encountered an error"
       fail:
         msg: "An error occurred while creating OVS VXLAN ports; check OVS status and the inputs"
+
+# Persist kernel VXLAN creation script and systemd service so tunnels survive reboot
+- name: "Render persistence script for kernel VXLAN tunnels"
+  template:
+    src: create_vxlan_tunnels.sh.j2
+    dest: /usr/local/bin/ovspve_create_vxlan_tunnels.sh
+    mode: '0755'
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0)
+
+- name: "Render systemd service for VXLAN tunnel creator"
+  template:
+    src: ovspve-vxlan-tunnels.service.j2
+    dest: /etc/systemd/system/ovspve-vxlan-tunnels.service
+    mode: '0644'
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0)
+
+- name: "Reload systemd and enable/start VXLAN tunnel service"
+  become: true
+  systemd:
+    daemon_reload: yes
+    name: ovspve-vxlan-tunnels.service
+    enabled: yes
+    state: started
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0)

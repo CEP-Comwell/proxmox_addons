@@ -1,0 +1,9 @@
+route_targets:
+  - rt: "100:31"
+    description: RT for ceph_cluster (VNI 10031)
+  - rt: "100:32"
+    description: RT for core_services (VNI 10032)
+  - rt: "100:6"
+    description: RT for edgesec_vault (VNI 9006)
+  - rt: "100:10"
+    description: RT for tenant1_services (VNI 10110)

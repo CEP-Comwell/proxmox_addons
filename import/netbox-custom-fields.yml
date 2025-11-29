@@ -1,0 +1,23 @@
+custom_fields:
+  prefix:
+    - name: vni
+      type: integer
+      required: false
+    - name: vnet
+      type: text
+      required: false
+    - name: bridge
+      type: text
+      required: false
+    - name: mtu
+      type: integer
+      required: false
+    - name: dns_zone
+      type: text
+      required: false
+    - name: dhcp_range
+      type: text
+      required: false
+    - name: features
+      type: text
+      required: false

@@ -1,86 +1,84 @@
 graph LR
-
-%% Bridges
+ 
+%% Bridges with persistent addresses
 ProxmoxBridge["vmbr0 (Linux bridge)\nports: ens2f0 (Proxmox default)"]
-MgmtBridge["vmbr99 (OVSBridge)\nports: eth2, mtu: 9000, vlan_aware: true"]
-VMBridge["vmbr1 (OVSBridge)\nports: eth1, mtu: 9000, vlan_aware: true"]
-ExtBridge["vmbr2 (Linux bridge)\nports: xg1, mtu: 1420, VyOS uplink"]
-
+MgmtBridge["vmbr99 (OVSBridge)\nports: eth2\naddress: 10.255.0.99/28\nmtu: 9000, vlan_aware: true"]
+VMBridge["vmbr1 (OVSBridge)\nports: eth1\naddress: 10.255.0.1/28\nmtu: 9000, vlan_aware: true"]
+ExtBridge["vmbr2 (Linux bridge)\nports: xg1\nmtu: 1420"]
+ 
 %% Explicit stitching (veth glue)
 veth_mgmt_ext["veth-mgmt-ext\nvmbr99 <-> vmbr2"]
 veth_vm_ext["veth-vm-ext\nvmbr1 <-> vmbr2"]
-
+ 
 %% vmbr2 subinterfaces
-Gateway1["gateway1 (vlan 100)"]
-Gateway2["gateway2 (vlan 200)"]
-%% Note: VX10031 / VX9003 / VX9006 are declared later under the "VXLANs and Gateway"
-%% section to include multi-line labels; removed the earlier single-line duplicates
-%% to avoid duplicate node IDs in the diagram.
-
-%% VXLANs and Gateway
-VX10100["VX10100\n(tenant1_mgmt)"]
-VX10101["VX10101\n(tenant1_engineering)"]
-VX10102["VX10102\n(tenant1_support)"]
-VX10031["VX10031\n(ceph_cluster)"]
-VX10032["VX10032\n(core_services)"]
-VX9003["VX9003\n(proxy_ext)"]
-VX10120["VX10120\n(tenant1_ext)"]
-VX10110["VX10110\n(tenant1_services)"]
-VX9000["VX9000\n(shared_services)"]
-VX9006["VX9006\n(edgesec_vault)"]
-edgesecGW{{"edgesec-gw-rr-yyz-01\nedgesec-SDN Global Fabric Gateway"}}
-
+VX9003["vx9003\nVNI 9003 → vn9003 (proxy_ext)\nSubnet: 10.90.3.0/24"]
+VX10120["vx10120\nVNI 10120 → vn10120 (tenant1_ext)\nSubnet: 10.101.20.0/24"]
+GatewayVLAN11["vmbr2.11 (VLAN 11)\naddress: 172.16.11.20/24"]
+GatewayVLAN100["vmbr2.100 (VLAN 100)\naddress: 10.10.31.20/24"]
+ 
+%% VXLANs on vmbr99
+VX10031["vx10031\nVNI 10031 → vn10031 (ceph_cluster)\nSubnet: 10.100.31.0/24\nRT 100:31"]
+VX10032["vx10032\nVNI 10032 → vn10032 (core_services)\nSubnet: 10.100.32.0/24\nRT 100:32"]
+VX10100["vx10100\nVNI 10100 → vn10100 (tenant1_mgmt)\nSubnet: 10.101.0.0/24"]
+VX10101["vx10101\nVNI 10101 → vn10101 (tenant1_engineering)\nSubnet: 10.101.1.0/24"]
+VX10102["vx10102\nVNI 10102 → vn10102 (tenant1_support)\nSubnet: 10.101.2.0/24"]
+ 
+%% VXLANs on vmbr1
+VX9006["vx9006\nVNI 9006 → vn9006 (edgesec_vault)\nSubnet: 10.90.6.0/24\nRT 100:6"]
+VX10110["vx10110\nVNI 10110 → vn10110 (tenant1_services)\nSubnet: 10.101.10.0/24\nRT 100:10"]
+VX9000["vx9000\nVNI 9000 → vn9000 (shared_services)\nSubnet: 10.90.0.0/24"]
+ 
+%% VyOS FRR Route Reflector/Gateway
+edgesecGW{{"VyOS FRR Route Reflector\nedgesec-SDN Global Fabric Gateway"}}
+ 
 %% Bridge to VNI relationships
+MgmtBridge --> VX10031
+MgmtBridge --> VX10032
 MgmtBridge --> VX10100
 MgmtBridge --> VX10101
 MgmtBridge --> VX10102
-MgmtBridge --> VX10031
-MgmtBridge --> VX10032
-
+ 
+VMBridge --> VX9006
 VMBridge --> VX10110
 VMBridge --> VX9000
-VMBridge --> VX9006
-
-ExtBridge --> VX10120
+ 
 ExtBridge --> VX9003
-ExtBridge --> Gateway1
-ExtBridge --> Gateway2
-
+ExtBridge --> VX10120
+ExtBridge --> GatewayVLAN11
+ExtBridge --> GatewayVLAN100
+ 
 %% Stitching links (veth glue)
 MgmtBridge --- veth_mgmt_ext --- ExtBridge
 VMBridge --- veth_vm_ext --- ExtBridge
-
-%% vmbr2 subinterfaces feeding Gateway / SDN fabric
-Gateway1 --> edgesecGW
-Gateway2 --> edgesecGW
+ 
+%% VXLANs terminate on Gateway
 VX10031 --> edgesecGW
-VX9003 --> edgesecGW
-VX9006 --> edgesecGW
-
-
-%% SDN fabric VNIs terminate on Gateway
+VX10032 --> edgesecGW
 VX10100 --> edgesecGW
 VX10101 --> edgesecGW
 VX10102 --> edgesecGW
+VX9006 --> edgesecGW
 VX10110 --> edgesecGW
 VX9000 --> edgesecGW
-VX9006 --> edgesecGW
-VX10031 --> edgesecGW
-VX10032 --> edgesecGW
-
-%% Peered overlays (remote VTEP connectivity)
-PEERED((🌐 Peered Overlay))
-VX10031 -. "edgesec-peer-tenant1-van-cal-vx10031" .-> PEERED
-VX10032 -. "edgesec-peer-tenant1-van-cal-vx10032" .-> PEERED
-VX10110 -. "edgesec-peer-tenant1-van-cal-vx10110" .-> PEERED
-VX9006 -. "edgesec-peer-tenant1-van-cal-vx9006" .-> PEERED
-
+VX9003 --> edgesecGW
+VX10120 --> edgesecGW
+ 
+%% Remote peering with RT labels
+PEERED((🌐 Remote Overlay))
+VX10031 -. "edgesec-peer-tenant1-van-cal-vx10031\nRT 100:31" .-> PEERED
+VX10032 -. "edgesec-peer-tenant1-van-cal-vx10032\nRT 100:32" .-> PEERED
+VX10110 -. "edgesec-peer-tenant1-van-cal-vx10110\nRT 100:10" .-> PEERED
+VX9006 -. "edgesec-peer-tenant1-van-cal-vx9006\nRT 100:6" .-> PEERED
+ 
 %% Color coding
 classDef mgmt fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
 classDef vm fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
 classDef ext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
-classDef legacy fill:#eeeeee,stroke:#888888,stroke-width:2px,stroke-dasharray: 5 5;
+classDef vni fill:#ede7f6,stroke:#512da8,stroke-width:2px;
 class ProxmoxBridge legacy;
-class MgmtBridge,VX10100,VX10101,VX10102,VX10031,VX10032 mgmt;
-class VMBridge,VX10110,VX9000,VX9006 vm;
-class ExtBridge,Gateway1,Gateway2,VX9003,VX10120,edgesecGW ext;
+class MgmtBridge,VX10031,VX10032,VX10100,VX10101,VX10102 mgmt;
+class VMBridge,VX9006,VX10110,VX9000 vm;
+class ExtBridge,VX9003,VX10120,GatewayVLAN11,GatewayVLAN100,edgesecGW ext;
+ 
+%% Legend
+Legend["Legend:\n- vx<ID> = VXLAN interface\n- vn<ID> = vNet object\n- VNI = numeric ID\n- RT = route-target\n- Subnet = IPAM allocation\n- Bridge labels include persistent mgmt IPs"]

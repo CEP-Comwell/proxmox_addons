@@ -13,3 +13,6 @@
 ovs_vxlan_method: "ovs-vsctl"      # supported: ovs-vsctl (default)
 ovs_vxlan_persistent: false          # if true, install a small systemd unit to reapply at boot
 ovs_vxlan_ports: []
+# Optional list of peers (IP addresses) to include when creating a Proxmox SDN VXLAN zone.
+# If empty, the local node's primary IPv4 address will be used when creating the zone.
+ovs_sdn_zone_peers: []

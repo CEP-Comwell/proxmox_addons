@@ -1,0 +1,30 @@
+---
+# Deploy the OVS VNI hookscript and VNI map to Proxmox nodes
+- name: Ensure snippets dir exists
+  file:
+    path: /var/lib/vz/snippets
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy ovs-vni-hook.sh into snippets (safe install)
+  copy:
+    src: "{{ playbook_dir }}/../../import/ovs-vni-hook.sh"
+    dest: /var/lib/vz/snippets/ovs-vni-hook.sh
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Install vni-map.conf if present in repo
+  copy:
+    src: "{{ playbook_dir }}/../../import/vni-map.conf"
+    dest: /etc/pve/vni-map.conf
+    owner: root
+    group: root
+    mode: '0644'
+  ignore_errors: true
+
+- name: Show dry-run example message
+  debug:
+    msg: "Installed hook to /var/lib/vz/snippets/ovs-vni-hook.sh and vni-map at /etc/pve/vni-map.conf (if provided). Use DRYRUN=1 HOOK_VERIFY=1 to test."
