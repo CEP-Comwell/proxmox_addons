@@ -1,0 +1,33 @@
+ovs_vxlan_ports:
+  - name: vx10031
+    bridge: vmbr99
+    vni: 10031
+    mtu: 1400
+  - name: vx10032
+    bridge: vmbr99
+    vni: 10032
+    mtu: 1400
+  - name: vx10100
+    bridge: vmbr99
+    vni: 10100
+    mtu: 1400
+  - name: vx10101
+    bridge: vmbr99
+    vni: 10101
+    mtu: 1400
+  - name: vx10102
+    bridge: vmbr99
+    vni: 10102
+    mtu: 1400
+  - name: vx9006
+    bridge: vmbr1
+    vni: 9006
+    mtu: 1400
+  - name: vx10110
+    bridge: vmbr1
+    vni: 10110
+    mtu: 1400
+  - name: vx9000
+    bridge: vmbr1
+    vni: 9000
+    mtu: 1400

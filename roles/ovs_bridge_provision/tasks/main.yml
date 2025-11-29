@@ -1,50 +1,145 @@
 ---
-# Deploy persistent OVS bridge block into /etc/network/interfaces
 
-- name: Load host bridge definitions
+- name: Load host bridge definitions (if present)
   include_vars:
     file: "{{ playbook_dir }}/../../host_vars/{{ inventory_hostname }}/bridges.yml"
     name: host_bridges
   ignore_errors: true
   tags: [deploy_ovs_bridges]
 
-- name: Compute OVS bridges (merge host + role, exclude vmbr2)
+- name: Initialize ovs_bridges from host_vars if not already set
   set_fact:
-    ovs_bridges: []
-
-- name: "Collect OVS bridges from host/role defs (case-insensitive 'ovs' type)"
-  set_fact:
-    ovs_bridges: "{{ (ovs_bridges | default([])) + [ item ] }}"
-  loop: "{{ (host_bridges.bridges | default([])) + (bridges | default([])) }}"
-  loop_control:
-    label: "{{ item.name | default('unnamed') }}"
-  when: (item.type is defined) and (('ovs' in (item.type | lower))) and (item.name is defined) and (item.name != 'vmbr2')
+    ovs_bridges: "{{ host_bridges.bridges | default([]) }}"
+  when: ovs_bridges is not defined
   tags: [deploy_ovs_bridges]
 
-- name: Build OVS /etc/network/interfaces block
+- name: Filter ovs_bridges to only OVS-type entries (case-insensitive)
   set_fact:
-    ovs_bridge_block: "{{ lookup('template', playbook_dir + '/../../roles/ovs_bridge_provision/templates/ovs_bridges.j2') }}"
-  when: ovs_bridges | length > 0
+    _ovs_bridges_raw: "{{ ovs_bridges | default([]) }}"
+  tags: [deploy_ovs_bridges]
+
+- name: Build filtered ovs_bridges list (keep only entries whose type contains 'ovs')
+  set_fact:
+    _ovs_bridges_filtered: "{{ _ovs_bridges_filtered | default([]) + [ item ] }}"
+  loop: "{{ _ovs_bridges_raw }}"
+  when: item.type is defined and ("ovs" in (item.type | lower) or "openvswitch" in (item.type | lower) or item.type == 'OVSBridge')
+  tags: [deploy_ovs_bridges]
+
+- name: Finalize ovs_bridges as filtered list
+  set_fact:
+    ovs_bridges: "{{ _ovs_bridges_filtered | default([]) }}"
+  tags: [deploy_ovs_bridges]
+
+- name: Render OVS block into a fact
+  set_fact:
+    ovs_bridge_block: "{{ lookup('template', playbook_dir + '/../../roles/ovs_bridge_provision/templates/ovs_bridges_full.j2') }}"
+  when: (ovs_bridges is defined) and (ovs_bridges | length > 0)
   changed_when: false
   tags: [deploy_ovs_bridges]
-- name: Remove existing Linux bridge stanzas for OVS-named bridges
+
+# --- Fetch-edit-push approach (controller-side deterministic merge)
+- name: Use fetch-edit-push merge on controller (create local tmp dir)
+  delegate_to: localhost
+  run_once: true
+  become: false
+  file:
+    path: "{{ playbook_dir }}/.tmp"
+    state: directory
+    mode: 0755
+  tags: [deploy_ovs_bridges]
+
+- name: Slurp existing /etc/network/interfaces from target
+  slurp:
+    src: /etc/network/interfaces
+  register: existing_interfaces_slurp
+  when: (ovs_bridges is defined) and (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  tags: [deploy_ovs_bridges]
+
+- name: Write existing interfaces to controller temp file
+  copy:
+    dest: "{{ playbook_dir }}/.tmp/interfaces.{{ inventory_hostname }}"
+    content: "{{ existing_interfaces_slurp.content | b64decode }}"
+    mode: '0644'
+  delegate_to: localhost
+  become: false
+  when: existing_interfaces_slurp is defined
+  tags: [deploy_ovs_bridges]
+
+- name: Write rendered OVS block to controller temp file
+  copy:
+    dest: "{{ playbook_dir }}/.tmp/ovsb.{{ inventory_hostname }}.new"
+    content: "{{ ovs_bridge_block }}"
+    mode: '0644'
+  delegate_to: localhost
+  become: false
+  when: (ovs_bridges is defined) and (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  tags: [deploy_ovs_bridges]
+
+- name: Merge interfaces locally on controller
+  delegate_to: localhost
+  become: false
+  command: >
+    {{ ansible_python_interpreter | default('python3') }} {{ role_path }}/files/merge_interfaces.py
+    {{ playbook_dir }}/.tmp/interfaces.{{ inventory_hostname }} {{ playbook_dir }}/.tmp/ovsb.{{ inventory_hostname }}.new {{ playbook_dir }}/.tmp/interfaces.merged.{{ inventory_hostname }}
+  when: (ovs_bridges is defined) and (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  register: merge_result
+  tags: [deploy_ovs_bridges]
+
+- name: Push merged interfaces to remote temp file
+  copy:
+    src: "{{ playbook_dir }}/.tmp/interfaces.merged.{{ inventory_hostname }}"
+    dest: "{{ ovsp_atomic_tmpdir | default('/tmp') }}/interfaces.merged.{{ inventory_hostname }}"
+    owner: root
+    group: root
+    mode: '0644'
+  when: merge_result is defined and merge_result.rc == 0
+  register: pushed_merged
+  tags: [deploy_ovs_bridges]
+
+- name: Atomically move merged file into place on target
   become: true
   shell: |
-    SRC=/etc/network/interfaces
-    for br in {{ ovs_bridges | map(attribute='name') | join(' ') }}; do
-      if grep -q "^auto ${br}\b" "$SRC"; then
-        perl -0777 -i -pe "s/\nauto ${br}[\s\S]*?(?=\nauto |\n# BEGIN |\nsource )//g" "$SRC" || true
-      fi
-    done
-  when: (ovs_bridges | length > 0) and (force_ovsclean | default(false))
+    set -euo pipefail
+    SRC={{ ovsp_atomic_tmpdir | default('/tmp') }}/interfaces.merged.{{ inventory_hostname }}
+    BAK_DIR={{ ovsp_atomic_tmpdir | default('/tmp') }}/ovsb_bak
+    mkdir -p "$BAK_DIR"
+    BAK="$BAK_DIR/interfaces.$(date +%s)"
+    cp -a /etc/network/interfaces "$BAK"
+    mv "$SRC" /etc/network/interfaces
+  when: pushed_merged is defined and pushed_merged.changed
+  register: controller_push_result
+  changed_when: controller_push_result.rc == 0
   tags: [deploy_ovs_bridges]
 
-- name: Normalize any existing OVS blocks and ensure spacing between iface stanzas
-  include_tasks: normalize_ovs.yml
+- name: Set ovs_interfaces_changed when controller push performed
+  set_fact:
+    ovs_interfaces_changed: true
+  when: controller_push_result is defined and controller_push_result.rc == 0
   tags: [deploy_ovs_bridges]
 
 
-- name: "Fetch existing OVS block from target (if any)"
+- name: Create secure remote tempfile for OVS block
+  tempfile:
+    state: file
+    suffix: ".ovsb"
+    prefix: "{{ ovsp_atomic_tmpdir | default('/tmp') }}/ovsb."
+  register: ovsb_tempfile
+  when: (ovs_bridges is defined) and (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  tags: [deploy_ovs_bridges]
+
+- name: Write rendered OVS block to remote temporary file
+  become: true
+  copy:
+    dest: "{{ ovsb_tempfile.path }}"
+    content: "{{ ovs_bridge_block }}"
+    owner: root
+    group: root
+    mode: '0644'
+  when: (ovs_bridges is defined) and (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  register: ovsb_remote_tmp
+  tags: [deploy_ovs_bridges]
+
+- name: Fetch existing OVS block from target (if any)
   become: true
   command: "sed -n '/# BEGIN OVS BRIDGES/,/# END OVS BRIDGES/p' /etc/network/interfaces"
   register: existing_ovs_block
@@ -52,33 +147,70 @@
   changed_when: false
   tags: [deploy_ovs_bridges]
 
-- name: Insert OVS block into /etc/network/interfaces (above source include)
-  become: true
-  blockinfile:
-    path: /etc/network/interfaces
-    marker: "# {mark} OVS BRIDGES"
-    block: "{{ ovs_bridge_block }}"
-    insertbefore: '^source /etc/network/interfaces.d/*'
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false)) and ((existing_ovs_block.stdout | default('') | trim) != (ovs_bridge_block | trim))
+- name: Determine whether rendered block equals existing block
+  set_fact:
+    ovs_blocks_equal: "{{ (existing_ovs_block.stdout | default('') | trim) == (ovs_bridge_block | trim) }}"
   tags: [deploy_ovs_bridges]
 
-- name: Validate /etc/network/interfaces after OVS block
+- name: Atomically replace OVS block when content differs
   become: true
-  command: ifquery --list
-  register: ifquery_after_ovs
-  failed_when: ifquery_after_ovs.rc != 0
-  changed_when: false
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  shell: |
+    set -euo pipefail
+    SRC=/etc/network/interfaces
+    TMP=${SRC}.tmp.$$
+    BAK_DIR={{ ovsp_atomic_tmpdir | default('/tmp') }}/ovsb_bak
+    mkdir -p "$BAK_DIR"
+    BAK="$BAK_DIR/interfaces.$(date +%s)"
+    cp -a "$SRC" "$BAK"
+    cp -a "$SRC" "$TMP"
+    perl -0777 -ne '
+      $s = $_;
+      # First remove any explicit BEGIN/END managed blocks
+      $s =~ s/(?s)# BEGIN OVS BRIDGES\n.*?# END OVS BRIDGES\n?//g;
+      # Split into paragraph chunks (blank-line separated) and drop any paragraph
+      # that contains an OVSBridge stanza marker to avoid leaving orphan bridge stanzas.
+      @paras = split(/\n\n+/, $s);
+      $out = "";
+      foreach $p (@paras) {
+        if ($p =~ /ovs_type\s+OVSBridge/ || $p =~ /ovs_type\s+OVSPort/) { next }
+        $out .= $p . "\n\n";
+      }
+      $out =~ s/\n\z//;
+      print $out;
+    ' "$TMP" > "${TMP}.2"
+    mv "${TMP}.2" "$TMP"
+    awk -v blockfile="{{ ovsb_tempfile.path }}" '
+      BEGIN{while((getline l < blockfile)>0){buf=buf l "\n"} close(blockfile)}
+      { if ($0 ~ /^source \/etc\/network\/interfaces.d\//) { printf "%s\n", buf } print }
+      END{ if (NR==0) printf "%s\n", buf }' "$TMP" > "${TMP}.3"
+    mv "${TMP}.3" /etc/network/interfaces
+    rm -f "{{ ovsb_tempfile.path }}"
+  when: (ovs_bridges is defined) and (ovs_bridges | length > 0) and (write_interfaces_file | default(false)) and (not ovs_blocks_equal)
+  register: atomic_replace
+  failed_when: atomic_replace.rc != 0
+  changed_when: atomic_replace.rc == 0
   tags: [deploy_ovs_bridges]
 
-- name: Reload network (ifquery passed)
-  become: true
-  command: ifreload -a
-  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false)) and (perform_reload | default(false)) and (ifquery_after_ovs is defined and (ifquery_after_ovs.rc | default(1) == 0))
+- name: Set ovs_interfaces_changed fact when replacement occurred
+  set_fact:
+    ovs_interfaces_changed: true
+  when: "'atomic_replace' in vars and ('rc' in vars['atomic_replace']) and (vars['atomic_replace'].rc == 0)"
   tags: [deploy_ovs_bridges]
 
-- name: Preview OVS block (no write)
-  debug:
-    msg: "{{ ovs_bridge_block }}"
-  when: (ovs_bridges | length > 0) and not (write_interfaces_file | default(false))
+- name: Ensure /etc/network/interfaces.new exists (copy-if-changed)
+  become: true
+  shell: |
+    set -euo pipefail
+    SRC=/etc/network/interfaces
+    DST=/etc/network/interfaces.new
+    if [ -f "$DST" ] && cmp -s "$SRC" "$DST"; then
+      exit 0
+    else
+      cp -a "$SRC" "$DST"
+      exit 2
+    fi
+  when: write_interfaces_file | default(false) and (ovs_interfaces_changed | default(false) or always_create_interfaces_new | default(false))
+  register: copy_if_changed_result
+  failed_when: false
+  changed_when: copy_if_changed_result.rc == 2
   tags: [deploy_ovs_bridges]

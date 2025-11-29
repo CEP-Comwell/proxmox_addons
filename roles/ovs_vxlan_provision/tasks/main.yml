@@ -51,6 +51,61 @@
   set_fact:
     effective_ovs_vxlan_ports: "{{ tmp_ovs_vxlan_ports }}"
 
+- name: "Compute unique bridge names referenced by effective vxlan ports"
+  set_fact:
+    wait_bridges: "{{ (effective_ovs_vxlan_ports | map(attribute='bridge') | default([])) | reject('equalto', None) | unique | sort | list }}"
+  when: (effective_ovs_vxlan_ports | length) > 0
+
+- name: "Debug: bridges to wait for before creating vxlan ports"
+  debug:
+    msg: "Will wait for bridges: {{ wait_bridges }}"
+  when: (effective_ovs_vxlan_ports | length) > 0
+
+# --- Ensure cluster SDN VXLAN zone exists (create if missing) ---
+- name: "Determine desired SDN zone name for VXLANs"
+  set_fact:
+    # Use underscore in generated zone name because Proxmox zone IDs disallow certain characters
+    # Use an alphanumeric-only default (no hyphen/underscore) so Proxmox accepts the zone ID.
+    # e.g. inventory_hostname pve1.comwell.edgesec.ca -> default 'ovspve1'
+    ovs_sdn_zone_name: "{{ ovs_sdn_zone_name | default('ovs' + (inventory_hostname | regex_replace('\\..*',''))) }}"
+
+- name: "Check for existing SDN zone '{{ ovs_sdn_zone_name }}'"
+  command: >-
+    pvesh get /cluster/sdn/zones/{{ ovs_sdn_zone_name }} --output-format json
+  register: _ovs_sdn_zone_check
+  failed_when: false
+  changed_when: false
+  when: ovs_create | default(false)
+
+- name: "Create SDN VXLAN zone '{{ ovs_sdn_zone_name }}' when missing"
+  command: >-
+    pvesh create /cluster/sdn/zones \
+      -zone {{ ovs_sdn_zone_name }} \
+      -type vxlan \
+      -mtu {{ vxlan_zone_mtu | default(1450) }}
+  register: _ovs_sdn_zone_create
+  failed_when: false
+  changed_when: _ovs_sdn_zone_create.rc == 0
+  when:
+    - ovs_create | default(false)
+    - _ovs_sdn_zone_check is defined
+    - _ovs_sdn_zone_check.rc != 0
+
+
+- name: "Wait for OVS bridges to exist in OVS DB"
+  become: true
+  shell: "ovs-vsctl --timeout=5 br-exists {{ item }}"
+  register: wait_for_bridge
+  retries: 12
+  delay: 5
+  until: wait_for_bridge.rc == 0
+  changed_when: false
+  failed_when: wait_for_bridge.rc != 0
+  loop: "{{ wait_bridges | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0)
+
 - name: "Skip OVS VXLAN provisioning when no ports defined"
   debug:
     msg: "No ovs_vxlan_ports defined; skipping OVS vxlan creation"

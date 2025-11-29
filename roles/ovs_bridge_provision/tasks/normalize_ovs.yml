@@ -1,5 +1,23 @@
 ---
-# normalize_ovs.yml (copied/adapted from network_provision)
+# normalize_ovs.yml
+# Purpose: OVSBridge type interfaces must be managed as one atomic block within /etc/network/interfaces in order to allow custom VXLAN port mapping.
+# Behavior: backup, remove any existing BEGIN/END OVS BRIDGES block,
+# collapse duplicate BEGIN markers, and normalize spacing before 'auto' stanzas.
+# Runs only when writing the interfaces file for OVS bridges.
+-
+# Example (for operator reference): 
+
+# BEGIN OVS BRIDGES
+
+# auto vmbr1
+# iface vmbr1 inet static
+#     address 10.255.0.1/28
+#     ovs_type OVSBridge
+#     ovs_ports eth1 vx9006 vx10110 vx9000
+#     mtu 9000
+
+# END OVS BRIDGES
+
 - name: Normalize /etc/network/interfaces OVS markers (dedupe + normalize)
   become: true
   shell: |

@@ -64,3 +64,15 @@
       - "port={{ port_name }} check.stdout={{ ovs_iface_check.stdout }}"
       - "add_result={{ ovs_add_result.stdout | default('n/a') }}"
       - "iface_show={{ ovs_iface_show.stdout | default('n/a') }}"
+
+- name: "Verify VXLAN interface {{ port_name }} exists and is type vxlan"
+  become: true
+  command: "ovs-vsctl --timeout=5 --bare --no-heading --columns=type list Interface {{ port_name }}"
+  register: verify_iface
+  failed_when: false
+  changed_when: false
+
+- name: "Fail if VXLAN {{ port_name }} not present or not type vxlan"
+  fail:
+    msg: "VXLAN {{ port_name }} missing or not of type 'vxlan' after creation: {{ verify_iface.stdout | default('') }}"
+  when: (verify_iface.rc != 0) or (('vxlan' not in (verify_iface.stdout | default(''))))

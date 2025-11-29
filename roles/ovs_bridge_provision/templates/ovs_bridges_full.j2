@@ -38,9 +38,9 @@
          - To inspect computed data before write, run the role with
              `write_interfaces_file: false` and review the debug preview (ovs_bridge_block).
 #}
-    # BEGIN OVS BRIDGES
+# BEGIN OVS BRIDGES
 
-    {# Managed OVS interfaces block - DO NOT EDIT: replaced by Ansible role ovs_bridge_provision #}
+{# Managed OVS interfaces block - DO NOT EDIT: replaced by Ansible role ovs_bridge_provision #}
 
 {% set include_logical = include_logical_ports_in_interfaces | default(false) | bool %}
 {%- set _physical = [] -%}
@@ -92,3 +92,5 @@ iface {{ b.name }} inet manual
 {% endif %}
 
 {% endfor %}
+
+# END OVS BRIDGES
