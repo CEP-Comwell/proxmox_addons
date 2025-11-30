@@ -51,7 +51,8 @@
         msg: >-
           Guarded network reload failed; /etc/network/interfaces was restored
           from backup. Inspect the file and run the role again when fixed.
-# NEW: Handlers for network_provision role - consolidated from nic_pinning
+
+# Additional handlers
 - name: update initramfs
   shell: update-initramfs -u -k all
   become: true
@@ -59,10 +60,5 @@
 
 - name: restart networking
   shell: systemctl restart networking
-  become: true
-  ignore_errors: true
-
-- name: reload_network
-  command: ifreload -a
   become: true
   ignore_errors: true

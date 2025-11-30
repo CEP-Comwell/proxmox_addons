@@ -1,12 +1,47 @@
+{# Build and emit physical OVSPort iface stanzas only. Logical vxlan names
+   will be referenced in the bridge's ovs_ports line but will NOT receive
+   per-vx persistent iface stanzas here (keeps persistent fragments declarative).
+   include_logical_ports_in_interfaces controls whether vx names are listed in
+   ovs_ports. #}
+{% set include_logical = include_logical_ports_in_interfaces | default(false) | bool %}
+{%- set physical_ports = ((ovs_bridges | map(attribute='ports') | sum(start=[])) | default([])) | unique | list -%}
+{%- set logical_ports = ((ovs_bridges | map(attribute='subinterfaces') | sum(start=[])) | default([])) | selectattr('type','equalto','vxlan') | map(attribute='name') | list -%}
+
+{% for p in physical_ports %}
+auto {{ p }}
+iface {{ p }} inet manual
+    ovs_type OVSPort
+{% for b in ovs_bridges | default([]) %}
+{% if p in (b.ports | default([]) | list) %}
+    ovs_bridge {{ b.name }}
+{% endif %}
+{% endfor %}
+
+{% endfor %}
+
 {% for b in ovs_bridges | default([]) %}
 auto {{ b.name }}
+{% if b.address is defined and b.address | length > 0 %}
+iface {{ b.name }} inet static
+    address {{ b.address }}
+{% else %}
 iface {{ b.name }} inet manual
-    pre-up /usr/bin/ovs-vsctl --may-exist add-br {{ b.name }}
-    pre-up /usr/bin/ovs-vsctl --may-exist add-port {{ b.name }} {{ b.interface }}
-{% if b.mtu is defined and b.mtu | int > 0 %}
-    pre-up /usr/bin/ovs-vsctl set Interface {{ b.interface }} mtu_request={{ b.mtu }}
 {% endif %}
-    post-down /usr/bin/ovs-vsctl del-port {{ b.name }} {{ b.interface }}
-    post-down /usr/bin/ovs-vsctl del-br {{ b.name }}
+    ovs_type OVSBridge
+    {# Render ovs_ports: filter out logical vx* unless include_logical true #}
+    {%- set phys = (b.ports | default([])) | list -%}
+    {%- set vxs = (b.subinterfaces | default([])) | selectattr('type','equalto','vxlan') | map(attribute='name') | list -%}
+    {%- if include_logical -%}
+    {%-   set ports_for_bridge = (phys + vxs) | unique -%}
+    {%- else -%}
+    {%-   set ports_for_bridge = phys -%}
+    {%- endif -%}
+    ovs_ports {{ ports_for_bridge | join(' ') }}
+{% if b.ovs_options is defined and b.ovs_options | length > 0 %}
+    ovs_options {{ b.ovs_options }}
+{% endif %}
+{% if b.mtu is defined and b.mtu | int > 0 %}
+    mtu {{ b.mtu }}
+{% endif %}
 
 {% endfor %}

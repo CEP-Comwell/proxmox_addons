@@ -1,0 +1,6 @@
+- name: Install prereqs on a single host
+  hosts: pve1.comwell.edgesec.ca
+  become: true
+  gather_facts: false
+  roles:
+    - prereqs

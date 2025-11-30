@@ -1,0 +1,10 @@
+- name: Test OVS bridge provisioning (idempotency)
+  hosts: proxmox-hosts
+  become: true
+  gather_facts: false
+  vars:
+    write_interfaces_file: true
+    ovs_create: false
+    force_ovsclean: false
+  roles:
+    - role: ovs_bridge_provision

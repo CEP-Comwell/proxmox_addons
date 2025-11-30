@@ -11,6 +11,7 @@
     cmd: ovs-vsctl --may-exist add-br {{ overlay.bridge }}
   changed_when: false
   failed_when: false
+  when: false
 
 - name: Check if vxlan port already exists on OVS bridge
   ansible.builtin.command:
@@ -18,6 +19,7 @@
   register: ovs_ports
   changed_when: false
   failed_when: false
+  when: false
 
 - name: Create OVS VXLAN port if missing
   ansible.builtin.shell: >-
@@ -33,8 +35,13 @@
   register: ovs_vxlan_result
   changed_when: "'CREATED' in ovs_vxlan_result.stdout"
   failed_when: false
+  when: false
 
 - name: Debug OVS vxlan create result
   debug:
     var: ovs_vxlan_result
-  when: ovs_vxlan_result is defined
+  when: false
+
+- name: Inform: OVS VXLAN fallback disabled
+  debug:
+    msg: "Direct OVS VXLAN creation in `roles/vxlan/tasks/create_vxlan_ovs.yml` has been disabled. Use the `ovs_vxlan_provision` role (gated by ovs_create) to manage runtime VXLAN ports."

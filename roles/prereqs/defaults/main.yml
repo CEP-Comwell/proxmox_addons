@@ -8,6 +8,18 @@ prereq_packages:
   - jq
   - openvswitch-switch
 
+# Services to ensure are enabled and started after package installation
+# Add any additional systemd service names (e.g. ifupdown2) as needed.
+prereq_services:
+  - openvswitch-switch
+
+# Optional list of service names that should be left stopped/disabled.
+# Services listed here will be ensured `stopped` (and not enabled) even if
+# `prereq_services` contains them. Useful for "start unless intentionally
+# stopped" semantics: controller will start services unless this list says
+# they should remain stopped.
+prereq_services_disabled: []
+
 # Optional: provide a URL to download the pve-network-interface-pinning script/binary
 # Example: https://example.com/pve-network-interface-pinning
 pve_network_interface_pinning_url: null

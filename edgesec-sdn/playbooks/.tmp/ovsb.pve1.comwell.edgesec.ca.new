@@ -1,0 +1,20 @@
+# BEGIN OVS BRIDGES
+
+
+
+auto vmbr99
+iface vmbr99 inet static
+    address 10.255.0.99/28
+    ovs_type OVSBridge
+    ovs_ports eth2 vx10031 vx10032 vx10100 vx10101 vx10102
+    mtu 9000
+
+auto vmbr1
+iface vmbr1 inet static
+    address 10.255.0.1/28
+    ovs_type OVSBridge
+    ovs_ports eth1 vx10110 vx9000 vx9006
+    mtu 9000
+
+
+# END OVS BRIDGES

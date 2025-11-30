@@ -1,0 +1,6 @@
+---
+galaxy_info:
+  author: edgesec
+  description: Install Proxmox OVS VNI hook and VNI map
+  license: MIT
+dependencies: []

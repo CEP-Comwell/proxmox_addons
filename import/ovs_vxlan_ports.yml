@@ -1,0 +1,130 @@
+ipam:
+  vx10031:
+    vni: 10031
+    vnet: vn10031
+    name: ceph_cluster
+    subnet: 10.100.31.0/24
+    gateway: 10.100.31.1
+    dhcp_range: 10.100.31.50-10.100.31.200
+    dns_zone: ceph.edgesec.local
+    features:
+      - storage replication
+      - jumbo mtu 9000
+      - route-reflected (RT 100:31)
+
+  vx10032:
+    vni: 10032
+    vnet: vn10032
+    name: core_services
+    subnet: 10.100.32.0/24
+    gateway: 10.100.32.1
+    dhcp_range: 10.100.32.50-10.100.32.200
+    dns_zone: core.edgesec.local
+    features:
+      - shared infra (DNS, NTP, monitoring)
+      - jumbo mtu 9000
+      - route-reflected (RT 100:32)
+
+  vx10100:
+    vni: 10100
+    vnet: vn10100
+    name: tenant1_mgmt
+    subnet: 10.101.0.0/24
+    gateway: 10.101.0.1
+    dhcp_range: 10.101.0.50-10.101.0.200
+    dns_zone: tenant1.mgmt.local
+    features:
+      - management plane
+      - DHCP relay to IPAM
+      - local-only (not exported)
+
+  vx10101:
+    vni: 10101
+    vnet: vn10101
+    name: tenant1_engineering
+    subnet: 10.101.1.0/24
+    gateway: 10.101.1.1
+    dhcp_range: 10.101.1.50-10.101.1.200
+    dns_zone: tenant1.eng.local
+    features:
+      - engineering workloads
+      - ACL enforced
+      - local-only (not exported)
+
+  vx10102:
+    vni: 10102
+    vnet: vn10102
+    name: tenant1_support
+    subnet: 10.101.2.0/24
+    gateway: 10.101.2.1
+    dhcp_range: 10.101.2.50-10.101.2.200
+    dns_zone: tenant1.support.local
+    features:
+      - support workloads
+      - ACL enforced
+      - local-only (not exported)
+
+  vx9006:
+    vni: 9006
+    vnet: vn9006
+    name: edgesec_vault
+    subnet: 10.90.6.0/24
+    gateway: 10.90.6.1
+    dhcp_range: 10.90.6.50-10.90.6.200
+    dns_zone: vault.edgesec.local
+    features:
+      - secure enclave
+      - ACL enforced
+      - route-reflected (RT 100:6)
+
+  vx10110:
+    vni: 10110
+    vnet: vn10110
+    name: tenant1_services
+    subnet: 10.101.10.0/24
+    gateway: 10.101.10.1
+    dhcp_range: 10.101.10.50-10.101.10.200
+    dns_zone: tenant1.services.local
+    features:
+      - tenant workloads
+      - DHCP/DNS scoped per tenant
+      - route-reflected (RT 100:10)
+
+  vx9000:
+    vni: 9000
+    vnet: vn9000
+    name: shared_services
+    subnet: 10.90.0.0/24
+    gateway: 10.90.0.1
+    dhcp_range: 10.90.0.50-10.90.0.200
+    dns_zone: shared.edgesec.local
+    features:
+      - multi-tenant shared apps
+      - ACL enforced
+      - local-only (not exported)
+
+  vx9003:
+    vni: 9003
+    vnet: vn9003
+    name: proxy_ext
+    subnet: 10.90.3.0/24
+    gateway: 10.90.3.1
+    dhcp_range: 10.90.3.50-10.90.3.200
+    dns_zone: proxy.edgesec.local
+    features:
+      - external proxy ingress
+      - NAT/firewall policies
+      - local-only (not exported)
+
+  vx10120:
+    vni: 10120
+    vnet: vn10120
+    name: tenant1_ext
+    subnet: 10.101.20.0/24
+    gateway: 10.101.20.1
+    dhcp_range: 10.101.20.50-10.101.20.200
+    dns_zone: tenant1.ext.local
+    features:
+      - tenant external ingress
+      - NAT/firewall policies
+      - local-only (not exported)

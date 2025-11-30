@@ -1,0 +1,5 @@
+---
+# Defaults for ovs_bridge_provision
+include_logical_ports_in_interfaces: false
+# When true and write_interfaces_file is true, run ifreload -a after writing
+perform_reload: false

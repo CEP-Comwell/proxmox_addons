@@ -1,0 +1,94 @@
+{# Purpose:
+     Render the persistent OVS block for /etc/network/interfaces.
+
+     Inputs (expected):
+         - ovs_bridges: list of bridge dicts (each must include at least `name` and `type`).
+             Optional keys commonly used: `bridge_ports` or `ports`, `subinterfaces`,
+             `address`, `mtu`, `ovs_options`.
+         - include_logical_ports_in_interfaces (bool): when true, include vxlan
+             subinterface names in each bridge's `ovs_ports` list.
+
+     Emits (per-host deterministic output):
+         - OVSPort stanzas for each physical port:
+                 auto <port>
+                 iface <port> inet manual
+                         ovs_type OVSPort
+                         ovs_bridge <bridge>   # repeated for each bridge using this port
+         - OVSBridge stanzas for each bridge:
+                 auto <bridge>
+                 iface <bridge> inet static|manual  # static if address provided
+                         ovs_type OVSBridge
+                         ovs_ports <space-separated ports>  # phys ports + optional logical vx names
+                         ovs_options ...      # if provided
+                         mtu ...              # if provided
+
+     Behavior notes:
+         - Physical and logical ports are deduped and sorted for deterministic output.
+         - Logical vxlan names are included in `ovs_ports` only when
+             `include_logical_ports_in_interfaces` is true.
+         - `subinterfaces` are filtered for entries where `type == 'vxlan'` (exact match).
+         - Template falls back to `bridge_ports` when `ports` is not present.
+
+     Quick checks / troubleshooting:
+         - If a bridge is missing, confirm host_vars include it and that its `type`
+             contains "ovs" (case-insensitive).
+         - If vx names are missing from `ovs_ports`, set
+             `include_logical_ports_in_interfaces: true` and ensure each subinterface
+             has `type: vxlan`.
+         - To inspect computed data before write, run the role with
+             `write_interfaces_file: false` and review the debug preview (ovs_bridge_block).
+#}
+    # BEGIN OVS BRIDGES
+
+    {# Managed OVS interfaces block - DO NOT EDIT: replaced by Ansible role ovs_bridge_provision #}
+
+{% set include_logical = include_logical_ports_in_interfaces | default(false) | bool %}
+{%- set _physical = [] -%}
+{%- for _b in (ovs_bridges | default([])) -%}
+{%-   set _p = _b.ports | default(_b.bridge_ports | default([])) -%}
+{%-   set _physical = _physical + (_p | list) -%}
+{%- endfor -%}
+{%- set physical_ports = (_physical | default([])) | unique | sort | list -%}
+{%- set logical_ports = ((ovs_bridges | map(attribute='subinterfaces') | sum(start=[])) | default([])) | selectattr('type','equalto','vxlan') | map(attribute='name') | unique | sort | list -%}
+
+{# === OVSPort section: emit physical port iface stanzas === #}
+{% for p in physical_ports %}
+auto {{ p }}
+iface {{ p }} inet manual
+    ovs_type OVSPort
+{# === OVSBridge section: emit bridge iface stanzas === #}
+{% for b in ovs_bridges | default([]) %}
+{%   set _pb = (b.ports | default(b.bridge_ports | default([]))) | list %}
+{%   if p in _pb %}
+    ovs_bridge {{ b.name }}
+{%   endif %}
+{% endfor %}
+
+{% endfor %}
+
+{% for b in ovs_bridges | default([]) %}
+auto {{ b.name }}
+{% if b.address is defined and b.address | length > 0 %}
+iface {{ b.name }} inet static
+    address {{ b.address }}
+{% else %}
+iface {{ b.name }} inet manual
+{% endif %}
+    ovs_type OVSBridge
+    {# Render ovs_ports: filter out logical vx* unless include_logical true #}
+    {%- set phys = (b.ports | default(b.bridge_ports | default([]))) | list -%}
+    {%- set vxs = (b.subinterfaces | default([])) | selectattr('type','equalto','vxlan') | map(attribute='name') | list -%}
+    {%- if include_logical -%}
+    {%-   set ports_for_bridge = ((phys + vxs) | unique | sort) -%}
+    {%- else -%}
+    {%-   set ports_for_bridge = (phys | unique | sort) -%}
+    {%- endif -%}
+    ovs_ports {{ ports_for_bridge | join(' ') }}
+{% if b.ovs_options is defined and b.ovs_options | length > 0 %}
+    ovs_options {{ b.ovs_options }}
+{% endif %}
+{% if b.mtu is defined and b.mtu | int > 0 %}
+    mtu {{ b.mtu }}
+{% endif %}
+
+{% endfor %}

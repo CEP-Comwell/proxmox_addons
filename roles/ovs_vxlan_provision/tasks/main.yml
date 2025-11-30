@@ -1,0 +1,155 @@
+---
+# Idempotent creation of OVS VXLAN ports using ovs-vsctl
+# This task file is intentionally conservative: it only runs when
+# the global `ovs_create` is true and the chosen method is `ovs-vsctl`.
+
+- name: "Load host-specific ovs vxlan ports vars (optional)"
+  include_vars:
+    file: "{{ playbook_dir }}/../../host_vars/{{ inventory_hostname }}/ovs_vxlan_ports.yml"
+    name: host_ovs_vxlan
+  ignore_errors: true
+
+- name: "Load host bridge definitions (optional)"
+  include_vars:
+    file: "{{ playbook_dir }}/../../host_vars/{{ inventory_hostname }}/bridges.yml"
+    name: host_bridges
+  ignore_errors: true
+
+- name: "Discover existing OVS bridge names on the host"
+  command: ovs-vsctl --bare --no-heading list-br
+  register: ovs_br_names
+  failed_when: false
+  changed_when: false
+
+- name: "Set effective_ovs_bridges from runtime OVS list"
+  set_fact:
+    effective_ovs_bridges: "{{ ovs_br_names.stdout_lines | default([]) }}"
+
+- name: "Collect OVS bridge names from role/host vars (if present)"
+  set_fact:
+    effective_ovs_bridges: "{{ effective_ovs_bridges + [ item.name ] }}"
+  loop: "{{ host_bridges.bridges | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: (item.name is defined) and (item.type is defined) and ('ovs' in (item.type | lower))
+
+  # Build effective vxlan ports list
+  # Build filtered list by iterating and appending only ports whose parent bridge
+  # is in the computed list of OVS bridges. Using a loop avoids unsupported
+  # lambda expressions in some Jinja/Ansible combinations.
+- name: "Initialize tmp vxlan ports list"
+  set_fact:
+    tmp_ovs_vxlan_ports: []
+
+- name: "Collect vxlan ports that target OVS bridges"
+  set_fact:
+    tmp_ovs_vxlan_ports: "{{ tmp_ovs_vxlan_ports + [ item ] }}"
+  loop: "{{ (host_ovs_vxlan.ovs_vxlan_ports | default([])) + (ovs_vxlan_ports | default([])) }}"
+  when: (item.bridge is defined) and (item.bridge in (effective_ovs_bridges | default([])))
+
+- name: "Set effective vxlan ports list from tmp"
+  set_fact:
+    effective_ovs_vxlan_ports: "{{ tmp_ovs_vxlan_ports }}"
+
+- name: "Compute unique bridge names referenced by effective vxlan ports"
+  set_fact:
+    wait_bridges: "{{ (effective_ovs_vxlan_ports | map(attribute='bridge') | default([])) | reject('equalto', None) | unique | sort | list }}"
+  when: (effective_ovs_vxlan_ports | length) > 0
+
+- name: "Debug: bridges to wait for before creating vxlan ports"
+  debug:
+    msg: "Will wait for bridges: {{ wait_bridges }}"
+  when: (effective_ovs_vxlan_ports | length) > 0
+
+# --- Ensure cluster SDN VXLAN zone exists (create if missing) ---
+- name: "Determine desired SDN zone name for VXLANs"
+  set_fact:
+    # Use underscore in generated zone name because Proxmox zone IDs disallow certain characters
+    # Use an alphanumeric-only default (no hyphen/underscore) so Proxmox accepts the zone ID.
+    # e.g. inventory_hostname pve1.comwell.edgesec.ca -> default 'ovspve1'
+    ovs_sdn_zone_name: "{{ ovs_sdn_zone_name | default('ovs' + (inventory_hostname | regex_replace('\\..*',''))) }}"
+
+- name: "Check for existing SDN zone '{{ ovs_sdn_zone_name }}'"
+  command: >-
+    pvesh get /cluster/sdn/zones/{{ ovs_sdn_zone_name }} --output-format json
+  register: _ovs_sdn_zone_check
+  failed_when: false
+  changed_when: false
+  when: ovs_create | default(false)
+
+- name: "Create SDN VXLAN zone '{{ ovs_sdn_zone_name }}' when missing"
+  command: >-
+    pvesh create /cluster/sdn/zones \
+      -zone {{ ovs_sdn_zone_name }} \
+      -type vxlan \
+      -mtu {{ vxlan_zone_mtu | default(1450) }} \
+      -peers {{ (ovs_sdn_zone_peers | default([ansible_default_ipv4.address])) | join(',') }}
+  register: _ovs_sdn_zone_create
+  failed_when: false
+  changed_when: _ovs_sdn_zone_create.rc == 0
+  when:
+    - ovs_create | default(false)
+    - _ovs_sdn_zone_check is defined
+    - _ovs_sdn_zone_check.rc != 0
+
+
+- name: "Wait for OVS bridges to exist in OVS DB"
+  become: true
+  shell: "ovs-vsctl --timeout=5 br-exists {{ item }}"
+  register: wait_for_bridge
+  retries: "{{ ovs_bridge_wait_retries | default(12) }}"
+  delay: 5
+  until: wait_for_bridge.rc == 0
+  changed_when: false
+  failed_when: wait_for_bridge.rc != 0
+  loop: "{{ wait_bridges | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0)
+
+- name: "Skip OVS VXLAN provisioning when no ports defined"
+  debug:
+    msg: "No ovs_vxlan_ports defined; skipping OVS vxlan creation"
+  when: (effective_ovs_vxlan_ports | length) == 0
+
+- name: "Ensure each VXLAN port exists (ovs-vsctl)"
+  when: (ovs_create | default(false)) and (ovs_vxlan_method == 'ovs-vsctl') and (effective_ovs_vxlan_ports | length > 0)
+  block:
+    - name: "Include per-port tasks for VXLAN creation"
+      include_tasks: each_port.yml
+      loop: "{{ effective_ovs_vxlan_ports }}"
+      loop_control:
+        label: "{{ (item.name | default('vx' ~ (item.vni | string))) }}@{{ item.bridge | default('vmbr1') }}"
+  rescue:
+    - name: "Fail: building OVS vxlan ports encountered an error"
+      fail:
+        msg: "An error occurred while creating OVS VXLAN ports; check OVS status and the inputs"
+
+# Persist kernel VXLAN creation script and systemd service so tunnels survive reboot
+- name: "Render persistence script for kernel VXLAN tunnels"
+  template:
+    src: create_vxlan_tunnels.sh.j2
+    dest: /usr/local/bin/ovspve_create_vxlan_tunnels.sh
+    mode: '0755'
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0) and (ovs_vxlan_persistent | default(false) | bool)
+
+- name: "Render systemd service for VXLAN tunnel creator"
+  template:
+    src: ovspve-vxlan-tunnels.service.j2
+    dest: /etc/systemd/system/ovspve-vxlan-tunnels.service
+    mode: '0644'
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0) and (ovs_vxlan_persistent | default(false) | bool)
+
+- name: "Reload systemd and enable/start VXLAN tunnel service"
+  become: true
+  systemd:
+    daemon_reload: yes
+    name: ovspve-vxlan-tunnels.service
+    enabled: yes
+    state: started
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0) and (ovs_vxlan_persistent | default(false) | bool)
+ 
+- name: "Note: persistence of kernel VXLANs disabled"
+  debug:
+    msg: "Kernel-based VXLAN persistence and repair loops are disabled; role will not create kernel vxlan netdevs."
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0) and (not (ovs_vxlan_persistent | default(false) | bool))

@@ -1,49 +1,92 @@
 # vmbr definitions for pve1.comwell.edgesec.ca
 # Adjust normalized interface names (xg*/eth*) and tunnel endpoints to match
 # the values discovered by the naming task on this host.
+# Enable inclusion of logical vx* names in the persistent interfaces
+# for this experimental hybrid SDN workflow.
+include_logical_ports_in_interfaces: true
+
+# Host-specific override: request 9000 MTU for the SDN VXLAN zone created for this node
+vxlan_zone_mtu: 9000
+
 bridges:
   - name: vmbr99
     type: OVSBridge
     bridge_ports:
       - eth2
     mtu: 9000
+    # Sample persistent address (will render iface <name> inet static)
+    address: 10.255.0.99/28
     vlan_aware: true
     subinterfaces:
-      - name: vxlan10031
+      - name: vx10031
         type: vxlan
         options:
           id: 10031
           mtu: 1400
-      - name: vxlan10032
+      - name: vx10032
         type: vxlan
         options:
           id: 10032
+          mtu: 1400
+      - name: vx10100
+        type: vxlan
+        options:
+          id: 10100
+          mtu: 1400
+      - name: vx10101
+        type: vxlan
+        options:
+          id: 10101
+          mtu: 1400
+      - name: vx10102
+        type: vxlan
+        options:
+          id: 10102
           mtu: 1400
   - name: vmbr1
     type: OVSBridge
     bridge_ports:
       - eth1
     mtu: 9000
+    # Sample persistent address for vmbr1
+    address: 10.255.0.1/28
     vlan_aware: true
     subinterfaces:
-      - name: vxlan9006
+      - name: vx9006
         type: vxlan
         options:
           id: 9006
           mtu: 1400
+      - name: vx10110
+        type: vxlan
+        options:
+          id: 10110
+          mtu: 1400
+      - name: vx9000
+        type: vxlan
+        options:
+          id: 9000
+          mtu: 1400
+
   - name: vmbr2
     type: Bridge
     bridge_ports:
       - xg1
     mtu: 1420
+    address: 10.255.0.2/28
     subinterfaces:
       # gateway VLANs are defined as vlan subinterfaces elsewhere (vmbr2.11, vmbr2.100)
       # so the explicit gateway1/gateway2 entries are removed to avoid duplication.
-      - name: vxlan9003
-        type: vxlan
-        options:
-          id: 9003
-          mtu: 1400
+      # - name: vx9003
+      #   type: vxlan
+      #   options:
+      #     id: 9003
+      #     mtu: 1400
+      # - name: vx10120
+      #   type: vxlan
+      #   options:
+      #     id: 10120
+      #     mtu: 1400
       - name: vmbr2.11
         type: vlan
         options:

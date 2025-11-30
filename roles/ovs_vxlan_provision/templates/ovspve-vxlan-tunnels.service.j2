@@ -1,0 +1,11 @@
+[Unit]
+Description=Create kernel VXLAN tunnels and attach to OVS
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/ovspve_create_vxlan_tunnels.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,141 @@
+ovs_vxlan_ports:
+  - name: vx10031
+    bridge: vmbr99
+    vni: 10031
+    vnet: vn10031
+    human_name: ceph_cluster
+    subnet: 10.100.31.0/24
+    gateway: 10.100.31.1
+    dhcp_range: 10.100.31.50-10.100.31.200
+    dns_zone: ceph.edgesec.local
+    features:
+      - storage replication
+      - jumbo mtu 9000
+      - route-reflected (RT 100:31)
+    mtu: 9000
+  - name: vx10032
+    bridge: vmbr99
+    vni: 10032
+    vnet: vn10032
+    human_name: core_services
+    subnet: 10.100.32.0/24
+    gateway: 10.100.32.1
+    dhcp_range: 10.100.32.50-10.100.32.200
+    dns_zone: core.edgesec.local
+    features:
+      - shared infra (DNS, NTP, monitoring)
+      - jumbo mtu 9000
+      - route-reflected (RT 100:32)
+    mtu: 9000
+  - name: vx10100
+    bridge: vmbr99
+    vni: 10100
+    vnet: vn10100
+    human_name: tenant1_mgmt
+    subnet: 10.101.0.0/24
+    gateway: 10.101.0.1
+    dhcp_range: 10.101.0.50-10.101.0.200
+    dns_zone: tenant1.mgmt.local
+    features:
+      - management plane
+      - DHCP relay to IPAM
+      - local-only (not exported)
+    mtu: 1400
+  - name: vx10101
+    bridge: vmbr99
+    vni: 10101
+    vnet: vn10101
+    human_name: tenant1_engineering
+    subnet: 10.101.1.0/24
+    gateway: 10.101.1.1
+    dhcp_range: 10.101.1.50-10.101.1.200
+    dns_zone: tenant1.eng.local
+    features:
+      - engineering workloads
+      - ACL enforced
+      - local-only (not exported)
+    mtu: 1400
+  - name: vx10102
+    bridge: vmbr99
+    vni: 10102
+    vnet: vn10102
+    human_name: tenant1_support
+    subnet: 10.101.2.0/24
+    gateway: 10.101.2.1
+    dhcp_range: 10.101.2.50-10.101.2.200
+    dns_zone: tenant1.support.local
+    features:
+      - support workloads
+      - ACL enforced
+      - local-only (not exported)
+    mtu: 1400
+  - name: vx9006
+    bridge: vmbr1
+    vni: 9006
+    vnet: vn9006
+    human_name: edgesec_vault
+    subnet: 10.90.6.0/24
+    gateway: 10.90.6.1
+    dhcp_range: 10.90.6.50-10.90.6.200
+    dns_zone: vault.edgesec.local
+    features:
+      - secure enclave
+      - ACL enforced
+      - route-reflected (RT 100:6)
+    mtu: 1400
+  - name: vx10110
+    bridge: vmbr1
+    vni: 10110
+    vnet: vn10110
+    human_name: tenant1_services
+    subnet: 10.101.10.0/24
+    gateway: 10.101.10.1
+    dhcp_range: 10.101.10.50-10.101.10.200
+    dns_zone: tenant1.services.local
+    features:
+      - tenant workloads
+      - DHCP/DNS scoped per tenant
+      - route-reflected (RT 100:10)
+    mtu: 1400
+  - name: vx9000
+    bridge: vmbr1
+    vni: 9000
+    vnet: vn9000
+    human_name: shared_services
+    subnet: 10.90.0.0/24
+    gateway: 10.90.0.1
+    dhcp_range: 10.90.0.50-10.90.0.200
+    dns_zone: shared.edgesec.local
+    features:
+      - multi-tenant shared apps
+      - ACL enforced
+      - local-only (not exported)
+    mtu: 1400
+  - name: vx9003
+    bridge: vmbr2
+    vni: 9003
+    vnet: vn9003
+    human_name: proxy_ext
+    subnet: 10.90.3.0/24
+    gateway: 10.90.3.1
+    dhcp_range: 10.90.3.50-10.90.3.200
+    dns_zone: proxy.edgesec.local
+    features:
+      - external proxy ingress
+      - NAT/firewall policies
+      - local-only (not exported)
+    mtu: 1420
+  - name: vx10120
+    bridge: vmbr2
+    vni: 10120
+    vnet: vn10120
+    human_name: tenant1_ext
+    subnet: 10.101.20.0/24
+    gateway: 10.101.20.1
+    dhcp_range: 10.101.20.50-10.101.20.200
+    dns_zone: tenant1.ext.local
+    features:
+      - tenant external ingress
+      - NAT/firewall policies
+      - local-only (not exported)
+    mtu: 1420

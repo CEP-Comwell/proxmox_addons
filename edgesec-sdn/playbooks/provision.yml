@@ -18,6 +18,11 @@
     # provision_confirm_before_apply: false
   roles:
     - prereqs           # Install prerequisite packages (jq, git, etc.)
-    - network_provision  # Streamlined single role for interface naming and bridge creation
-    - vxlan              # Create and configure VXLAN overlays on node(s)
-    - sdn_fabric_provision  # Provisions SDN fabric, VNETs, subnets, ports (never touches vmbr0)
+    - network_provision  # Streamlined role for interface naming and Linux bridge creation
+    - ovs_bridge_provision # New role: render and persist OVS bridge stanzas into /etc/network/interfaces
+    - ovs_vxlan_provision  # Create OVS VXLAN ports (ovs-vsctl driven)
+    #- vxlan              # Create and configure VXLAN overlays on node(s)
+    #- sdn_fabric_provision  # Provisions SDN fabric, VNETs, subnets, ports (never touches vmbr0)
+  # Handlers are provided by roles (for example network_provision provides
+  # a guarded `reload_network` handler). Do not define a play-level
+  # reload handler here so the role's guarded handler is used.

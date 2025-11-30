@@ -1,0 +1,140 @@
+---
+# Tasks to ensure a single VXLAN port (expects 'item' from loop in caller)
+- name: "Set vx and port_name variables for item"
+  set_fact:
+    vx: "{{ item }}"
+    port_name: "{{ item.name | default('vx' ~ (item.vni | string)) }}"
+
+- name: "Validate vxlan port name length for {{ port_name }}"
+  assert:
+    that:
+      - (port_name | length) <= 8
+    fail_msg: "VXLAN port name '{{ port_name }}' is longer than 8 characters; shorten to <=8 per project policy."
+  when: port_name is defined
+
+- name: "Build external_ids string for OVS interface {{ port_name }}"
+  set_fact:
+    ovs_external_ids: >-
+      {%- set kv = [] -%}
+      {%- if vx.vnet is defined -%}{%- set _ = kv.append('vnet="' ~ (vx.vnet | string) ~ '"') -%}{%- endif -%}
+      {%- if vx.subnet is defined -%}{%- set _ = kv.append('subnet="' ~ (vx.subnet | string) ~ '"') -%}{%- endif -%}
+      {%- if vx.gateway is defined -%}{%- set _ = kv.append('gateway="' ~ (vx.gateway | string) ~ '"') -%}{%- endif -%}
+      {%- if vx.dhcp_range is defined -%}{%- set _ = kv.append('dhcp_range="' ~ (vx.dhcp_range | string) ~ '"') -%}{%- endif -%}
+      {%- if vx.dns_zone is defined -%}{%- set _ = kv.append('dns_zone="' ~ (vx.dns_zone | string) ~ '"') -%}{%- endif -%}
+      {%- if vx.human_name is defined -%}{%- set _ = kv.append('human_name="' ~ (vx.human_name | string) ~ '"') -%}{%- endif -%}
+      {%- if vx.features is defined -%}{%- set _ = kv.append('features="' ~ (vx.features | join('; ') | string) ~ '"') -%}{%- endif -%}
+      {{ kv | join(',') }}
+  when: vx is defined
+
+- name: "Check if OVS interface {{ port_name }} exists"
+  command: "ovs-vsctl --timeout=10 --bare --no-heading --columns=name list Interface {{ port_name }}"
+  register: ovs_iface_check
+  failed_when: false
+  changed_when: false
+
+- name: "Wait for bridge {{ vx.bridge }} to exist before creating {{ port_name }}"
+  command: "ovs-vsctl --timeout=10 br-exists {{ vx.bridge }}"
+  register: br_exists
+  failed_when: false
+  changed_when: false
+  until: br_exists.rc == 0
+  retries: 3
+  delay: 2
+  when: (not ansible_check_mode) and (vx.bridge is defined)
+ 
+- name: "Derive local_ip for {{ port_name }} from host_bridges (fallback to ansible_default_ipv4)"
+  set_fact:
+    local_ip: >-
+      {{ ((host_bridges.bridges | default([]) | selectattr('name','equalto', vx.bridge) | map(attribute='address') | list | first | default('')) | regex_replace('/.*$','')) | default(ansible_default_ipv4.address) }}
+  when: not ansible_check_mode
+
+- name: "Derive remote_ip for kernel vxlan when requested for {{ port_name }}"
+  set_fact:
+    remote_ip: "{{ vx.remote_ip | default(ovs_vxlan_static_remote_ip | default('')) }}"
+  when: (kernel_vxlan_only | default(false)) and not ansible_check_mode
+
+- name: "Create OVS port {{ port_name }} on bridge {{ vx.bridge }}"
+  command: >-
+    ovs-vsctl --may-exist add-port {{ vx.bridge }} {{ port_name }} -- \
+      set interface {{ port_name }} type=vxlan \
+      options:key="flow" options:remote_ip="{{ vx.remote_ip | default(ovs_vxlan_static_remote_ip | default('flow')) }}" options:local_ip="{{ local_ip }}" options:csum=true {% if vx.dst_port is defined %}options:dst_port="{{ vx.dst_port }}"{% endif %}
+  register: ovs_add_result
+  become: true
+  when: (ovs_iface_check.stdout | default('') == '') and (not ansible_check_mode) and not (kernel_vxlan_only | default(false))
+  changed_when: ovs_add_result.rc == 0
+  failed_when: ovs_add_result.rc != 0
+
+- name: "Ensure existing OVS interface {{ port_name }} is configured for flow-mode"
+  command: >-
+    ovs-vsctl set Interface {{ port_name }} \
+      type=vxlan \
+      options:key="flow" options:remote_ip="{{ vx.remote_ip | default(ovs_vxlan_static_remote_ip | default('flow')) }}" options:local_ip="{{ local_ip }}" options:csum=true {% if vx.dst_port is defined %}options:dst_port="{{ vx.dst_port }}"{% endif %}
+  register: ovs_update_opts
+  become: true
+  when: (ovs_iface_check.stdout | default('') != '') and (not ansible_check_mode) and not (kernel_vxlan_only | default(false))
+  changed_when: ovs_update_opts.rc == 0
+
+- name: "Annotate OVS interface {{ port_name }} with external_ids metadata"
+  command: >-
+    ovs-vsctl set Interface {{ port_name }} {% if ovs_external_ids|default('') != '' %}external_ids:{{ ovs_external_ids }}{% else %}external_ids:managed_by=ansible{% endif %}
+  register: ovs_set_extids
+  become: true
+  failed_when: false
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: "Ensure MTU for {{ port_name }} is set"
+  become: true
+  block:
+    - name: "Set link MTU on {{ port_name }}"
+      command: "ip link set {{ port_name }} mtu {{ vx.mtu | default(9000) }}"
+      failed_when: false
+      changed_when: false
+
+    - name: "Request OVS port MTU via ovs-vsctl for {{ port_name }}"
+      command: "ovs-vsctl set Interface {{ port_name }} mtu_request={{ vx.mtu | default(9000) }}"
+      failed_when: false
+      changed_when: false
+  when: not ansible_check_mode
+
+# NOTE: Kernel-based fallback removed. Role now requires OVS to bind VXLAN interfaces
+# via flow-mode. If ofport is not assigned by OVS, the task will fail so the controller
+# can reconcile. This avoids creation of kernel vxlan netdevs which conflict with OVS.
+
+- name: "Debug: show interface details for {{ port_name }}"
+  command: "ovs-vsctl --columns=name,type,options list Interface {{ port_name }}"
+  register: ovs_iface_show
+  changed_when: false
+
+- name: "Debug: show result"
+  debug:
+    msg:
+      - "port={{ port_name }} check.stdout={{ ovs_iface_check.stdout }}"
+      - "add_result={{ ovs_add_result.stdout | default('n/a') }}"
+      - "iface_show={{ ovs_iface_show.stdout | default('n/a') }}"
+
+- name: "Verify VXLAN interface {{ port_name }} exists and is type vxlan"
+  become: true
+  command: "ovs-vsctl --timeout=5 --bare --no-heading --columns=type list Interface {{ port_name }}"
+  register: verify_iface
+  failed_when: false
+  changed_when: false
+
+- name: "Fail if VXLAN {{ port_name }} not present or not type vxlan"
+  fail:
+    msg: "VXLAN {{ port_name }} missing or not of type 'vxlan' after creation: {{ verify_iface.stdout | default('') }}"
+  when: (verify_iface.rc != 0) or ((not (kernel_vxlan_only | default(false))) and ('vxlan' not in (verify_iface.stdout | default(''))))
+
+- name: "Get ofport for {{ port_name }} (wait until >0)"
+  command: "ovs-vsctl --bare --no-heading get Interface {{ port_name }} ofport"
+  register: ovs_ofport
+  failed_when: false
+  changed_when: false
+  retries: 3
+  delay: 2
+  until: (ovs_ofport.stdout | default('0') | int) > 0
+  when: not ansible_check_mode
+  # Kernel-based fallback removed intentionally: this role requires OVS to bind
+  # VXLAN interfaces (flow-mode). If `ofport` is not assigned by OVS within
+  # the retries above, fail so controller can reconcile. This avoids creating
+  # kernel vxlan netdevs on hosts which can conflict with OVS-owned interfaces.

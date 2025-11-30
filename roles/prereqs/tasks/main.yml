@@ -21,3 +21,14 @@
     state: file
   when: pve_network_interface_pinning_url is defined and pve_network_interface_pinning_url is not none and pve_network_interface_pinning_url | length > 0
   become: true
+
+- name: Ensure prerequisite services are enabled and started
+  systemd:
+    name: "{{ (item.name if item is mapping else item) }}"
+    masked: no
+    enabled: "{{ (item.enabled if item is mapping else true) }}"
+    state: "{{ ( ('stopped' if (prereq_services_disabled is defined and (item.name if item is mapping else item) in prereq_services_disabled) else (item.state if item is mapping else 'started')) ) | trim }}"
+  loop: "{{ prereq_services | default([]) }}"
+  when: (prereq_services is defined) and (prereq_services | length > 0)
+  become: true
+

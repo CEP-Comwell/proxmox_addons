@@ -1,0 +1,160 @@
+prefixes:
+  - prefix: 10.100.31.0/24
+    vrf: default
+    description: ceph_cluster (VNI 10031)
+    name: ceph_cluster
+    custom_fields:
+      vni: 10031
+      vnet: vn10031
+      bridge: vmbr99
+      mtu: 9000
+      dns_zone: ceph.edgesec.local
+      dhcp_range: 10.100.31.50-10.100.31.200
+      features:
+        - storage replication
+        - jumbo mtu 9000
+        - route-reflected (RT 100:31)
+
+  - prefix: 10.100.32.0/24
+    vrf: default
+    description: core_services (VNI 10032)
+    name: core_services
+    custom_fields:
+      vni: 10032
+      vnet: vn10032
+      bridge: vmbr99
+      mtu: 9000
+      dns_zone: core.edgesec.local
+      dhcp_range: 10.100.32.50-10.100.32.200
+      features:
+        - shared infra (DNS, NTP, monitoring)
+        - jumbo mtu 9000
+        - route-reflected (RT 100:32)
+
+  - prefix: 10.101.0.0/24
+    vrf: default
+    description: tenant1_mgmt (VNI 10100)
+    name: tenant1_mgmt
+    custom_fields:
+      vni: 10100
+      vnet: vn10100
+      bridge: vmbr99
+      mtu: 1400
+      dns_zone: tenant1.mgmt.local
+      dhcp_range: 10.101.0.50-10.101.0.200
+      features:
+        - management plane
+        - DHCP relay to IPAM
+        - local-only (not exported)
+
+  - prefix: 10.101.1.0/24
+    vrf: default
+    description: tenant1_engineering (VNI 10101)
+    name: tenant1_engineering
+    custom_fields:
+      vni: 10101
+      vnet: vn10101
+      bridge: vmbr99
+      mtu: 1400
+      dns_zone: tenant1.eng.local
+      dhcp_range: 10.101.1.50-10.101.1.200
+      features:
+        - engineering workloads
+        - ACL enforced
+        - local-only (not exported)
+
+  - prefix: 10.101.2.0/24
+    vrf: default
+    description: tenant1_support (VNI 10102)
+    name: tenant1_support
+    custom_fields:
+      vni: 10102
+      vnet: vn10102
+      bridge: vmbr99
+      mtu: 1400
+      dns_zone: tenant1.support.local
+      dhcp_range: 10.101.2.50-10.101.2.200
+      features:
+        - support workloads
+        - ACL enforced
+        - local-only (not exported)
+
+  - prefix: 10.90.6.0/24
+    vrf: default
+    description: edgesec_vault (VNI 9006)
+    name: edgesec_vault
+    custom_fields:
+      vni: 9006
+      vnet: vn9006
+      bridge: vmbr1
+      mtu: 1400
+      dns_zone: vault.edgesec.local
+      dhcp_range: 10.90.6.50-10.90.6.200
+      features:
+        - secure enclave
+        - ACL enforced
+        - route-reflected (RT 100:6)
+
+  - prefix: 10.101.10.0/24
+    vrf: default
+    description: tenant1_services (VNI 10110)
+    name: tenant1_services
+    custom_fields:
+      vni: 10110
+      vnet: vn10110
+      bridge: vmbr1
+      mtu: 1400
+      dns_zone: tenant1.services.local
+      dhcp_range: 10.101.10.50-10.101.10.200
+      features:
+        - tenant workloads
+        - DHCP/DNS scoped per tenant
+        - route-reflected (RT 100:10)
+
+  - prefix: 10.90.0.0/24
+    vrf: default
+    description: shared_services (VNI 9000)
+    name: shared_services
+    custom_fields:
+      vni: 9000
+      vnet: vn9000
+      bridge: vmbr1
+      mtu: 1400
+      dns_zone: shared.edgesec.local
+      dhcp_range: 10.90.0.50-10.90.0.200
+      features:
+        - multi-tenant shared apps
+        - ACL enforced
+        - local-only (not exported)
+
+  - prefix: 10.90.3.0/24
+    vrf: default
+    description: proxy_ext (VNI 9003)
+    name: proxy_ext
+    custom_fields:
+      vni: 9003
+      vnet: vn9003
+      bridge: vmbr2
+      mtu: 1420
+      dns_zone: proxy.edgesec.local
+      dhcp_range: 10.90.3.50-10.90.3.200
+      features:
+        - external proxy ingress
+        - NAT/firewall policies
+        - local-only (not exported)
+
+  - prefix: 10.101.20.0/24
+    vrf: default
+    description: tenant1_ext (VNI 10120)
+    name: tenant1_ext
+    custom_fields:
+      vni: 10120
+      vnet: vn10120
+      bridge: vmbr2
+      mtu: 1420
+      dns_zone: tenant1.ext.local
+      dhcp_range: 10.101.20.50-10.101.20.200
+      features:
+        - tenant external ingress
+        - NAT/firewall policies
+        - local-only (not exported)

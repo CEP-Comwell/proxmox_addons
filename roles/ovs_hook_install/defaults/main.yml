@@ -1,0 +1,4 @@
+---
+# defaults for ovs_hook_install
+ovs_vni_hook_dest: /var/lib/vz/snippets/ovs-vni-hook.sh
+vni_map_dest: /etc/pve/vni-map.conf

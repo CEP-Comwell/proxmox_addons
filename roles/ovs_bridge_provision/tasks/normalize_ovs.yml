@@ -1,0 +1,48 @@
+---
+# normalize_ovs.yml
+# Purpose: OVSBridge type interfaces must be managed as one atomic block within /etc/network/interfaces in order to allow custom VXLAN port mapping.
+# Behavior: backup, remove any existing BEGIN/END OVS BRIDGES block,
+# collapse duplicate BEGIN markers, and normalize spacing before 'auto' stanzas.
+# Runs only when writing the interfaces file for OVS bridges.
+-
+# Example (for operator reference): 
+
+# BEGIN OVS BRIDGES
+
+# auto vmbr1
+# iface vmbr1 inet static
+#     address 10.255.0.1/28
+#     ovs_type OVSBridge
+#     ovs_ports eth1 vx9006 vx10110 vx9000
+#     mtu 9000
+
+# END OVS BRIDGES
+
+- name: Normalize /etc/network/interfaces OVS markers (dedupe + normalize)
+  become: true
+  shell: |
+    set -e
+    SRC=/etc/network/interfaces
+    BAK=${SRC}.pre-ovsclean
+    TMP=${SRC}.ovsclean.tmp
+    cp -a "$SRC" "$BAK"
+    # collapse duplicate BEGIN markers safely (idempotent)
+    perl -0777 -pe 's/(?m)^(# BEGIN OVS BRIDGES\n)+/# BEGIN OVS BRIDGES\n/g' "$SRC" > "${SRC}.dedup.tmp" && mv "${SRC}.dedup.tmp" "$SRC" || true
+    # Only remove content between '# BEGIN OVS BRIDGES' and '# END OVS BRIDGES' (non-greedy)
+    if grep -q '^# BEGIN OVS BRIDGES' "$SRC"; then
+      perl -0777 -pe 's/(?s)# BEGIN OVS BRIDGES\n.*?# END OVS BRIDGES\n?/\n/g' "$SRC" > "$TMP"
+      # ensure a blank line before each 'auto' stanza
+      awk 'BEGIN{prev=""} { if (/^auto / && prev!="") print ""; print; prev=$0 }' "$TMP" > "${TMP}.2"
+      mv "${TMP}.2" "$SRC"
+    else
+      echo "no-ovs-markers-found"
+    fi
+  args:
+    executable: /bin/sh
+  register: ovsclean_result
+  failed_when: ovsclean_result.rc != 0
+  changed_when: false
+  when: (ovs_bridges | length > 0) and (write_interfaces_file | default(false))
+  tags:
+    - deploy_ovs_bridges
+

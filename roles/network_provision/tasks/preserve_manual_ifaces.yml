@@ -48,26 +48,9 @@
     line: 'source /etc/network/interfaces.d/*'
     create: yes
   become: true
-
-- name: Insert single ANSIBLE edgesec manual-ifaces block before the source include
-  ansible.builtin.blockinfile:
-    path: /etc/network/interfaces
-    create: yes
-    marker: "# {mark} ANSIBLE edgesec manual-ifaces"
-    insertbefore: '^source /etc/network/interfaces.d/\*$'
-    backup: yes
-    block: |
-
-      iface bonding_masters inet manual
-
-      iface dummy_fab-core inet manual
-
-  become: true
-
-- name: Ensure a blank line exists after the ANSIBLE block end marker
-  ansible.builtin.lineinfile:
-    path: /etc/network/interfaces
-    insertafter: '^# END ANSIBLE edgesec manual-ifaces$'
-    line: ''
-    create: yes
-  become: true
+# The insertion of a static "ANISBLE edgesec manual-ifaces" block was removed
+# because manual interface stanzas are no longer required to be injected by this
+# role. The tasks above still ensure there is a single 'source /etc/network/interfaces.d/*'
+# at EOF and will remove any leftover ANSIBLE-managed manual-ifaces blocks if they
+# exist (idempotent/cleanup). If operator-managed manual stanzas are desired in the
+# future, add a separate, explicit role/task that inserts them from a source file.
