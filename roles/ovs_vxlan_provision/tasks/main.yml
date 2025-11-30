@@ -97,7 +97,7 @@
   become: true
   shell: "ovs-vsctl --timeout=5 br-exists {{ item }}"
   register: wait_for_bridge
-  retries: 12
+  retries: "{{ ovs_bridge_wait_retries | default(12) }}"
   delay: 5
   until: wait_for_bridge.rc == 0
   changed_when: false
@@ -131,14 +131,14 @@
     src: create_vxlan_tunnels.sh.j2
     dest: /usr/local/bin/ovspve_create_vxlan_tunnels.sh
     mode: '0755'
-  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0)
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0) and (ovs_vxlan_persistent | default(false) | bool)
 
 - name: "Render systemd service for VXLAN tunnel creator"
   template:
     src: ovspve-vxlan-tunnels.service.j2
     dest: /etc/systemd/system/ovspve-vxlan-tunnels.service
     mode: '0644'
-  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0)
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0) and (ovs_vxlan_persistent | default(false) | bool)
 
 - name: "Reload systemd and enable/start VXLAN tunnel service"
   become: true
@@ -147,4 +147,9 @@
     name: ovspve-vxlan-tunnels.service
     enabled: yes
     state: started
-  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0)
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0) and (ovs_vxlan_persistent | default(false) | bool)
+ 
+- name: "Note: persistence of kernel VXLANs disabled"
+  debug:
+    msg: "Kernel-based VXLAN persistence and repair loops are disabled; role will not create kernel vxlan netdevs."
+  when: (ovs_create | default(false)) and (effective_ovs_vxlan_ports | length > 0) and (not (ovs_vxlan_persistent | default(false) | bool))

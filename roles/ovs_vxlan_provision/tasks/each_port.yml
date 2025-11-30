@@ -38,7 +38,7 @@
   failed_when: false
   changed_when: false
   until: br_exists.rc == 0
-  retries: 6
+  retries: 3
   delay: 2
   when: (not ansible_check_mode) and (vx.bridge is defined)
  
@@ -57,7 +57,7 @@
   command: >-
     ovs-vsctl --may-exist add-port {{ vx.bridge }} {{ port_name }} -- \
       set interface {{ port_name }} type=vxlan \
-      options:key="flow" options:remote_ip="{{ vx.remote_ip | default(ovs_vxlan_static_remote_ip | default('flow')) }}" options:local_ip="{{ local_ip }}" options:nolearning=true options:csum=true {% if vx.dst_port is defined %}options:dst_port="{{ vx.dst_port }}"{% endif %}
+      options:key="flow" options:remote_ip="{{ vx.remote_ip | default(ovs_vxlan_static_remote_ip | default('flow')) }}" options:local_ip="{{ local_ip }}" options:csum=true {% if vx.dst_port is defined %}options:dst_port="{{ vx.dst_port }}"{% endif %}
   register: ovs_add_result
   become: true
   when: (ovs_iface_check.stdout | default('') == '') and (not ansible_check_mode) and not (kernel_vxlan_only | default(false))
@@ -67,7 +67,8 @@
 - name: "Ensure existing OVS interface {{ port_name }} is configured for flow-mode"
   command: >-
     ovs-vsctl set Interface {{ port_name }} \
-      options:key="flow" options:remote_ip="{{ vx.remote_ip | default(ovs_vxlan_static_remote_ip | default('flow')) }}" options:local_ip="{{ local_ip }}" options:nolearning=true options:csum=true {% if vx.dst_port is defined %}options:dst_port="{{ vx.dst_port }}"{% endif %}
+      type=vxlan \
+      options:key="flow" options:remote_ip="{{ vx.remote_ip | default(ovs_vxlan_static_remote_ip | default('flow')) }}" options:local_ip="{{ local_ip }}" options:csum=true {% if vx.dst_port is defined %}options:dst_port="{{ vx.dst_port }}"{% endif %}
   register: ovs_update_opts
   become: true
   when: (ovs_iface_check.stdout | default('') != '') and (not ansible_check_mode) and not (kernel_vxlan_only | default(false))
@@ -96,77 +97,9 @@
       changed_when: false
   when: not ansible_check_mode
 
-# Kernel-based VXLAN creation and attach as a system netdev (when requested)
-- name: "Kernel VXLAN create and attach for {{ port_name }} when kernel_vxlan_only"
-  block:
-    - name: "Validate remote_ip provided for kernel VXLAN {{ port_name }}"
-      assert:
-        that:
-          - remote_ip != ''
-        fail_msg: "kernel_vxlan_only is true but no remote_ip (vx.remote_ip or ovs_vxlan_static_remote_ip) provided for {{ port_name }}"
-
-    - name: "Create kernel vxlan device {{ port_name }}"
-      become: true
-      shell: >-
-        ip link add {{ port_name }} type vxlan id {{ vx.vni }} local {{ local_ip }} remote {{ remote_ip }} dstport {{ vx.dst_port | default(4789) }} || true
-
-    - name: "Bring up kernel device {{ port_name }}"
-      become: true
-      command: ip link set {{ port_name }} up
-
-    - name: "Set MTU on kernel device {{ port_name }}"
-      become: true
-      command: ip link set {{ port_name }} mtu {{ vx.mtu | default(9000) }}
-
-    - name: "Add kernel device {{ port_name }} to OVS bridge {{ vx.bridge }}"
-      become: true
-      command: ovs-vsctl --may-exist add-port {{ vx.bridge }} {{ port_name }}
-
-    - name: "Detect misconfigured OVS Interface that requires re-add for {{ port_name }}"
-      become: true
-      command: ovs-vsctl --columns=type,options --bare --no-heading list Interface {{ port_name }}
-      register: iface_row
-      failed_when: false
-      changed_when: false
-
-    - name: "If Interface {{ port_name }} is type=vxlan without remote_ip, delete and re-add port"
-      become: true
-      block:
-        - name: "Delete existing port {{ port_name }} from bridge {{ vx.bridge }}"
-          command: ovs-vsctl --if-exists del-port {{ vx.bridge }} {{ port_name }}
-
-        - name: "Re-add kernel device {{ port_name }} to OVS bridge {{ vx.bridge }}"
-          command: ovs-vsctl --may-exist add-port {{ vx.bridge }} {{ port_name }}
-
-      when: "iface_row.stdout is defined and ('vxlan' in iface_row.stdout) and ('remote' not in iface_row.stdout)"
-
-    - name: "Annotate kernel-backed OVS interface {{ port_name }} with external_ids metadata"
-      become: true
-      command: >-
-        ovs-vsctl set Interface {{ port_name }} {% if ovs_external_ids|default('') != '' %}external_ids:{{ ovs_external_ids }}{% else %}external_ids:managed_by=ansible{% endif %}
-      failed_when: false
-      changed_when: false
-
-    - name: "Request OVS port MTU via ovs-vsctl for kernel-backed {{ port_name }}"
-      become: true
-      command: "ovs-vsctl set Interface {{ port_name }} mtu_request={{ vx.mtu | default(9000) }}"
-      failed_when: false
-      changed_when: false
-
-    - name: "Get ofport for kernel-backed {{ port_name }} (wait until >0)"
-      command: "ovs-vsctl --bare --no-heading get Interface {{ port_name }} ofport"
-      register: ovs_ofport_kernel
-      failed_when: false
-      changed_when: false
-      retries: 6
-      delay: 2
-      until: (ovs_ofport_kernel.stdout | default('0') | int) > 0
-  when: (kernel_vxlan_only | default(false)) and (not ansible_check_mode)
-
-- name: "Fail if kernel-backed ofport invalid for {{ port_name }}"
-  fail:
-    msg: "Kernel VXLAN {{ port_name }} has invalid ofport={{ ovs_ofport_kernel.stdout | default('') }}; expected > 0"
-  when: ((ovs_ofport_kernel.stdout | default('0') | int) <= 0) and (kernel_vxlan_only | default(false)) and (not ansible_check_mode)
+# NOTE: Kernel-based fallback removed. Role now requires OVS to bind VXLAN interfaces
+# via flow-mode. If ofport is not assigned by OVS, the task will fail so the controller
+# can reconcile. This avoids creation of kernel vxlan netdevs which conflict with OVS.
 
 - name: "Debug: show interface details for {{ port_name }}"
   command: "ovs-vsctl --columns=name,type,options list Interface {{ port_name }}"
@@ -197,38 +130,11 @@
   register: ovs_ofport
   failed_when: false
   changed_when: false
-  retries: 6
+  retries: 3
   delay: 2
   until: (ovs_ofport.stdout | default('0') | int) > 0
   when: not ansible_check_mode
-
-
-- name: "Attempt kernel vxlan device creation for {{ port_name }} when ofport invalid"
-  block:
-    - name: "Create kernel vxlan device {{ port_name }}"
-      become: true
-      shell: >-
-        ip link add {{ port_name }} type vxlan id {{ vx.vni }} local {{ local_ip }} dstport {{ vx.dst_port | default(4789) }} || true
-
-    - name: "Bring up kernel device {{ port_name }}"
-      become: true
-      command: ip link set {{ port_name }} up
-
-    - name: "Reattach or add port {{ port_name }} to OVS bridge {{ vx.bridge }}"
-      become: true
-      command: ovs-vsctl --may-exist add-port {{ vx.bridge }} {{ port_name }}
-
-    - name: "Re-check ofport for {{ port_name }} (wait until >0)"
-      command: "ovs-vsctl --bare --no-heading get Interface {{ port_name }} ofport"
-      register: ovs_ofport_retry
-      failed_when: false
-      changed_when: false
-      retries: 6
-      delay: 2
-      until: (ovs_ofport_retry.stdout | default('0') | int) > 0
-  when: (ovs_ofport.stdout | default('0') | int) <= 0 and (not ansible_check_mode)
-
-- name: "Fail if ofport invalid for {{ port_name }}"
-  fail:
-    msg: "VXLAN {{ port_name }} has invalid ofport={{ (ovs_ofport_retry.stdout if (ovs_ofport_retry is defined) else ovs_ofport.stdout) | default('') }}; expected > 0"
-  when: ((ovs_ofport_retry.stdout | default(ovs_ofport.stdout | default('0')) | int) <= 0) and (not ansible_check_mode)
+  # Kernel-based fallback removed intentionally: this role requires OVS to bind
+  # VXLAN interfaces (flow-mode). If `ofport` is not assigned by OVS within
+  # the retries above, fail so controller can reconcile. This avoids creating
+  # kernel vxlan netdevs on hosts which can conflict with OVS-owned interfaces.

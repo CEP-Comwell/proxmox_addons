@@ -8,5 +8,6 @@
     ovs_create: true
     force_ovsclean: false
   roles:
+    - prereqs
     - ovs_bridge_provision
     - ovs_vxlan_provision

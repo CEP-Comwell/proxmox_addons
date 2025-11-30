@@ -148,6 +148,22 @@ vx_ofport() {
   echo ""
 }
 
+# Return 0 if there is another local interface (different name) on the
+# host that is already tagged with this VNI. This avoids adding tunnel
+# egress flows when the destination is local; in that case normal L2
+# switching is preferred.
+local_vni_peer_exists() {
+  ovs_br="$1"; vni="$2"; this_if="$3"
+  for iface in $(ovs-vsctl --bare --columns=name list Interface 2>/dev/null); do
+    [ "$iface" = "$this_if" ] && continue
+    ext=$(ovs-vsctl --no-heading --format=csv --columns=external_ids get Interface "$iface" 2>/dev/null || true)
+    case "$ext" in
+      *vni=\"${vni}\"*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
 vni_from_external_ids() {
   iface="$1"; vni=""
   vni="$(ovs-vsctl --no-heading --bare get interface "$iface" external_ids 2>/dev/null || true)"

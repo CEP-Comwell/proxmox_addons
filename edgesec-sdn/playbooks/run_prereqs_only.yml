@@ -1,0 +1,7 @@
+---
+- name: Ensure prerequisites are installed on Proxmox hosts
+  hosts: proxmox-hosts
+  become: true
+  gather_facts: false
+  roles:
+    - prereqs

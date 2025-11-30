@@ -105,6 +105,15 @@
     mkdir -p "$BAK_DIR"
     BAK="$BAK_DIR/interfaces.$(date +%s)"
     cp -a /etc/network/interfaces "$BAK"
+    # Ensure merged content exists and looks sane before replacing
+    if [ ! -s "$SRC" ]; then
+      echo "Merged interfaces file $SRC is missing or empty; aborting" >&2
+      exit 1
+    fi
+    if ! grep -qE '(^auto lo|^iface lo)' "$SRC" >/dev/null 2>&1; then
+      echo "Merged interfaces $SRC missing loopback stanza; aborting" >&2
+      exit 1
+    fi
     mv "$SRC" /etc/network/interfaces
   when: pushed_merged is defined and pushed_merged.changed
   register: controller_push_result
@@ -213,4 +222,13 @@
   register: copy_if_changed_result
   failed_when: false
   changed_when: copy_if_changed_result.rc == 2
+  tags: [deploy_ovs_bridges]
+
+- name: Reload network interfaces when OVS bridge blocks changed for vmbr1/vmbr99
+  become: true
+  command: ifreload -a
+  register: ifreload_result
+  changed_when: ifreload_result.rc == 0
+  failed_when: ifreload_result.rc != 0
+  when: (ovs_interfaces_changed | default(false)) and ( 'vmbr1' in (ovs_bridge_block | default('')) or 'vmbr99' in (ovs_bridge_block | default('')) )
   tags: [deploy_ovs_bridges]
