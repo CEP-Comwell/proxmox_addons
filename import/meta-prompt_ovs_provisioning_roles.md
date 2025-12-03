@@ -241,3 +241,24 @@ export TUN_DST_vmbr99=<peer-ip-for-core-services>
 
 **End of meta‑prompt.**
 ```
+# verify vx ofports and flows
+ovs-vsctl --columns=name,ofport,type list Interface | egrep "vx10110|vx9006|vx9000|vx10031|vx10032|vx10100|vx10101|vx10102" || true
+ovs-ofctl -O OpenFlow13 dump-flows vmbr1 | sed -n '1,200p'
+ovs-ofctl -O OpenFlow13 dump-flows vmbr99 | sed -n '1,200p'
+
+# If vx10110.ofport <= 0, rebind it (vmbr1 local_ip is 10.255.0.1)
+ovs-vsctl --if-exists del-port vx10110
+ovs-vsctl --may-exist add-port vmbr1 vx10110 \
+  -- set interface vx10110 type=vxlan \
+  options:key=10110 options:remote_ip=flow options:local_ip=10.255.0.1
+# verify
+ovs-vsctl get Interface vx10110 ofport
+
+# If vmbr99 has a stale flow referencing in_port=7 (and port 7 is not present there), delete it:
+ovs-ofctl -O OpenFlow13 del-flows vmbr99 "in_port=7"
+
+# Force the hook to install flows for VM 200 (will create VX if allowed)
+HOOK_DRYRUN=0 HOOK_VERIFY=1 ALLOW_CREATE_VX=1 /usr/local/bin/ovs-vni-hook.sh 200 post-start
+
+# Re-check flows and counters on vmbr1
+ovs-ofctl -O OpenFlow13 dump-flows vmbr1 | sed -n '1,200p'
