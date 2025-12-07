@@ -7,12 +7,26 @@ bridges:
     vlan_aware: false
     comment: "OVN integration bridge (managed by OVN, no IP)"
 
-  - name: br-ext
-    type: OVSBridge
+  - name: vmbr1
+    type: LinuxBridge
     bridge_ports:
       - xg1
     mtu: 1480
-    comment: "External/provider bridge using xg1 (dedicated interface, no VLAN tagging)"
+    comment: "External/provider bridge (host Linux bridge vmbr1, backs VM access)"
+
+  - name: ovs99
+    type: OVSBridge
+    bridge_ports:
+      - eth2
+    vlan_aware: true
+    comment: "Management OVS bridge (ovs99) for isolated management VNIs"
+
+  - name: ovs1
+    type: OVSBridge
+    bridge_ports:
+      - eth1
+    vlan_aware: true
+    comment: "OVS1 provider bridge (was vmbr1 in VXLAN config; used for shared/tenant VNIs)"
 
 # IPAM canonicalised from `ovn_geneve_ports.yml`
 ipam:

@@ -1,3 +1,15 @@
+- name: Provision OVN on Proxmox hosts
+  hosts: all
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../../host_vars/{{ inventory_hostname }}/ovn_bridges.yml
+  pre_tasks:
+    - name: Ensure OVN prerequisites are applied
+      import_role:
+        name: ovn-prereqs
+  roles:
+    - role: ovn-central
 - name: Provision Proxmox node (OVS-only)
   hosts: proxmox-hosts
   become: true

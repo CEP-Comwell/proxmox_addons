@@ -1,6 +1,7 @@
 ovs_vxlan_ports:
   - name: vx10031
-    bridge: vmbr99
+    bridge: ovs99
+    encap: geneve
     vni: 10031
     vnet: vn10031
     human_name: ceph_cluster
@@ -14,21 +15,7 @@ ovs_vxlan_ports:
       - route-reflected (RT 100:31)
     mtu: 9000
   - name: vx10032
-    bridge: vmbr99
-    vni: 10032
-    vnet: vn10032
-    human_name: core_services
-    subnet: 10.100.32.0/24
-    gateway: 10.100.32.1
-    dhcp_range: 10.100.32.50-10.100.32.200
-    dns_zone: core.edgesec.local
-    features:
-      - shared infra (DNS, NTP, monitoring)
-      - jumbo mtu 9000
-      - route-reflected (RT 100:32)
-    mtu: 9000
-  - name: vx10100
-    bridge: vmbr99
+    encap: geneve
     vni: 10100
     vnet: vn10100
     human_name: tenant1_mgmt
@@ -42,7 +29,8 @@ ovs_vxlan_ports:
       - local-only (not exported)
     mtu: 1400
   - name: vx10101
-    bridge: vmbr99
+    bridge: ovs99
+    encap: geneve
     vni: 10101
     vnet: vn10101
     human_name: tenant1_engineering
@@ -56,7 +44,8 @@ ovs_vxlan_ports:
       - local-only (not exported)
     mtu: 1400
   - name: vx10102
-    bridge: vmbr99
+    bridge: ovs99
+    encap: geneve
     vni: 10102
     vnet: vn10102
     human_name: tenant1_support
@@ -70,7 +59,8 @@ ovs_vxlan_ports:
       - local-only (not exported)
     mtu: 1400
   - name: vx9006
-    bridge: vmbr1
+    bridge: ovs1
+    encap: geneve
     vni: 9006
     vnet: vn9006
     human_name: edgesec_vault
@@ -84,7 +74,8 @@ ovs_vxlan_ports:
       - route-reflected (RT 100:6)
     mtu: 1400
   - name: vx10110
-    bridge: vmbr1
+    bridge: ovs1
+    encap: geneve
     vni: 10110
     vnet: vn10110
     human_name: tenant1_services
@@ -98,7 +89,8 @@ ovs_vxlan_ports:
       - route-reflected (RT 100:10)
     mtu: 1400
   - name: vx9000
-    bridge: vmbr1
+    bridge: ovs1
+    encap: geneve
     vni: 9000
     vnet: vn9000
     human_name: shared_services
@@ -112,7 +104,8 @@ ovs_vxlan_ports:
       - local-only (not exported)
     mtu: 1400
   - name: vx9003
-    bridge: vmbr2
+    bridge: ovs1
+    encap: geneve
     vni: 9003
     vnet: vn9003
     human_name: proxy_ext
@@ -126,7 +119,8 @@ ovs_vxlan_ports:
       - local-only (not exported)
     mtu: 1420
   - name: vx10120
-    bridge: vmbr2
+    bridge: ovs1
+    encap: geneve
     vni: 10120
     vnet: vn10120
     human_name: tenant1_ext

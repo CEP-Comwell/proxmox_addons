@@ -1,6 +1,9 @@
 ---
 galaxy_info:
   author: edgesec
-  description: Configure a host to run independent OVN NB/SB, northd and ovn-controller
+  description: Configure OVN central services
   company: edgesec
+  license: MIT
+  min_ansible_version: 2.9
 dependencies: []
+ 

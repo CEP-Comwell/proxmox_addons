@@ -1,0 +1,8 @@
+## ovn-northd configuration (simple key=value mapper)
+{% if ovn_northd_config is defined and (ovn_northd_config | length) > 0 %}
+{% for k, v in ovn_northd_config.items() %}
+{{ k }}={{ v }}
+{% endfor %}
+{% else %}
+# No ovn_northd_config provided
+{% endif %}

@@ -1,5 +1,16 @@
 ---
 # Default variables for ovn-central role
+ovn_central_packages:
+  - ovn-central
+
+# Services to enable/start for the central components. Adjust per distribution.
+ovn_central_services:
+  - ovn-northd
+
+# Optional ovn-northd configuration mapping. If empty, no config template is deployed.
+ovn_northd_config: {}
+
+# Additional optional defaults (can be overridden)
 system_id: pve1
 encap_ip: 172.16.10.20
 br_int: br-int

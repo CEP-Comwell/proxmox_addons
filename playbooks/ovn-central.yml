@@ -1,0 +1,14 @@
+- hosts: pve1.comwell.edgesec.ca
+  become: true
+  vars_files:
+    - "../host_vars/pve1.comwell.edgesec.ca/main.yml"
+  pre_tasks:
+    - name: Ensure prereq packages are present (check mode safe)
+      package:
+        name: "{{ packages | default(['curl']) }}"
+        state: present
+      tags: prereqs
+
+  roles:
+    - role: ovn-central
+      tags: ovn
