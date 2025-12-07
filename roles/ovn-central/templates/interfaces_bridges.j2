@@ -1,0 +1,9 @@
+auto {{ br_int }}
+iface {{ br_int }} inet manual
+    pre-up ovs-vsctl br-exists {{ br_int }} >/dev/null 2>&1 || ovs-vsctl add-br {{ br_int }}
+    post-down ovs-vsctl del-br {{ br_int }} || true
+
+auto {{ br_ext }}
+iface {{ br_ext }} inet manual
+    pre-up ovs-vsctl br-exists {{ br_ext }} >/dev/null 2>&1 || ovs-vsctl add-br {{ br_ext }}
+    post-down ovs-vsctl del-br {{ br_ext }} || true

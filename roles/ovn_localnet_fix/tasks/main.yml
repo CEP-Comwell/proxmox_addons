@@ -1,0 +1,81 @@
+---
+- name: Ensure openvswitch-switch is enabled and running
+  ansible.builtin.systemd:
+    name: openvswitch-switch
+    enabled: true
+    state: started
+
+- name: Ensure systemd drop-in directory for ovn-controller exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/ovn-controller.service.d
+    state: directory
+    mode: '0755'
+
+- name: Create systemd drop-in to ensure ovn-controller starts after openvswitch
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ovn-controller.service.d/10-openvswitch.conf
+    content: |
+      [Unit]
+      Requires=openvswitch-switch.service
+      After=openvswitch-switch.service
+      ConditionPathExists=/sys/module/openvswitch
+    mode: '0644'
+  notify: daemon-reload
+
+
+- name: Ensure systemd drop-in directory for ovn-northd exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/ovn-northd.service.d
+    state: directory
+    mode: '0755'
+
+- name: Create systemd drop-in to ensure ovn-northd starts after openvswitch
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ovn-northd.service.d/10-openvswitch.conf
+    content: |
+      [Unit]
+      Requires=openvswitch-switch.service
+      After=openvswitch-switch.service
+      ConditionPathExists=/sys/module/openvswitch
+    mode: '0644'
+  notify: daemon-reload
+
+- name: Copy stale-device cleanup script
+  ansible.builtin.copy:
+    src: ovn-clean-stale-devs.sh
+    dest: /usr/local/bin/ovn-clean-stale-devs.sh
+    mode: '0755'
+
+- name: Run stale-device cleanup (if any devices supplied)
+  ansible.builtin.shell: "/usr/local/bin/ovn-clean-stale-devs.sh {{ ovn_stale_devices }}"
+  when: ovn_stale_devices is defined and ovn_stale_devices | length > 0
+
+- name: Deploy ovn-local systemd unit
+  ansible.builtin.copy:
+    src: ovn-local.service
+    dest: /etc/systemd/system/ovn-local.service
+    mode: '0644'
+  notify: daemon-reload
+
+- name: Enable and start ovn-local.service
+  ansible.builtin.systemd:
+    name: ovn-local.service
+    enabled: true
+    state: started
+  when: ovn_stale_devices is defined
+
+- name: Gather ovs-vsctl version
+  ansible.builtin.command: ovs-vsctl --version
+  register: ovs_vsctl
+  changed_when: false
+
+- name: Gather openvswitch kernel module info
+  ansible.builtin.shell: modinfo openvswitch || true
+  register: modinfo_openvswitch
+  changed_when: false
+
+- name: Show version check summary
+  ansible.builtin.debug:
+    msg:
+      - "ovs-vsctl: {{ ovs_vsctl.stdout.split('\n')[:3] | join(' | ') }}"
+      - "openvswitch modinfo snippet: {{ (modinfo_openvswitch.stdout.split('\n')[:5]) | join(' | ') }}"

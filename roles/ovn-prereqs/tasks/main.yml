@@ -1,0 +1,28 @@
+---
+# Install prerequisite packages for OVN on Debian/Proxmox
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: apt_update | bool
+
+- name: Install OVN prerequisite packages
+  apt:
+    name: "{{ ovn_prereq_packages }}"
+    state: present
+    update_cache: no
+
+- name: Stop distro OVN units
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  loop: "{{ ovn_distro_units }}"
+  when: mask_ovn_systemd_units | bool
+  ignore_errors: yes
+
+- name: Mask distro OVN units
+  command: systemctl mask {{ item }}
+  loop: "{{ ovn_distro_units }}"
+  when: mask_ovn_systemd_units | bool
+  ignore_errors: yes

@@ -13,8 +13,8 @@ veth_vm_ext["veth-vm-ext\nvmbr1 <-> vmbr2"]
 %% vmbr2 subinterfaces
 VX9003["vx9003\nVNI 9003 → vn9003 (proxy_ext)\nSubnet: 10.90.3.0/24"]
 VX10120["vx10120\nVNI 10120 → vn10120 (tenant1_ext)\nSubnet: 10.101.20.0/24"]
-GatewayVLAN11["vmbr2.11 (VLAN 11)\naddress: 172.16.11.20/24"]
-GatewayVLAN100["vmbr2.100 (VLAN 100)\naddress: 10.10.31.20/24"]
+GatewayVLAN11["vmbr2.11 (removed - use br-ext dedicated interface)\naddress: 172.16.11.20/24"]
+GatewayVLAN100["vmbr2.100 (removed - use br-ext dedicated interface)\naddress: 10.10.31.20/24"]
  
 %% VXLANs on vmbr99
 VX10031["vx10031\nVNI 10031 → vn10031 (ceph_cluster)\nSubnet: 10.100.31.0/24\nRT 100:31"]

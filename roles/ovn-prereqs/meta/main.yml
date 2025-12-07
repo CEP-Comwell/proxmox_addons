@@ -1,0 +1,6 @@
+---
+galaxy_info:
+  author: edgesec
+  description: Install packages and prepare host for running independent OVN stack
+  company: edgesec
+dependencies: []

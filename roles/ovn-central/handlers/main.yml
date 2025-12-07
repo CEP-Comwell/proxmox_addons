@@ -1,0 +1,12 @@
+---
+# Handlers for ovn-central role
+- name: daemon-reload-and-restart-ovn
+  block:
+    - name: Reload systemd
+      command: systemctl daemon-reload
+
+    - name: Ensure ovn-local enabled and restarted
+      systemd:
+        name: ovn-local
+        state: restarted
+        enabled: yes

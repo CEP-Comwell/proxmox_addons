@@ -1,0 +1,12 @@
+- name: Provision Proxmox node (OVS-only)
+  hosts: proxmox-hosts
+  become: true
+  gather_facts: false
+  vars:
+    # Defaults; override via -e when running
+    write_interfaces_file: false
+    ovs_create: true
+    force_ovsclean: false
+  roles:
+    - ovn-prereqs
+    - ovn-central

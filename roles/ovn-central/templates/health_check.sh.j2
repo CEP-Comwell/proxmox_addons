@@ -1,0 +1,22 @@
+#!/bin/sh
+# Minimal health-check for local OVN stack
+set -e
+ERR=0
+echo "OVN health-check: system_id={{ system_id }}" 
+
+if [ "{{ use_tcp }}" = "True" ] || [ "{{ use_tcp }}" = "true" ]; then
+  ss -ltnp | grep -E "127.0.0.1:{{ nb_port }}|127.0.0.1:{{ sb_port }}" >/dev/null 2>&1 || {
+    echo "ERROR: expected NB/SB on 127.0.0.1:{{ nb_port }}/{{ sb_port }}"; ERR=1; }
+else
+  ls -l /var/run/ovn/*nb* /var/run/ovn/*sb* >/dev/null 2>&1 || { echo "ERROR: missing OVN unix sockets"; ERR=1; }
+fi
+
+ovn-sbctl show | grep -q "Chassis {{ system_id }}" || { echo "ERROR: Chassis {{ system_id }} not found in ovn-sbctl"; ERR=1; }
+
+ovs-ofctl dump-flows {{ br_int }} | head -n 5 | grep -q -v "NXST" || { echo "ERROR: br-int flows appear empty"; ERR=1; }
+
+if [ $ERR -eq 0 ]; then
+  echo "OK: OVN stack looks healthy"; exit 0
+else
+  echo "FAIL: one or more checks failed"; exit 2
+fi

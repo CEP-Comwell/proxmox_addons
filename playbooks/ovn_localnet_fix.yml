@@ -1,0 +1,11 @@
+---
+- name: Fix OVN native localnet creation
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    # Provide a space-separated list of device names to consider stale and remove if present.
+    # e.g. "uplink-v11 dummy-uplink"
+    ovn_stale_devices: ""
+  roles:
+    - ovn_localnet_fix

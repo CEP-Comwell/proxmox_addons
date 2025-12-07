@@ -1,0 +1,17 @@
+---
+# Default variables for ovn-central role
+system_id: pve1
+encap_ip: 172.16.10.20
+br_int: br-int
+br_ext: br-ext
+provider_bridge: ovs2
+nb_port: 6641
+sb_port: 6642
+use_tcp: true
+ensure_ovs_installed: true
+packages:
+  - openvswitch-switch
+  - ovn-common
+interfaces_fragment: /etc/network/interfaces.d/ovn-bridges.cfg
+systemd_unit_path: /etc/systemd/system/ovn-local.service
+healthcheck_path: /usr/local/bin/ovn-local-healthcheck.sh

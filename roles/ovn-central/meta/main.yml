@@ -1,0 +1,6 @@
+---
+galaxy_info:
+  author: edgesec
+  description: Configure a host to run independent OVN NB/SB, northd and ovn-controller
+  company: edgesec
+dependencies: []

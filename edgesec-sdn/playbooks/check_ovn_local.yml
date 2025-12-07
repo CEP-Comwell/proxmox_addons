@@ -1,0 +1,99 @@
+---
+- name: Check OVN local installation and services
+  hosts: proxmox-hosts
+  become: true
+  gather_facts: false
+  vars:
+    check_br: br-int
+    units_to_check:
+      - ovn-local
+      - ovn-controller
+      - ovn-northd
+      - ovn-ovsdb-server-nb
+      - ovn-ovsdb-server-sb
+      - ovn-central
+      - ovn-host
+  tasks:
+    - name: Check installed OVN/Open vSwitch packages
+      shell: |
+        dpkg -l | egrep 'openvswitch-switch|ovn-central|ovn-common|ovn-host|python3-openvswitch' || true
+      register: pkg_out
+
+    - name: Check systemd status for OVN-related units
+      shell: |
+        for u in {{ units_to_check | join(' ') }}; do
+          echo "=== $u ==="; systemctl status $u --no-pager || true; echo; done
+      register: systemd_out
+      failed_when: false
+
+    - name: Get Open_vSwitch external_ids
+      command: ovs-vsctl get Open_vSwitch . external_ids
+      register: extids
+      failed_when: false
+
+    - name: List OVS bridges
+      command: ovs-vsctl list-br
+      register: brs
+      failed_when: false
+
+    - name: Check NB/SB listeners (TCP 6641/6642)
+      shell: ss -ltnp | egrep '6641|6642' || true
+      register: listeners
+      failed_when: false
+
+    - name: List /var/run/ovn
+      shell: ls -l /var/run/ovn 2>/dev/null || true
+      register: ovn_run
+      failed_when: false
+
+    - name: ovn-sbctl show
+      command: ovn-sbctl show
+      register: sbshow
+      failed_when: false
+
+    - name: Dump flows from {{ check_br }} (head)
+      command: ovs-ofctl dump-flows {{ check_br }} | head -n 20
+      register: flows
+      failed_when: false
+
+    - name: Combine diagnostic outputs
+      set_fact:
+        combined_output: |
+          ===== PACKAGES =====
+          {{ pkg_out.stdout | default('') }}
+
+          ===== SYSTEMD =====
+          {{ systemd_out.stdout | default('') }}
+
+          ===== OVS external_ids =====
+          {{ extids.stdout | default('') }}
+
+          ===== OVS BRIDGES =====
+          {{ brs.stdout | default('') }}
+
+          ===== LISTENERS =====
+          {{ listeners.stdout | default('') }}
+
+          ===== /var/run/ovn =====
+          {{ ovn_run.stdout | default('') }}
+
+          ===== ovn-sbctl show =====
+          {{ sbshow.stdout | default('') }}
+
+          ===== {{ check_br }} FLOWS =====
+          {{ flows.stdout | default('') }}
+
+    - name: Ensure logs directory exists on control node
+      local_action: file path=logs state=directory mode=0755
+      run_once: true
+
+    - name: Write diagnostic output to control node log file
+      local_action:
+        copy:
+          content: "{{ combined_output }}"
+          dest: "logs/ovn_check_{{ inventory_hostname }}.txt"
+      run_once: false
+
+    - name: Show short summary
+      debug:
+        msg: "Wrote logs/ovn_check_{{ inventory_hostname }}.txt on control node. Paste its content when ready."

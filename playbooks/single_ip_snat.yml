@@ -1,0 +1,13 @@
+---
+- name: Ensure single-IP SNAT on host
+  hosts: pve1
+  become: true
+  vars:
+    snat_source_ip: "10.255.0.200/32"
+    external_iface: "br-ext"
+    external_ip: "172.16.11.20"
+  roles:
+    - role: host_snat
+      snat_source_ip: "{{ snat_source_ip }}"
+      external_iface: "{{ external_iface }}"
+      external_ip: "{{ external_ip }}"

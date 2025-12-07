@@ -1,0 +1,79 @@
+---
+# Main tasks for ovn-central role
+- name: Ensure required packages
+  apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  when: ensure_ovs_installed | bool
+
+- name: Check if {{ br_int }} exists
+  command: ovs-vsctl br-exists {{ br_int }}
+  register: br_int_exists
+  failed_when: false
+  changed_when: false
+
+- name: Create {{ br_int }} if missing
+  command: ovs-vsctl add-br {{ br_int }}
+  when: br_int_exists.rc != 0
+
+- name: Check if {{ br_ext }} exists
+  command: ovs-vsctl br-exists {{ br_ext }}
+  register: br_ext_exists
+  failed_when: false
+  changed_when: false
+
+- name: Create {{ br_ext }} if missing
+  command: ovs-vsctl add-br {{ br_ext }}
+  when: br_ext_exists.rc != 0
+
+- name: Configure Open_vSwitch external_ids (base)
+  shell: |
+    ovs-vsctl set Open_vSwitch . \
+      external_ids:system-id="{{ system_id }}" \
+      external_ids:ovn-bridge="{{ br_int }}" \
+      external_ids:ovn-encap-type="geneve" \
+      external_ids:ovn-encap-ip="{{ encap_ip }}"
+
+- name: Configure Open_vSwitch external_ids (TCP endpoints)
+  when: use_tcp | bool
+  shell: |
+    ovs-vsctl set Open_vSwitch . \
+      external_ids:ovn-nb="tcp:127.0.0.1:{{ nb_port }}" \
+      external_ids:ovn-sb="tcp:127.0.0.1:{{ sb_port }}" \
+      external_ids:ovn-remote="tcp:127.0.0.1:{{ sb_port }}"
+
+- name: Deploy /etc/network/interfaces.d fragment for OVS bridges
+  template:
+    src: interfaces_bridges.j2
+    dest: "{{ interfaces_fragment }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Deploy systemd unit for ovn-local
+  template:
+    src: ovn-local.service.j2
+    dest: "{{ systemd_unit_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  # Reload systemd and ensure unit is enabled and restarted
+
+
+- name: Reload systemd
+  command: systemctl daemon-reload
+
+- name: Ensure ovn-local enabled and restarted
+  systemd:
+    name: ovn-local
+    state: restarted
+    enabled: yes
+
+- name: Deploy health-check script
+  template:
+    src: health_check.sh.j2
+    dest: "{{ healthcheck_path }}"
+    owner: root
+    group: root
+    mode: '0755'

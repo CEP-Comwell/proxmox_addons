@@ -1,0 +1,24 @@
+---
+# Idempotent single-IP SNAT via iptables - uses iptables -C to check existence
+- name: Check for existing SNAT rule
+  become: true
+  shell: |
+    iptables -t nat -C POSTROUTING -o {{ external_iface }} -s {{ snat_source_ip }} -j SNAT --to-source {{ external_ip }}
+  register: snat_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Add SNAT rule when missing
+  become: true
+  shell: |
+    iptables -t nat -A POSTROUTING -o {{ external_iface }} -s {{ snat_source_ip }} -j SNAT --to-source {{ external_ip }}
+  when: snat_check.rc != 0
+
+- name: Show nat table (for verification)
+  become: true
+  command: iptables -t nat -L POSTROUTING -n -v
+  register: nat_list
+
+- name: Debug nat table
+  debug:
+    var: nat_list.stdout_lines

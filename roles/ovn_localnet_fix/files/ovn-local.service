@@ -1,0 +1,17 @@
+
+[Unit]
+Description=OVN full stack (NB/SB/northd/controller) for standalone node
+After=network.target
+
+[Service]
+ExecStart=/usr/share/ovn/scripts/ovn-ctl \
+	--db-nb-addr=127.0.0.1 --db-nb-port=6641 --db-nb-create-insecure-remote=yes \
+	--db-sb-addr=127.0.0.1 --db-sb-port=6642 --db-sb-create-insecure-remote=yes \
+	start_northd
+ExecStartPost=/usr/share/ovn/scripts/ovn-ctl start_controller
+ExecStop=/usr/share/ovn/scripts/ovn-ctl stop_northd
+ExecStopPost=/usr/share/ovn/scripts/ovn-ctl stop_controller
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

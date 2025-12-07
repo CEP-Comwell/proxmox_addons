@@ -1,0 +1,23 @@
+---
+# Defaults for ovn-prereqs role
+apt_update: true
+ovn_prereq_packages:
+  - openvswitch-switch
+  - ovn-central
+  - ovn-common
+  - ovn-host
+  - python3-openvswitch
+  - ovn-controller
+  - ovn-northd
+  - ovn-ovsdb-server-nb
+  - ovn-ovsdb-server-sb
+
+# Whether to stop and mask distro OVN systemd units (useful for running independent stack)
+mask_ovn_systemd_units: true
+ovn_distro_units:
+  - ovn-controller
+  - ovn-northd
+  - ovn-ovsdb-server-nb
+  - ovn-ovsdb-server-sb
+  - ovn-central
+  - ovn-host

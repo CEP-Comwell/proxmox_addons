@@ -1,0 +1,69 @@
+graph LR
+
+%% ovs99 group
+subgraph OVS99_GROUP [ovs99]
+direction LR
+OVS99["ovs99 (OVSBridge)<br/>ports: eth2<br/>vlan_aware: true"]
+vx10031["vx10031<br/>VNI 10031<br/>ceph_cluster"]
+vx10032["vx10032<br/>VNI 10032<br/>core_services"]
+vx10100["vx10100<br/>VNI 10100<br/>tenant1_mgmt"]
+vx10101["vx10101<br/>VNI 10101<br/>tenant1_engineering"]
+vx10102["vx10102<br/>VNI 10102<br/>tenant1_support"]
+OVS99 --> vx10031
+OVS99 --> vx10032
+OVS99 --> vx10100
+OVS99 --> vx10101
+OVS99 --> vx10102
+end
+
+%% ovs1 group
+subgraph OVS1_GROUP [ovs1]
+direction LR
+OVS1["ovs1 (OVSBridge)<br/>ports: eth1<br/>vlan_aware: true"]
+vx9000["vx9000<br/>VNI 9000<br/>shared_services"]
+vx9006["vx9006<br/>VNI 9006<br/>edgesec_vault"]
+vx10110["vx10110<br/>VNI 10110<br/>tenant1_services"]
+OVS1 --> vx9000
+OVS1 --> vx9006
+OVS1 --> vx10110
+end
+
+%% br-ext group (formerly ovs2)
+subgraph BR_EXT_GROUP [br-ext]
+direction LR
+BR_EXT["br-ext (OVSBridge)<br/>ports: xg1<br/>172.16.11.20/24 (dedicated interface, no VLAN tagging)"]
+vx10120["vx10120<br/>VNI 10120<br/>tenant1_ext"]
+BR_EXT --> vx10120
+end
+
+%% br-int
+BRINT["br-int (OVN Integration Bridge)<br/>virtual"]
+
+%% Integration links
+OVS99 -. patch .- BRINT
+OVS1  -. patch .- BRINT
+BR_EXT  -. localnet .- BRINT
+
+%% Remote peering
+PEERED((🌐 Remote Overlay))
+vx10031 -. "RT 100:31<br/>ceph_cluster" .-> PEERED
+vx10032 -. "RT 100:32<br/>core_services" .-> PEERED
+vx10110 -. "RT 100:10<br/>tenant1_services" .-> PEERED
+vx9006  -. "RT 100:6<br/>edgesec_vault" .-> PEERED
+
+%% Color coding
+classDef brint fill:#ede7f6,stroke:#512da8,stroke-width:2px;
+classDef ovs99 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
+classDef ovs1 fill:#fffde7,stroke:#fbc02d,stroke-width:2px;
+
+classDef brext fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
+
+class BRINT brint;
+class OVS99 ovs99;
+class OVS1 ovs1;
+class BR_EXT brext;
+
+class vx10031,vx10032,vx10100,vx10101,vx10102 ovs99;
+class vx10110,vx9000,vx9006 ovs1;
+class VLAN11,VLAN100,vx10120 ovs2;
+

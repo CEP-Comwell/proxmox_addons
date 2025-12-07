@@ -87,17 +87,8 @@ bridges:
       #   options:
       #     id: 10120
       #     mtu: 1400
-      - name: vmbr2.11
-        type: vlan
-        options:
-          inet: static
-          address: 172.16.11.20/24
-          tag: 11
-      - name: vmbr2.100
-        type: vlan
-        options:
-          address: 10.10.31.20/24
-          tag: 100
+      # The previous VLAN subinterfaces (vmbr2.11, vmbr2.100) were removed
+      # to treat xg1/br-ext as a dedicated external interface (no VLAN tagging).
       # Note: vxlan9003 is an external proxy ingress attached to vmbr2 on this host.
       # Other VXLANs for tenant/fabric are typically instantiated on OVS bridges
       # (vmbr99/vmbr1) and therefore are not declared as vmbr2 subinterfaces here.

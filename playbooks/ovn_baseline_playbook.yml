@@ -1,0 +1,68 @@
+---
+# Playbook to run the ovn_baseline script in dry-run or apply mode.
+# Usage: ansible-playbook -i inventory playbooks/ovn_baseline_playbook.yml -e run_mode=dry
+# set run_mode=apply to actually run the installer.
+---
+- name: OVN baseline installer (dry-run/apply)
+  hosts: all
+  become: true
+  vars:
+    run_mode: "dry"   # dry or apply
+    local_script_path: "roles/ovn-prereqs/ovn_baseline.sh"
+    remote_script_path: "/tmp/ovn_baseline.sh"
+
+  tasks:
+    - name: Check connectivity and distro
+      ansible.builtin.setup:
+        ---
+        # Playbook to run the ovn_baseline script in dry-run or apply mode.
+        # Usage: ansible-playbook -i inventory playbooks/ovn_baseline_playbook.yml -e run_mode=dry
+        # set run_mode=apply to actually run the installer.
+
+        - name: OVN baseline installer (dry-run/apply)
+          hosts: all
+          become: true
+          vars:
+            run_mode: "dry"   # dry or apply
+            local_script_path: "roles/ovn-prereqs/ovn_baseline.sh"
+            remote_script_path: "/tmp/ovn_baseline.sh"
+
+          tasks:
+            - name: Check connectivity and distro
+              ansible.builtin.setup:
+                gather_subset: min
+
+            - name: Copy ovn_baseline script to target
+              ansible.builtin.copy:
+                src: "{{ local_script_path }}"
+                dest: "{{ remote_script_path }}"
+                mode: '0755'
+
+            - name: Dry-run: show actions that would be performed
+              ansible.builtin.shell: |
+                echo "DRY-RUN: On host $(hostname) the following would run:"
+                echo " - Ensure openvswitch and ovn packages installed"
+                echo " - Unmask ovs-vswitchd/ovsdb-server"
+                echo " - Start/enable ovs services and ensure br-int up"
+                echo " - Wait for br-int.mgmt and then start ovn-controller"
+              when: run_mode != 'apply'
+
+            - name: Run installer (apply mode)
+              ansible.builtin.shell: "{{ remote_script_path }}"
+              register: install_out
+              when: run_mode == 'apply'
+
+            - name: Show installer output
+              ansible.builtin.debug:
+                var: install_out.stdout_lines
+              when: run_mode == 'apply'
+
+            - name: Collect verification artifacts (apply mode)
+              ansible.builtin.shell: |
+                mkdir -p /tmp/ovn_verify_${USER:-ansible}
+                ovs-vsctl show > /tmp/ovn_verify_${USER:-ansible}/ovs-vsctl-show.txt 2>&1 || true
+                ovs-ofctl -O OpenFlow15 dump-ports-desc br-int > /tmp/ovn_verify_${USER:-ansible}/dump-ports-desc-br-int.txt 2>&1 || true
+                ovs-ofctl -O OpenFlow15 dump-flows br-int > /tmp/ovn_verify_${USER:-ansible}/dump-flows-br-int.txt 2>&1 || true
+                systemctl status ovs-vswitchd --no-pager -l > /tmp/ovn_verify_${USER:-ansible}/ovs-vswitchd.status.txt 2>&1 || true
+                systemctl status ovn-controller --no-pager -l > /tmp/ovn_verify_${USER:-ansible}/ovn-controller.status.txt 2>&1 || true
+              when: run_mode == 'apply'
