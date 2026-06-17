@@ -2,6 +2,7 @@ ipam:
   vx10031:
     vni: 10031
     vnet: vn10031
+    logical_switch: ceph_cluster
     name: ceph_cluster
     subnet: 10.100.31.0/24
     gateway: 10.100.31.1
@@ -15,6 +16,7 @@ ipam:
   vx10032:
     vni: 10032
     vnet: vn10032
+    logical_switch: core_services
     name: core_services
     subnet: 10.100.32.0/24
     gateway: 10.100.32.1
@@ -28,6 +30,7 @@ ipam:
   vx10100:
     vni: 10100
     vnet: vn10100
+    logical_switch: tenant1_mgmt
     name: tenant1_mgmt
     subnet: 10.101.0.0/24
     gateway: 10.101.0.1
@@ -41,6 +44,7 @@ ipam:
   vx10101:
     vni: 10101
     vnet: vn10101
+    logical_switch: tenant1_engineering
     name: tenant1_engineering
     subnet: 10.101.1.0/24
     gateway: 10.101.1.1
@@ -54,6 +58,7 @@ ipam:
   vx10102:
     vni: 10102
     vnet: vn10102
+    logical_switch: tenant1_support
     name: tenant1_support
     subnet: 10.101.2.0/24
     gateway: 10.101.2.1
@@ -67,6 +72,7 @@ ipam:
   vx9006:
     vni: 9006
     vnet: vn9006
+    logical_switch: edgesec_vault
     name: edgesec_vault
     subnet: 10.90.6.0/24
     gateway: 10.90.6.1
@@ -80,6 +86,7 @@ ipam:
   vx10110:
     vni: 10110
     vnet: vn10110
+    logical_switch: tenant1_services
     name: tenant1_services
     subnet: 10.101.10.0/24
     gateway: 10.101.10.1
@@ -93,6 +100,7 @@ ipam:
   vx9000:
     vni: 9000
     vnet: vn9000
+    logical_switch: shared_services
     name: shared_services
     subnet: 10.90.0.0/24
     gateway: 10.90.0.1
@@ -106,6 +114,7 @@ ipam:
   vx10120:
     vni: 10120
     vnet: vn10120
+    logical_switch: tenant1_ext
     name: tenant1_ext
     subnet: 10.101.20.0/24
     gateway: 10.101.20.1
