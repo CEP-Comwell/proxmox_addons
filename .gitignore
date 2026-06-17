@@ -208,3 +208,7 @@ __marimo__/
 
 # Local Proxmox configuration backups
 backups/
+
+# Workspace scratch artifacts generated during OVN testing
+/test/
+/tmp/
